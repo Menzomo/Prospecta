@@ -71,7 +71,16 @@ export async function createLead(
     .select()
     .single()
 
-  if (error) return null
+  if (error) {
+    console.error('[leadRepository.createLead] Supabase error:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    })
+    return null
+  }
+
   return data
 }
 

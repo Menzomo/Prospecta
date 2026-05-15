@@ -1,14 +1,11 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createLeadSchema, updateLeadSchema } from '@/validations/leadSchema'
-import {
-  createLead,
-  updateLead,
-  hideLead,
-  findDuplicateLead,
-} from '@/repositories/leadRepository'
+import { updateLead, hideLead } from '@/repositories/leadRepository'
+import { createLeadWithDuplicateCheck } from '@/services/leadService'
 import type { LeadStatus } from '@/types/leads'
 
 // --- Create ---
@@ -51,17 +48,7 @@ export async function createLeadAction(
 
   if (!user) redirect('/login')
 
-  const { email, website } = validation.data
-  const duplicate = await findDuplicateLead(supabase, user.id, email, website)
-
-  if (duplicate === 'email') {
-    return { errors: { email: ['Já existe um lead com esse email.'] } }
-  }
-  if (duplicate === 'website') {
-    return { errors: { website: ['Já existe um lead com esse website.'] } }
-  }
-
-  const lead = await createLead(supabase, user.id, {
+  const dto = {
     company_name: validation.data.company_name,
     contact_name: validation.data.contact_name || null,
     email: validation.data.email || null,
@@ -69,15 +56,30 @@ export async function createLeadAction(
     website: validation.data.website || null,
     city: validation.data.city || null,
     notes: validation.data.notes || null,
-    source: 'manual',
-    status: 'novo',
-  })
+    source: 'manual' as const,
+    status: 'novo' as const,
+  }
 
-  if (!lead) {
+  const result = await createLeadWithDuplicateCheck(supabase, user.id, dto)
+
+  if ('duplicate' in result) {
+    return {
+      errors: {
+        [result.duplicate]: [`Já existe um lead com esse ${result.duplicate}.`],
+      },
+    }
+  }
+
+  if ('error' in result) {
+    console.error('[createLeadAction] createLead failed:', {
+      userId: user.id,
+      dto,
+    })
     return { error: 'Erro ao criar lead. Tente novamente.' }
   }
 
-  redirect(`/leads/${lead.id}`)
+  revalidatePath('/leads')
+  redirect(`/leads/${result.lead.id}`)
 }
 
 // --- Update ---
@@ -139,6 +141,8 @@ export async function updateLeadAction(
     return { error: 'Erro ao atualizar lead. Tente novamente.' }
   }
 
+  revalidatePath(`/leads/${id}`)
+  revalidatePath('/leads')
   return { success: true }
 }
 
@@ -153,5 +157,6 @@ export async function hideLeadAction(id: string, _formData: FormData): Promise<v
   if (!user) redirect('/login')
 
   await hideLead(supabase, id)
+  revalidatePath('/leads')
   redirect('/leads')
 }
