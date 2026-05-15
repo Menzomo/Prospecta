@@ -34,6 +34,33 @@ export interface Database {
         }
         Relationships: []
       }
+      templates: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          subject: string
+          body: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          subject: string
+          body: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          name?: string
+          subject?: string
+          body?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           id: string

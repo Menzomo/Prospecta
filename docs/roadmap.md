@@ -48,11 +48,15 @@ Nota: Leads Foundation concluída — CRUD básico de leads funcionando (criar, 
 
 ## Fase 3 — Templates
 
-- [ ] Tabelas: templates, template_attachments
-- [ ] CRUD de templates
-- [ ] Suporte a variáveis: {{lead_company_name}}, {{user_company_name}}, {{user_name}}
+- [x] Tabelas: templates
+- [x] CRUD de templates (criar, listar, editar, excluir)
+- [x] Suporte a variáveis: {{lead_company_name}}, {{user_company_name}}, {{user_name}}
 - [ ] Upload de anexos (PDF, PPT, PPTX)
 - [ ] Preview do template
+
+Nota: Templates Foundation concluída — CRUD básico de templates funcionando (criar, listar, editar e excluir).
+- Variáveis disponíveis exibidas como dica na interface do editor.
+- RLS com políticas por user_id.
 
 ---
 
