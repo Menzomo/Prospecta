@@ -47,6 +47,8 @@
 ### Deduplicação
 - Lead duplicado detectado por: mesmo user_id + email OU mesmo user_id + website
 - Sistema impede criação de lead duplicado
+- Deduplicação por email implementada no create de lead
+- Débito técnico: aplicar deduplicação também no updateLeadAction
 
 ### Status dos Leads
 - `novo` — recém adicionado

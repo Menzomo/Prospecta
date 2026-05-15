@@ -71,10 +71,7 @@ export async function createLeadAction(
   }
 
   if ('error' in result) {
-    console.error('[createLeadAction] createLead failed:', {
-      userId: user.id,
-      dto,
-    })
+    console.error('[createLeadAction] createLead failed for userId:', user.id)
     return { error: 'Erro ao criar lead. Tente novamente.' }
   }
 

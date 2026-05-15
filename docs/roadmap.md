@@ -39,6 +39,11 @@ Desenvolvimento modular, incremental, módulo por módulo. Nunca implementar tud
 - [ ] Histórico de status do lead
 - [ ] Ocultação de leads (is_hidden)
 
+Nota: Leads Foundation concluída — CRUD básico de leads funcionando (criar, listar, editar e ocultar).
+- Deduplicação por email já implementada no create.
+- RLS validado manualmente para leads.
+- Débito técnico futuro: aplicar deduplicação também no updateLeadAction.
+
 ---
 
 ## Fase 3 — Templates
