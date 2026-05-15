@@ -34,6 +34,63 @@ export interface Database {
         }
         Relationships: []
       }
+      leads: {
+        Row: {
+          id: string
+          user_id: string
+          company_name: string
+          contact_name: string | null
+          email: string | null
+          phone: string | null
+          website: string | null
+          city: string | null
+          source: string
+          status: string
+          notes: string | null
+          is_hidden: boolean
+          hidden_at: string | null
+          last_contacted_at: string | null
+          last_reply_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          company_name: string
+          contact_name?: string | null
+          email?: string | null
+          phone?: string | null
+          website?: string | null
+          city?: string | null
+          source?: string
+          status?: string
+          notes?: string | null
+          is_hidden?: boolean
+          hidden_at?: string | null
+          last_contacted_at?: string | null
+          last_reply_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string
+          contact_name?: string | null
+          email?: string | null
+          phone?: string | null
+          website?: string | null
+          city?: string | null
+          source?: string
+          status?: string
+          notes?: string | null
+          is_hidden?: boolean
+          hidden_at?: string | null
+          last_contacted_at?: string | null
+          last_reply_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       company_profiles: {
         Row: {
           id: string
