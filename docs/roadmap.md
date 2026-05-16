@@ -62,12 +62,19 @@ Nota: Templates Foundation concluída — CRUD básico de templates funcionando 
 
 ## Fase 4 — Gmail
 
-- [ ] OAuth Google para Gmail
-- [ ] Tabela: gmail_connections
-- [ ] Conexão e desconexão da conta Gmail
-- [ ] Settings: /settings/gmail
+- [x] OAuth Google para Gmail
+- [x] Tabela: gmail_connections
+- [x] Conexão e desconexão da conta Gmail
+- [x] Settings: /settings/gmail
 - [ ] Envio de email via Gmail API
 - [ ] Registro de email_threads e email_messages
+
+Nota: Gmail Connection Foundation concluída — conexão OAuth implementada.
+- Fluxo: /api/gmail/connect → Google OAuth → /api/gmail/callback → salva gmail_connections.
+- CSRF protegido via state parameter em cookie httpOnly.
+- Tokens (access_token, refresh_token) salvos no banco, nunca expostos no frontend.
+- Desconexão via server action (marca is_connected=false, salva disconnected_at).
+- Env vars necessárias: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI.
 
 ---
 

@@ -70,17 +70,24 @@ Regra: 1 usuário = 1 empresa (user_id UNIQUE).
 ### gmail_connections
 Tokens e estado da integração Gmail por usuário.
 
-| Campo         | Tipo        | Obs                     |
-|---------------|-------------|-------------------------|
-| id            | uuid PK     |                         |
-| user_id       | uuid UNIQUE | FK → profiles           |
-| email         | text        | conta Gmail conectada   |
-| access_token  | text        | temporário, expira rapidamente |
-| refresh_token | text        | principal token persistido |
-| expires_at    | timestamptz |                         |
-| status        | text        | connected / disconnected|
-| created_at    | timestamptz |                         |
-| updated_at    | timestamptz |                         |
+| Campo               | Tipo        | Obs                                  |
+|---------------------|-------------|--------------------------------------|
+| id                  | uuid PK     |                                      |
+| user_id             | uuid UNIQUE | FK → auth.users                      |
+| gmail_email         | text        | conta Gmail conectada                |
+| provider_account_id | text        | sub do Google (identificador Google) |
+| access_token        | text        | temporário, expira rapidamente       |
+| refresh_token       | text        | principal token persistido           |
+| expires_at          | timestamptz |                                      |
+| scope               | text        | escopos OAuth autorizados            |
+| is_connected        | boolean     | true = conectado, false = desconectado |
+| connected_at        | timestamptz |                                      |
+| disconnected_at     | timestamptz |                                      |
+| created_at          | timestamptz |                                      |
+| updated_at          | timestamptz |                                      |
+
+Regra: 1 conexão Gmail por usuário (user_id UNIQUE).
+Segurança: tokens nunca expostos no frontend. Logs sem tokens completos.
 
 ---
 

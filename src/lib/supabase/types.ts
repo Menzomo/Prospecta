@@ -118,6 +118,51 @@ export interface Database {
         }
         Relationships: []
       }
+      gmail_connections: {
+        Row: {
+          id: string
+          user_id: string
+          gmail_email: string
+          provider_account_id: string | null
+          access_token: string
+          refresh_token: string | null
+          expires_at: string | null
+          scope: string | null
+          is_connected: boolean
+          connected_at: string
+          disconnected_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          gmail_email: string
+          provider_account_id?: string | null
+          access_token: string
+          refresh_token?: string | null
+          expires_at?: string | null
+          scope?: string | null
+          is_connected?: boolean
+          connected_at?: string
+          disconnected_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          gmail_email?: string
+          provider_account_id?: string | null
+          access_token?: string
+          refresh_token?: string | null
+          expires_at?: string | null
+          scope?: string | null
+          is_connected?: boolean
+          connected_at?: string
+          disconnected_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       company_profiles: {
         Row: {
           id: string

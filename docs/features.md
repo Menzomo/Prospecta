@@ -20,7 +20,14 @@
 ### /settings/gmail
 - Conectar conta Gmail via OAuth Google
 - Ver status da conexão (conectado / desconectado)
+- Ver email da conta Gmail conectada
 - Desconectar conta Gmail
+
+**Implementado:** Gmail Connection Foundation concluída.
+- Fluxo OAuth: GET /api/gmail/connect → Google → GET /api/gmail/callback.
+- Estado CSRF protegido por state em cookie httpOnly.
+- Tokens armazenados no banco (nunca no frontend).
+- Mesma conta do login Prospecta pode ser conectada como Gmail.
 
 ---
 
