@@ -1,5 +1,6 @@
 import type { Lead } from '@/types/leads'
 import type { EmailMessage } from '@/types/email'
+import type { Followup } from '@/types/followups'
 
 type LeadCreatedEvent = {
   id: string
@@ -14,9 +15,32 @@ type EmailSentEvent = {
   subject: string
 }
 
-type TimelineEvent = LeadCreatedEvent | EmailSentEvent
+type FollowupCreatedEvent = {
+  id: string
+  type: 'followup_created'
+  timestamp: string
+  title: string
+  due_at: string
+}
 
-function buildTimeline(lead: Lead, messages: EmailMessage[]): TimelineEvent[] {
+type FollowupCompletedEvent = {
+  id: string
+  type: 'followup_completed'
+  timestamp: string
+  title: string
+}
+
+type TimelineEvent =
+  | LeadCreatedEvent
+  | EmailSentEvent
+  | FollowupCreatedEvent
+  | FollowupCompletedEvent
+
+function buildTimeline(
+  lead: Lead,
+  messages: EmailMessage[],
+  followups: Followup[]
+): TimelineEvent[] {
   const events: TimelineEvent[] = [
     {
       id: `created_${lead.id}`,
@@ -30,6 +54,21 @@ function buildTimeline(lead: Lead, messages: EmailMessage[]): TimelineEvent[] {
         type: 'email_sent',
         timestamp: m.sent_at,
         subject: m.subject,
+      })),
+    ...followups.map((f): FollowupCreatedEvent => ({
+      id: `followup_created_${f.id}`,
+      type: 'followup_created',
+      timestamp: f.created_at,
+      title: f.title,
+      due_at: f.due_at,
+    })),
+    ...followups
+      .filter((f) => f.status === 'completed' && f.completed_at)
+      .map((f): FollowupCompletedEvent => ({
+        id: `followup_completed_${f.id}`,
+        type: 'followup_completed',
+        timestamp: f.completed_at!,
+        title: f.title,
       })),
   ]
 
@@ -48,13 +87,22 @@ function formatDateTime(timestamp: string): string {
   })
 }
 
+function formatDate(timestamp: string): string {
+  return new Date(timestamp).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
+
 type Props = {
   lead: Lead
   messages: EmailMessage[]
+  followups: Followup[]
 }
 
-export function LeadTimeline({ lead, messages }: Props) {
-  const events = buildTimeline(lead, messages)
+export function LeadTimeline({ lead, messages, followups }: Props) {
+  const events = buildTimeline(lead, messages, followups)
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -86,6 +134,27 @@ export function LeadTimeline({ lead, messages }: Props) {
                     <p className="mt-1 truncate text-xs text-gray-500">
                       Assunto: {event.subject}
                     </p>
+                  </>
+                )}
+
+                {event.type === 'followup_created' && (
+                  <>
+                    <p className="text-sm font-medium text-gray-800">Acompanhamento criado</p>
+                    <p className="mt-0.5 text-xs text-gray-500">{formatDateTime(event.timestamp)}</p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      {event.title}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      Data prevista: {formatDate(event.due_at)}
+                    </p>
+                  </>
+                )}
+
+                {event.type === 'followup_completed' && (
+                  <>
+                    <p className="text-sm font-medium text-gray-800">Acompanhamento concluído</p>
+                    <p className="mt-0.5 text-xs text-gray-500">{formatDateTime(event.timestamp)}</p>
+                    <p className="mt-1 text-xs text-gray-500">{event.title}</p>
                   </>
                 )}
               </div>

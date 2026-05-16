@@ -3,9 +3,11 @@ import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getLeadById } from '@/repositories/leadRepository'
 import { getEmailMessagesByLeadId } from '@/repositories/emailRepository'
+import { getFollowupsByLeadId } from '@/repositories/followupRepository'
 import { hideLeadAction } from '@/features/leads/actions'
 import { LeadEditForm } from '@/features/leads/components/LeadEditForm'
 import { LeadTimeline } from '@/features/leads/components/LeadTimeline'
+import { LeadFollowupSection } from '@/features/followups/components/LeadFollowupSection'
 import { LEAD_STATUS_LABELS } from '@/types/leads'
 import type { LeadStatus } from '@/types/leads'
 
@@ -26,9 +28,10 @@ export default async function LeadDetailPage({ params }: Props) {
   const lead = await getLeadById(supabase, id)
   if (!lead) notFound()
 
-  const emailMessages = await getEmailMessagesByLeadId(supabase, user.id, id)
-
-  console.log('[LeadDetailPage] lead.id:', lead.id, '| emailMessages.length:', emailMessages.length)
+  const [emailMessages, followups] = await Promise.all([
+    getEmailMessagesByLeadId(supabase, user.id, id),
+    getFollowupsByLeadId(supabase, user.id, id),
+  ])
 
   const status = lead.status as LeadStatus
   const statusLabel = LEAD_STATUS_LABELS[status] ?? lead.status
@@ -90,7 +93,9 @@ export default async function LeadDetailPage({ params }: Props) {
             <LeadEditForm lead={lead} />
           </div>
 
-          <LeadTimeline lead={lead} messages={emailMessages} />
+          <LeadFollowupSection leadId={lead.id} followups={followups} />
+
+          <LeadTimeline lead={lead} messages={emailMessages} followups={followups} />
         </div>
       </main>
     </div>

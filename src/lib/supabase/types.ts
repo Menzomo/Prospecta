@@ -266,6 +266,41 @@ export interface Database {
         }
         Relationships: []
       }
+      followups: {
+        Row: {
+          id: string
+          user_id: string
+          lead_id: string
+          title: string
+          notes: string | null
+          due_at: string
+          status: string
+          completed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          lead_id: string
+          title: string
+          notes?: string | null
+          due_at: string
+          status?: string
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          title?: string
+          notes?: string | null
+          due_at?: string
+          status?: string
+          completed_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
