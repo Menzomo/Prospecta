@@ -2,8 +2,10 @@ import Link from 'next/link'
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getLeadById } from '@/repositories/leadRepository'
+import { getEmailMessagesByLeadId } from '@/repositories/emailRepository'
 import { hideLeadAction } from '@/features/leads/actions'
 import { LeadEditForm } from '@/features/leads/components/LeadEditForm'
+import { LeadEmailHistory } from '@/features/leads/components/LeadEmailHistory'
 import { LEAD_STATUS_LABELS } from '@/types/leads'
 import type { LeadStatus } from '@/types/leads'
 
@@ -23,6 +25,8 @@ export default async function LeadDetailPage({ params }: Props) {
 
   const lead = await getLeadById(supabase, id)
   if (!lead) notFound()
+
+  const emailMessages = await getEmailMessagesByLeadId(supabase, user.id, id)
 
   const status = lead.status as LeadStatus
   const statusLabel = LEAD_STATUS_LABELS[status] ?? lead.status
@@ -83,6 +87,8 @@ export default async function LeadDetailPage({ params }: Props) {
             <h2 className="mb-4 text-base font-semibold text-gray-900">Editar dados</h2>
             <LeadEditForm lead={lead} />
           </div>
+
+          <LeadEmailHistory messages={emailMessages} />
         </div>
       </main>
     </div>
