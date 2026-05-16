@@ -118,6 +118,67 @@ export interface Database {
         }
         Relationships: []
       }
+      email_threads: {
+        Row: {
+          id: string
+          user_id: string
+          lead_id: string
+          gmail_thread_id: string
+          subject: string
+          last_reply_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          lead_id: string
+          gmail_thread_id: string
+          subject: string
+          last_reply_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          gmail_thread_id?: string
+          subject?: string
+          last_reply_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_messages: {
+        Row: {
+          id: string
+          user_id: string
+          lead_id: string
+          thread_id: string
+          template_id: string | null
+          subject: string
+          body: string
+          direction: string
+          gmail_message_id: string
+          sent_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          lead_id: string
+          thread_id: string
+          template_id?: string | null
+          subject: string
+          body: string
+          direction?: string
+          gmail_message_id: string
+          sent_at?: string
+          created_at?: string
+        }
+        Update: {
+          last_reply_at?: string | null
+        }
+        Relationships: []
+      }
       gmail_connections: {
         Row: {
           id: string

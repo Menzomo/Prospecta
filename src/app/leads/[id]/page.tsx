@@ -39,14 +39,22 @@ export default async function LeadDetailPage({ params }: Props) {
             <h1 className="text-lg font-semibold text-gray-900">{lead.company_name}</h1>
           </div>
 
-          <form action={hideLeadAction.bind(null, lead.id)}>
-            <button
-              type="submit"
-              className="rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-50"
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/leads/${lead.id}/send`}
+              className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
             >
-              Ocultar lead
-            </button>
-          </form>
+              Enviar email
+            </Link>
+            <form action={hideLeadAction.bind(null, lead.id)}>
+              <button
+                type="submit"
+                className="rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-50"
+              >
+                Ocultar lead
+              </button>
+            </form>
+          </div>
         </div>
       </header>
 

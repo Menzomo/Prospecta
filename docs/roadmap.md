@@ -80,10 +80,20 @@ Nota: Gmail Connection Foundation concluída — conexão OAuth implementada.
 
 ## Fase 5 — Envio de Email
 
-- [ ] Fluxo de envio: lead → template → edição → confirmação → envio
-- [ ] Substituição de variáveis antes do envio
-- [ ] Edição de assunto, corpo e anexos antes do envio
-- [ ] Registro de email_messages e email_threads
+- [x] Fluxo de envio: lead → template → edição → confirmação → envio
+- [x] Substituição de variáveis antes do envio (client-side, editável)
+- [x] Edição de assunto e corpo antes do envio
+- [x] Registro de email_messages e email_threads
+- [ ] Edição de anexos antes do envio
+- [ ] Exibição de histórico de emails enviados em /leads/[id]
+
+Nota: Email Send Foundation concluída.
+- Página /leads/[id]/send: seleção de template + renderização de variáveis + edição + envio.
+- Variáveis substituídas client-side antes da edição final pelo usuário.
+- Email enviado via Gmail API (raw RFC2822 base64url).
+- email_threads + email_messages persistidos no banco após envio.
+- Lead atualizado para status=contatado e last_contacted_at após envio.
+- Token expirado detectado com mensagem clara para reconectar.
 
 ---
 

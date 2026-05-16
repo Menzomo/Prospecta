@@ -93,14 +93,21 @@
 ## Envio de Email
 
 ### Fluxo completo
-1. Usuário acessa um lead
-2. Seleciona ou cria um template
-3. Sistema substitui variáveis automaticamente
-4. Usuário pode editar: assunto, corpo e anexos antes de enviar
-5. Usuário confirma envio
-6. Sistema envia via Gmail API
+1. Usuário acessa um lead → clica "Enviar email"
+2. Seleciona um template na página /leads/[id]/send
+3. Sistema substitui variáveis automaticamente (client-side)
+4. Usuário pode editar: assunto e corpo antes de enviar
+5. Usuário clica "Enviar email"
+6. Sistema envia via Gmail API (raw RFC2822, base64url)
 7. Sistema registra email_threads e email_messages no banco
-8. Status do lead atualizado para `contatado`
+8. Status do lead atualizado para `contatado` e last_contacted_at atualizado
+
+**Implementado:** Email Send Foundation concluída.
+- Variáveis: {{lead_company_name}}, {{user_company_name}}, {{user_name}}
+- Renderização client-side antes da edição final
+- Persistência em email_threads + email_messages
+- Token expirado detectado com mensagem para reconectar
+- Débito técnico: exibir histórico de emails em /leads/[id]
 
 ---
 

@@ -221,6 +221,7 @@ Limites: até 5 anexos por template, 10MB por arquivo. Tipos: PDF, PPT, PPTX.
 ---
 
 ### email_threads
+**Implementado.**
 Threads de email baseadas em Gmail threads. Representa a conversa/thread do Gmail.
 
 | Campo         | Tipo        |
@@ -237,6 +238,7 @@ Threads de email baseadas em Gmail threads. Representa a conversa/thread do Gmai
 ---
 
 ### email_messages
+**Implementado.**
 Mensagens individuais da thread, tanto enviadas quanto recebidas.
 
 | Campo          | Tipo        |

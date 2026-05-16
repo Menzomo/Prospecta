@@ -100,6 +100,30 @@ export async function updateLead(
   return data
 }
 
+export async function markLeadContacted(
+  supabase: SupabaseClient<Database>,
+  id: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('leads')
+    .update({
+      status: 'contatado',
+      last_contacted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+
+  if (error) {
+    console.error('[leadRepository.markLeadContacted] Supabase error:', {
+      code: error.code,
+      message: error.message,
+    })
+    return false
+  }
+
+  return true
+}
+
 export async function hideLead(
   supabase: SupabaseClient<Database>,
   id: string
