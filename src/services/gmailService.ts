@@ -97,6 +97,39 @@ export async function getGoogleUserInfo(accessToken: string): Promise<GoogleUser
   return response.json() as Promise<GoogleUserInfo>
 }
 
+type RefreshedTokens = {
+  access_token: string
+  expires_in: number
+}
+
+export async function refreshGmailToken(refreshToken: string): Promise<RefreshedTokens | null> {
+  const clientId = process.env.GOOGLE_CLIENT_ID
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET
+
+  if (!clientId || !clientSecret) {
+    console.error('[gmailService.refreshGmailToken] Missing env vars')
+    return null
+  }
+
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      refresh_token: refreshToken,
+      client_id: clientId,
+      client_secret: clientSecret,
+      grant_type: 'refresh_token',
+    }).toString(),
+  })
+
+  if (!response.ok) {
+    console.error('[gmailService.refreshGmailToken] Token refresh failed:', response.status)
+    return null
+  }
+
+  return response.json() as Promise<RefreshedTokens>
+}
+
 export async function saveGmailConnectionService(
   supabase: SupabaseClient<Database>,
   userId: string,

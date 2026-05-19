@@ -124,6 +124,26 @@ export async function markLeadContacted(
   return true
 }
 
+export async function updateLeadLastReplyAt(
+  supabase: SupabaseClient<Database>,
+  leadId: string,
+  lastReplyAt: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('leads')
+    .update({ last_reply_at: lastReplyAt, updated_at: new Date().toISOString() })
+    .eq('id', leadId)
+
+  if (error) {
+    console.error('[leadRepository.updateLeadLastReplyAt] Supabase error:', {
+      code: error.code,
+      message: error.message,
+    })
+    return false
+  }
+  return true
+}
+
 export async function hideLead(
   supabase: SupabaseClient<Database>,
   id: string

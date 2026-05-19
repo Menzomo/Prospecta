@@ -101,6 +101,7 @@ export async function sendEmailService(
     subject: input.subject,
     body: input.body,
     gmail_message_id: gmailData.id,
+    direction: 'outbound',
   })
 
   if (!message) {

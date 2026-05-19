@@ -30,11 +30,20 @@ type FollowupCompletedEvent = {
   title: string
 }
 
+type ReplyReceivedEvent = {
+  id: string
+  type: 'reply_received'
+  timestamp: string
+  subject: string
+  from_email: string | null
+}
+
 type TimelineEvent =
   | LeadCreatedEvent
   | EmailSentEvent
   | FollowupCreatedEvent
   | FollowupCompletedEvent
+  | ReplyReceivedEvent
 
 function buildTimeline(
   lead: Lead,
@@ -54,6 +63,15 @@ function buildTimeline(
         type: 'email_sent',
         timestamp: m.sent_at,
         subject: m.subject,
+      })),
+    ...messages
+      .filter((m) => m.direction === 'inbound')
+      .map((m): ReplyReceivedEvent => ({
+        id: `reply_${m.id}`,
+        type: 'reply_received',
+        timestamp: m.sent_at,
+        subject: m.subject,
+        from_email: m.from_email,
       })),
     ...followups.map((f): FollowupCreatedEvent => ({
       id: `followup_created_${f.id}`,
@@ -155,6 +173,19 @@ export function LeadTimeline({ lead, messages, followups }: Props) {
                     <p className="text-sm font-medium text-gray-800">Acompanhamento concluído</p>
                     <p className="mt-0.5 text-xs text-gray-500">{formatDateTime(event.timestamp)}</p>
                     <p className="mt-1 text-xs text-gray-500">{event.title}</p>
+                  </>
+                )}
+
+                {event.type === 'reply_received' && (
+                  <>
+                    <p className="text-sm font-medium text-gray-800">Resposta recebida</p>
+                    <p className="mt-0.5 text-xs text-gray-500">{formatDateTime(event.timestamp)}</p>
+                    <p className="mt-1 truncate text-xs text-gray-500">
+                      Assunto: {event.subject}
+                    </p>
+                    {event.from_email && (
+                      <p className="truncate text-xs text-gray-400">De: {event.from_email}</p>
+                    )}
                   </>
                 )}
               </div>

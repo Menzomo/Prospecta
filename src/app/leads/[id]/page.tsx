@@ -8,6 +8,7 @@ import { hideLeadAction } from '@/features/leads/actions'
 import { LeadEditForm } from '@/features/leads/components/LeadEditForm'
 import { LeadTimeline } from '@/features/leads/components/LeadTimeline'
 import { LeadFollowupSection } from '@/features/followups/components/LeadFollowupSection'
+import { SyncButton } from '@/features/gmail/components/SyncButton'
 import { LEAD_STATUS_LABELS } from '@/types/leads'
 import type { LeadStatus } from '@/types/leads'
 
@@ -49,6 +50,7 @@ export default async function LeadDetailPage({ params }: Props) {
           </div>
 
           <div className="flex items-center gap-2">
+            <SyncButton leadId={lead.id} />
             <Link
               href={`/leads/${lead.id}/send`}
               className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"

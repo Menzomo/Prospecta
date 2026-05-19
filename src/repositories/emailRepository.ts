@@ -49,7 +49,7 @@ export async function createEmailMessage(
 ): Promise<EmailMessage | null> {
   const { data, error } = await supabase
     .from('email_messages')
-    .insert({ user_id: userId, direction: 'outbound', ...dto })
+    .insert({ user_id: userId, ...dto })
     .select()
     .single()
 
@@ -80,4 +80,41 @@ export async function getEmailMessagesByLeadId(
 
   if (error) return []
   return data
+}
+
+export async function getGmailMessageIdsByThreadId(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  threadId: string
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('email_messages')
+    .select('gmail_message_id')
+    .eq('user_id', userId)
+    .eq('thread_id', threadId)
+
+  if (error) return []
+  return data.map((row) => row.gmail_message_id)
+}
+
+export async function updateEmailThreadLastReply(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  threadId: string,
+  lastReplyAt: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('email_threads')
+    .update({ last_reply_at: lastReplyAt, updated_at: new Date().toISOString() })
+    .eq('id', threadId)
+    .eq('user_id', userId)
+
+  if (error) {
+    console.error('[emailRepository.updateEmailThreadLastReply] Supabase error:', {
+      code: error.code,
+      message: error.message,
+    })
+    return false
+  }
+  return true
 }

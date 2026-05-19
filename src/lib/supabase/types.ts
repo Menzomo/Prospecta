@@ -158,6 +158,7 @@ export interface Database {
           body: string
           direction: string
           gmail_message_id: string
+          from_email: string | null
           sent_at: string
           created_at: string
         }
@@ -171,6 +172,7 @@ export interface Database {
           body: string
           direction?: string
           gmail_message_id: string
+          from_email?: string | null
           sent_at?: string
           created_at?: string
         }

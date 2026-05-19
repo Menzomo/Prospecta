@@ -16,4 +16,7 @@ export type CreateEmailMessageDto = {
   subject: string
   body: string
   gmail_message_id: string
+  direction: 'inbound' | 'outbound'
+  from_email?: string | null
+  sent_at?: string
 }
