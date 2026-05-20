@@ -161,6 +161,8 @@ export interface Database {
           from_email: string | null
           sent_at: string
           created_at: string
+          is_read: boolean
+          read_at: string | null
         }
         Insert: {
           id?: string
@@ -175,9 +177,13 @@ export interface Database {
           from_email?: string | null
           sent_at?: string
           created_at?: string
+          is_read?: boolean
+          read_at?: string | null
         }
         Update: {
           last_reply_at?: string | null
+          is_read?: boolean
+          read_at?: string | null
         }
         Relationships: []
       }

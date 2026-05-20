@@ -1,6 +1,7 @@
 import type { Lead } from '@/types/leads'
 import type { EmailMessage } from '@/types/email'
 import type { Followup } from '@/types/followups'
+import { stripHtml, stripHtmlPreview } from '@/utils/stripHtml'
 
 type LeadCreatedEvent = {
   id: string
@@ -36,6 +37,8 @@ type ReplyReceivedEvent = {
   timestamp: string
   subject: string
   from_email: string | null
+  body: string
+  original_body: string | null
 }
 
 type TimelineEvent =
@@ -50,6 +53,13 @@ function buildTimeline(
   messages: EmailMessage[],
   followups: Followup[]
 ): TimelineEvent[] {
+  const outboundByThread = new Map<string, EmailMessage>()
+  for (const m of messages) {
+    if (m.direction === 'outbound') {
+      outboundByThread.set(m.thread_id, m)
+    }
+  }
+
   const events: TimelineEvent[] = [
     {
       id: `created_${lead.id}`,
@@ -66,13 +76,18 @@ function buildTimeline(
       })),
     ...messages
       .filter((m) => m.direction === 'inbound')
-      .map((m): ReplyReceivedEvent => ({
-        id: `reply_${m.id}`,
-        type: 'reply_received',
-        timestamp: m.sent_at,
-        subject: m.subject,
-        from_email: m.from_email,
-      })),
+      .map((m): ReplyReceivedEvent => {
+        const related = outboundByThread.get(m.thread_id)
+        return {
+          id: `reply_${m.id}`,
+          type: 'reply_received',
+          timestamp: m.sent_at,
+          subject: m.subject,
+          from_email: m.from_email,
+          body: stripHtml(m.body),
+          original_body: related ? stripHtmlPreview(related.body, 200) : null,
+        }
+      }),
     ...followups.map((f): FollowupCreatedEvent => ({
       id: `followup_created_${f.id}`,
       type: 'followup_created',
@@ -180,11 +195,25 @@ export function LeadTimeline({ lead, messages, followups }: Props) {
                   <>
                     <p className="text-sm font-medium text-gray-800">Resposta recebida</p>
                     <p className="mt-0.5 text-xs text-gray-500">{formatDateTime(event.timestamp)}</p>
-                    <p className="mt-1 truncate text-xs text-gray-500">
-                      Assunto: {event.subject}
-                    </p>
-                    {event.from_email && (
-                      <p className="truncate text-xs text-gray-400">De: {event.from_email}</p>
+
+                    <div className="mt-1 space-y-0.5 text-xs text-gray-500">
+                      {event.from_email && <p>De: {event.from_email}</p>}
+                      <p>Assunto: {event.subject}</p>
+                    </div>
+
+                    <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                      <p className="whitespace-pre-wrap text-xs leading-relaxed text-gray-700">
+                        {event.body || '(sem conteúdo)'}
+                      </p>
+                    </div>
+
+                    {event.original_body && (
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-400">Email original:</p>
+                        <p className="mt-0.5 line-clamp-3 text-xs italic text-gray-400">
+                          {event.original_body}
+                        </p>
+                      </div>
                     )}
                   </>
                 )}

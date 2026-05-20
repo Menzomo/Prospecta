@@ -20,3 +20,8 @@ export type CreateEmailMessageDto = {
   from_email?: string | null
   sent_at?: string
 }
+
+export type InboxMessage = EmailMessage & {
+  lead_company_name: string
+  lead_contact_name: string | null
+}

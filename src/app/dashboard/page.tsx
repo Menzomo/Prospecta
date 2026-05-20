@@ -1,6 +1,8 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCompanyProfileByUserId } from '@/repositories/companyProfileRepository'
+import { countUnreadInboundMessages } from '@/repositories/emailRepository'
 import { logoutAction } from '@/features/auth/actions'
 
 export default async function DashboardPage() {
@@ -15,6 +17,8 @@ export default async function DashboardPage() {
   if (!company) {
     redirect('/onboarding')
   }
+
+  const unreadCount = await countUnreadInboundMessages(supabase, user.id)
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
@@ -36,13 +40,30 @@ export default async function DashboardPage() {
       </header>
 
       <main className="flex flex-1 flex-col items-center justify-center p-6">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Bem-vindo, {company.company_name}!
-          </h2>
-          <p className="mt-2 text-sm text-gray-500">
-            O dashboard completo será implementado na Fase 9.
-          </p>
+        <div className="w-full max-w-md space-y-4">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Bem-vindo, {company.company_name}!
+            </h2>
+            <p className="mt-2 text-sm text-gray-500">
+              O dashboard completo será implementado na Fase 9.
+            </p>
+          </div>
+
+          {unreadCount > 0 && (
+            <Link
+              href="/inbox"
+              className="flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50 px-5 py-4 transition-colors hover:bg-blue-100"
+            >
+              <div>
+                <p className="text-sm font-semibold text-blue-800">Respostas pendentes</p>
+                <p className="mt-0.5 text-xs text-blue-600">Clique para ver na inbox</p>
+              </div>
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white">
+                {unreadCount}
+              </span>
+            </Link>
+          )}
         </div>
       </main>
     </div>
