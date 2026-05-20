@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/types'
 import type { GmailConnection, SaveGmailConnectionDto } from '@/types/gmail'
-import { getGmailConnection, saveGmailConnection } from '@/repositories/gmailRepository'
+import { getGmailConnection, saveGmailConnection, updateGmailTokens } from '@/repositories/gmailRepository'
 
 export type GmailConnectionResult =
   | { success: true; connection: GmailConnection }
@@ -128,6 +128,34 @@ export async function refreshGmailToken(refreshToken: string): Promise<Refreshed
   }
 
   return response.json() as Promise<RefreshedTokens>
+}
+
+/**
+ * Refreshes an expired Gmail access token and persists the new token to the database.
+ * Returns the new access_token on success, null if refresh fails.
+ * Maximum one refresh attempt — callers must not retry.
+ */
+export async function tryRefreshGmailToken(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  refreshToken: string
+): Promise<string | null> {
+  const refreshed = await refreshGmailToken(refreshToken)
+
+  if (!refreshed) {
+    console.log('[gmailService.tryRefreshGmailToken] refresh failed')
+    return null
+  }
+
+  const expiresAt = new Date(Date.now() + refreshed.expires_in * 1000).toISOString()
+
+  await updateGmailTokens(supabase, userId, {
+    access_token: refreshed.access_token,
+    expires_at: expiresAt,
+  })
+
+  console.log('[gmailService.tryRefreshGmailToken] token refreshed and persisted')
+  return refreshed.access_token
 }
 
 export async function saveGmailConnectionService(

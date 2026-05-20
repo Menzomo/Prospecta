@@ -7,6 +7,7 @@ import {
   updateEmailThreadLastReply,
 } from '@/repositories/emailRepository'
 import { updateLeadLastReplyAt } from '@/repositories/leadRepository'
+import { tryRefreshGmailToken } from '@/services/gmailService'
 
 export type SyncResult = { synced: number; errors: number }
 
@@ -27,6 +28,10 @@ type GmailThread = {
   id: string
   messages?: GmailMessage[]
 }
+
+type FetchThreadResult =
+  | { ok: true; thread: GmailThread }
+  | { ok: false; unauthorized: boolean }
 
 function getHeader(headers: Array<{ name: string; value: string }>, name: string): string {
   return headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value ?? ''
@@ -60,16 +65,23 @@ function extractBody(payload: GmailMessagePayload): string {
 async function fetchGmailThread(
   gmailThreadId: string,
   accessToken: string
-): Promise<GmailThread | null> {
+): Promise<FetchThreadResult> {
   const response = await fetch(
     `https://gmail.googleapis.com/gmail/v1/users/me/threads/${gmailThreadId}?format=full`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
   )
+
+  if (response.status === 401) {
+    return { ok: false, unauthorized: true }
+  }
+
   if (!response.ok) {
     console.error('[gmailSyncService] Failed to fetch thread:', gmailThreadId, response.status)
-    return null
+    return { ok: false, unauthorized: false }
   }
-  return response.json() as Promise<GmailThread>
+
+  const thread = (await response.json()) as GmailThread
+  return { ok: true, thread }
 }
 
 export async function syncGmailRepliesForLead(
@@ -79,17 +91,47 @@ export async function syncGmailRepliesForLead(
     leadId,
     accessToken,
     gmailEmail,
-  }: { userId: string; leadId: string; accessToken: string; gmailEmail: string }
+    refreshToken,
+  }: {
+    userId: string
+    leadId: string
+    accessToken: string
+    gmailEmail: string
+    refreshToken: string | null
+  }
 ): Promise<SyncResult> {
   const threads = await getEmailThreadsByLeadId(supabase, userId, leadId)
 
+  let currentToken = accessToken
+  let tokenRefreshed = false
   let synced = 0
   let errors = 0
   let latestReplyAt: string | null = null
 
   for (const thread of threads) {
-    const gmailThread = await fetchGmailThread(thread.gmail_thread_id, accessToken)
-    if (!gmailThread?.messages) {
+    let result = await fetchGmailThread(thread.gmail_thread_id, currentToken)
+
+    if (!result.ok && result.unauthorized && !tokenRefreshed && refreshToken) {
+      console.log('[gmailSyncService] token expired during sync, attempting refresh')
+      const newToken = await tryRefreshGmailToken(supabase, userId, refreshToken)
+
+      if (newToken) {
+        console.log('[gmailSyncService] token refreshed, retrying thread fetch')
+        currentToken = newToken
+        tokenRefreshed = true
+        result = await fetchGmailThread(thread.gmail_thread_id, currentToken)
+      } else {
+        console.log('[gmailSyncService] token refresh failed')
+      }
+    }
+
+    if (!result.ok) {
+      errors++
+      continue
+    }
+
+    const gmailThread = result.thread
+    if (!gmailThread.messages) {
       errors++
       continue
     }

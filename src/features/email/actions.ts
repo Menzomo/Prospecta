@@ -7,6 +7,7 @@ import { sendEmailSchema } from '@/validations/emailSchema'
 import { getLeadById } from '@/repositories/leadRepository'
 import { getGmailConnection } from '@/repositories/gmailRepository'
 import { sendEmailService } from '@/services/emailSendService'
+import { tryRefreshGmailToken } from '@/services/gmailService'
 
 export type SendEmailActionState = {
   errors?: {
@@ -48,8 +49,23 @@ export async function sendEmailAction(
     return { error: 'Conta Gmail não conectada. Acesse Configurações > Gmail para conectar.' }
   }
 
-  if (connection.expires_at && new Date(connection.expires_at) < new Date()) {
-    return { error: 'Token Gmail expirado. Reconecte sua conta em Configurações > Gmail.' }
+  let accessToken = connection.access_token
+
+  const isExpired = connection.expires_at
+    ? new Date(connection.expires_at) < new Date(Date.now() + 5 * 60 * 1000)
+    : false
+
+  if (isExpired) {
+    if (!connection.refresh_token) {
+      return { error: 'Token Gmail expirado. Reconecte sua conta em Configurações > Gmail.' }
+    }
+    console.log('[sendEmailAction] token expired, attempting proactive refresh')
+    const newToken = await tryRefreshGmailToken(supabase, user.id, connection.refresh_token)
+    if (!newToken) {
+      return { error: 'Token Gmail expirado. Reconecte sua conta em Configurações > Gmail.' }
+    }
+    console.log('[sendEmailAction] token refreshed proactively')
+    accessToken = newToken
   }
 
   const result = await sendEmailService(supabase, {
@@ -58,7 +74,8 @@ export async function sendEmailAction(
     templateId: validation.data.template_id,
     leadEmail: lead.email,
     gmailEmail: connection.gmail_email,
-    accessToken: connection.access_token,
+    accessToken,
+    refreshToken: connection.refresh_token,
     subject: validation.data.subject,
     body: validation.data.body,
   })

@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/types'
 import { createEmailThread, createEmailMessage } from '@/repositories/emailRepository'
 import { markLeadContacted } from '@/repositories/leadRepository'
+import { tryRefreshGmailToken } from '@/services/gmailService'
 
 type SendEmailInput = {
   userId: string
@@ -10,6 +11,7 @@ type SendEmailInput = {
   leadEmail: string
   gmailEmail: string
   accessToken: string
+  refreshToken: string | null
   subject: string
   body: string
 }
@@ -53,26 +55,49 @@ function buildRawEmail(to: string, from: string, subject: string, body: string):
     .replace(/=/g, '')
 }
 
+async function callGmailSendApi(
+  accessToken: string,
+  raw: string
+): Promise<Response> {
+  return fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ raw }),
+  })
+}
+
 export async function sendEmailService(
   supabase: SupabaseClient<Database>,
   input: SendEmailInput
 ): Promise<SendEmailResult> {
   const raw = buildRawEmail(input.leadEmail, input.gmailEmail, input.subject, input.body)
 
-  const gmailResponse = await fetch(
-    'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${input.accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ raw }),
-    }
-  )
+  let gmailResponse = await callGmailSendApi(input.accessToken, raw)
 
   if (gmailResponse.status === 401) {
-    console.error('[emailSendService] Gmail token expired for userId:', input.userId)
+    console.log('[emailSendService] token expired on send, attempting refresh')
+
+    if (!input.refreshToken) {
+      console.log('[emailSendService] no refresh token available')
+      return { error: 'token_expired' }
+    }
+
+    const newToken = await tryRefreshGmailToken(supabase, input.userId, input.refreshToken)
+
+    if (!newToken) {
+      console.log('[emailSendService] token refresh failed')
+      return { error: 'token_expired' }
+    }
+
+    console.log('[emailSendService] token refreshed, retrying send')
+    gmailResponse = await callGmailSendApi(newToken, raw)
+  }
+
+  if (gmailResponse.status === 401) {
+    console.log('[emailSendService] token expired after refresh, giving up')
     return { error: 'token_expired' }
   }
 
