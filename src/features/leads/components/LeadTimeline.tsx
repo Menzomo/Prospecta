@@ -112,6 +112,7 @@ function buildTimeline(
 
 function formatDateTime(timestamp: string): string {
   return new Date(timestamp).toLocaleString('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -122,6 +123,7 @@ function formatDateTime(timestamp: string): string {
 
 function formatDate(timestamp: string): string {
   return new Date(timestamp).toLocaleDateString('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
