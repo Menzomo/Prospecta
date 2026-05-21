@@ -44,7 +44,7 @@ export async function createFollowupAction(
     lead_id: leadId,
     title: validation.data.title,
     notes: validation.data.notes || null,
-    due_at: new Date(validation.data.due_at).toISOString(),
+    due_at: validation.data.due_at,
   })
 
   if (!followup) {
@@ -94,7 +94,7 @@ export async function updateFollowupAction(
   const followup = await updateFollowup(supabase, user.id, followupId, {
     title: validation.data.title,
     notes: validation.data.notes || null,
-    due_at: new Date(validation.data.due_at).toISOString(),
+    due_at: validation.data.due_at,
   })
 
   if (!followup) {

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useActionState } from 'react'
 import { createFollowupAction } from '@/features/followups/actions'
 
@@ -10,6 +11,14 @@ type Props = {
 export function FollowupCreateForm({ leadId }: Props) {
   const boundAction = createFollowupAction.bind(null, leadId)
   const [state, formAction, pending] = useActionState(boundAction, null)
+
+  const [dueAtLocal, setDueAtLocal] = useState('')
+  const [dueAtUtc, setDueAtUtc] = useState('')
+
+  function handleDueAtChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setDueAtLocal(e.target.value)
+    setDueAtUtc(e.target.value ? new Date(e.target.value).toISOString() : '')
+  }
 
   return (
     <form action={formAction} className="flex flex-col gap-3 border-t border-gray-100 pt-4">
@@ -37,10 +46,12 @@ export function FollowupCreateForm({ leadId }: Props) {
         </label>
         <input
           id="followup-due-at"
-          name="due_at"
           type="datetime-local"
+          value={dueAtLocal}
+          onChange={handleDueAtChange}
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         />
+        <input type="hidden" name="due_at" value={dueAtUtc} />
         {state?.errors?.due_at && (
           <p className="text-xs text-red-500">{state.errors.due_at[0]}</p>
         )}

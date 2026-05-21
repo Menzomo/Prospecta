@@ -9,7 +9,6 @@ type Props = {
 
 export function MarkInboxRead({ leadId }: Props) {
   useEffect(() => {
-    console.log('[MarkInboxRead] mounted, calling action', { leadId })
     markLeadInboxReadAction(leadId)
   }, [leadId])
 

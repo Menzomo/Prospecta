@@ -20,17 +20,32 @@ function formatDueAt(value: string): string {
   })
 }
 
+// Converts a UTC ISO string to a datetime-local input value in local time.
+// new Date(...).getHours/Minutes use the browser's local timezone.
+function toLocalDatetimeValue(isoString: string): string {
+  const d = new Date(isoString)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 export function FollowupItem({ followup, leadId }: Props) {
   const [editing, setEditing] = useState(false)
   const boundUpdate = updateFollowupAction.bind(null, followup.id, leadId)
   const [updateState, updateAction, updatePending] = useActionState(boundUpdate, null)
+
+  const [dueAtLocal, setDueAtLocal] = useState(() => toLocalDatetimeValue(followup.due_at))
+  const [dueAtUtc, setDueAtUtc] = useState(followup.due_at)
+
+  function handleDueAtChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setDueAtLocal(e.target.value)
+    setDueAtUtc(e.target.value ? new Date(e.target.value).toISOString() : '')
+  }
 
   useEffect(() => {
     if (updateState?.success) setEditing(false)
   }, [updateState?.success])
 
   const overdue = new Date(followup.due_at) < new Date()
-  const defaultDueAt = new Date(followup.due_at).toISOString().slice(0, 16)
 
   return (
     <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
@@ -89,11 +104,12 @@ export function FollowupItem({ followup, leadId }: Props) {
               Data prevista <span className="text-red-500">*</span>
             </label>
             <input
-              name="due_at"
               type="datetime-local"
-              defaultValue={defaultDueAt}
+              value={dueAtLocal}
+              onChange={handleDueAtChange}
               className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
+            <input type="hidden" name="due_at" value={dueAtUtc} />
             {updateState?.errors?.due_at && (
               <p className="text-xs text-red-500">{updateState.errors.due_at[0]}</p>
             )}

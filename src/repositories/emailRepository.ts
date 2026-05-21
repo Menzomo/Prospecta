@@ -135,28 +135,20 @@ export async function markInboundMessagesAsRead(
   userId: string,
   leadId: string
 ): Promise<void> {
-  console.log('[emailRepository.markInboundMessagesAsRead] called', { userId, leadId })
-
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('email_messages')
     .update({ is_read: true, read_at: new Date().toISOString() })
     .eq('user_id', userId)
     .eq('lead_id', leadId)
     .eq('direction', 'inbound')
     .eq('is_read', false)
-    .select('id')
 
   if (error) {
     console.error('[emailRepository.markInboundMessagesAsRead] Supabase error:', {
       code: error.code,
       message: error.message,
-      details: error.details,
-      hint: error.hint,
     })
-    return
   }
-
-  console.log('[emailRepository.markInboundMessagesAsRead] rows updated:', data?.length ?? 0)
 }
 
 export async function countUnreadInboundMessages(
@@ -172,6 +164,19 @@ export async function countUnreadInboundMessages(
 
   if (error) return 0
   return count ?? 0
+}
+
+export async function getLeadIdsWithThreads(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('email_threads')
+    .select('lead_id')
+    .eq('user_id', userId)
+
+  if (error) return []
+  return [...new Set(data.map((row) => row.lead_id))]
 }
 
 export async function updateEmailThreadLastReply(

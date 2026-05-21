@@ -91,6 +91,25 @@ export async function disconnectGmailConnection(
   return true
 }
 
+export async function getActiveGmailConnections(
+  supabase: SupabaseClient<Database>
+): Promise<GmailConnection[]> {
+  const { data, error } = await supabase
+    .from('gmail_connections')
+    .select('*')
+    .eq('is_connected', true)
+
+  if (error) {
+    console.error('[gmailRepository.getActiveGmailConnections] Supabase error:', {
+      code: error.code,
+      message: error.message,
+    })
+    return []
+  }
+
+  return data ?? []
+}
+
 export async function updateGmailTokens(
   supabase: SupabaseClient<Database>,
   userId: string,
