@@ -16,6 +16,7 @@ function localToUtcIso(localValue: string): string {
 }
 
 export function FollowupCreateForm({ leadId }: Props) {
+  console.log('FOLLOWUP_CREATE_FORM_VERSION_2026_05_21_A')
   const boundAction = createFollowupAction.bind(null, leadId)
   const [state, formAction, pending] = useActionState(boundAction, null)
   const [dueAtLocal, setDueAtLocal] = useState('')
@@ -43,7 +44,7 @@ export function FollowupCreateForm({ leadId }: Props) {
           id="followup-title"
           name="title"
           type="text"
-          placeholder="Ex: Ligar para apresentar proposta"
+          placeholder="DEBUG - criar acompanhamento"
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         />
         {state?.errors?.title && (
