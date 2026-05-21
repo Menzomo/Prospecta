@@ -8,6 +8,13 @@ type Props = {
   leadId: string
 }
 
+// Converts "YYYY-MM-DDTHH:MM" from datetime-local to UTC ISO.
+// Appends ":00-03:00" (Brazil BRT, always UTC-3, no DST since 2019)
+// so parsing is timezone-independent across all browsers.
+function localToUtcIso(localValue: string): string {
+  return new Date(`${localValue}:00-03:00`).toISOString()
+}
+
 export function FollowupCreateForm({ leadId }: Props) {
   const boundAction = createFollowupAction.bind(null, leadId)
   const [state, formAction, pending] = useActionState(boundAction, null)
@@ -16,8 +23,10 @@ export function FollowupCreateForm({ leadId }: Props) {
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
-    const utcValue = dueAtLocal ? new Date(dueAtLocal).toISOString() : ''
+    const utcValue = dueAtLocal ? localToUtcIso(dueAtLocal) : ''
+    console.log('[FollowupCreateForm] title:', formData.get('title'))
     console.log('[FollowupCreateForm] dueAtLocal:', dueAtLocal, '→ UTC:', utcValue)
+    console.log('[FollowupCreateForm] browserTZ:', Intl.DateTimeFormat().resolvedOptions().timeZone)
     formData.set('due_at', utcValue)
     formAction(formData)
   }

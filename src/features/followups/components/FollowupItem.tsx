@@ -21,11 +21,27 @@ function formatDueAt(value: string): string {
   })
 }
 
-// Converts a UTC ISO string to a datetime-local input value in browser local time.
+// Converts UTC ISO string to "YYYY-MM-DDTHH:MM" for datetime-local input,
+// using explicit America/Sao_Paulo timezone — not dependent on browser TZ.
 function toLocalDatetimeValue(isoString: string): string {
   const d = new Date(isoString)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(d)
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '00'
+  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`
+}
+
+// Converts "YYYY-MM-DDTHH:MM" from datetime-local to UTC ISO.
+// Appends ":00-03:00" (Brazil BRT, always UTC-3, no DST since 2019).
+function localToUtcIso(localValue: string): string {
+  return new Date(`${localValue}:00-03:00`).toISOString()
 }
 
 export function FollowupItem({ followup, leadId }: Props) {
@@ -37,7 +53,8 @@ export function FollowupItem({ followup, leadId }: Props) {
   function handleUpdateSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
-    const utcValue = dueAtLocal ? new Date(dueAtLocal).toISOString() : ''
+    const utcValue = dueAtLocal ? localToUtcIso(dueAtLocal) : ''
+    console.log('[FollowupItem] title:', formData.get('title'))
     console.log('[FollowupItem] dueAtLocal:', dueAtLocal, '→ UTC:', utcValue)
     formData.set('due_at', utcValue)
     updateAction(formData)
