@@ -21,8 +21,7 @@ function formatDueAt(value: string): string {
   })
 }
 
-// Converts a UTC ISO string to a datetime-local input value in local time.
-// new Date(...).getHours/Minutes use the browser's local timezone.
+// Converts a UTC ISO string to a datetime-local input value in browser local time.
 function toLocalDatetimeValue(isoString: string): string {
   const d = new Date(isoString)
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -33,13 +32,15 @@ export function FollowupItem({ followup, leadId }: Props) {
   const [editing, setEditing] = useState(false)
   const boundUpdate = updateFollowupAction.bind(null, followup.id, leadId)
   const [updateState, updateAction, updatePending] = useActionState(boundUpdate, null)
-
   const [dueAtLocal, setDueAtLocal] = useState(() => toLocalDatetimeValue(followup.due_at))
-  const [dueAtUtc, setDueAtUtc] = useState(followup.due_at)
 
-  function handleDueAtChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setDueAtLocal(e.target.value)
-    setDueAtUtc(e.target.value ? new Date(e.target.value).toISOString() : '')
+  function handleUpdateSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    const utcValue = dueAtLocal ? new Date(dueAtLocal).toISOString() : ''
+    console.log('[FollowupItem] dueAtLocal:', dueAtLocal, '→ UTC:', utcValue)
+    formData.set('due_at', utcValue)
+    updateAction(formData)
   }
 
   useEffect(() => {
@@ -84,7 +85,10 @@ export function FollowupItem({ followup, leadId }: Props) {
 
       {/* Edit form (below info, only when editing) */}
       {editing && (
-        <form action={updateAction} className="mt-3 flex flex-col gap-2 border-t border-gray-200 pt-3">
+        <form
+          onSubmit={handleUpdateSubmit}
+          className="mt-3 flex flex-col gap-2 border-t border-gray-200 pt-3"
+        >
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-gray-600">
               Título <span className="text-red-500">*</span>
@@ -107,10 +111,9 @@ export function FollowupItem({ followup, leadId }: Props) {
             <input
               type="datetime-local"
               value={dueAtLocal}
-              onChange={handleDueAtChange}
+              onChange={(e) => setDueAtLocal(e.target.value)}
               className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
-            <input type="hidden" name="due_at" value={dueAtUtc} />
             {updateState?.errors?.due_at && (
               <p className="text-xs text-red-500">{updateState.errors.due_at[0]}</p>
             )}

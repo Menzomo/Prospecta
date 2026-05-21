@@ -11,17 +11,19 @@ type Props = {
 export function FollowupCreateForm({ leadId }: Props) {
   const boundAction = createFollowupAction.bind(null, leadId)
   const [state, formAction, pending] = useActionState(boundAction, null)
-
   const [dueAtLocal, setDueAtLocal] = useState('')
-  const [dueAtUtc, setDueAtUtc] = useState('')
 
-  function handleDueAtChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setDueAtLocal(e.target.value)
-    setDueAtUtc(e.target.value ? new Date(e.target.value).toISOString() : '')
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    const utcValue = dueAtLocal ? new Date(dueAtLocal).toISOString() : ''
+    console.log('[FollowupCreateForm] dueAtLocal:', dueAtLocal, '→ UTC:', utcValue)
+    formData.set('due_at', utcValue)
+    formAction(formData)
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-3 border-t border-gray-100 pt-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3 border-t border-gray-100 pt-4">
       <p className="text-sm font-medium text-gray-700">Novo acompanhamento</p>
 
       <div className="flex flex-col gap-1">
@@ -48,10 +50,9 @@ export function FollowupCreateForm({ leadId }: Props) {
           id="followup-due-at"
           type="datetime-local"
           value={dueAtLocal}
-          onChange={handleDueAtChange}
+          onChange={(e) => setDueAtLocal(e.target.value)}
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         />
-        <input type="hidden" name="due_at" value={dueAtUtc} />
         {state?.errors?.due_at && (
           <p className="text-xs text-red-500">{state.errors.due_at[0]}</p>
         )}
