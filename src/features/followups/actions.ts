@@ -23,11 +23,6 @@ export async function createFollowupAction(
   _state: CreateFollowupActionState,
   formData: FormData
 ): Promise<CreateFollowupActionState> {
-  console.log('CREATE_FOLLOWUP_ACTION_VERSION_2026_05_21_A', {
-    title: formData.get('title'),
-    dueAt: formData.get('due_at'),
-  })
-
   const validation = createFollowupSchema.safeParse({
     title: formData.get('title'),
     notes: formData.get('notes') || undefined,
@@ -79,8 +74,6 @@ export async function updateFollowupAction(
   _state: UpdateFollowupActionState,
   formData: FormData
 ): Promise<UpdateFollowupActionState> {
-  console.log('[updateFollowupAction] title:', formData.get('title'), '| due_at:', formData.get('due_at'))
-
   const validation = updateFollowupSchema.safeParse({
     title: formData.get('title'),
     notes: formData.get('notes') || undefined,

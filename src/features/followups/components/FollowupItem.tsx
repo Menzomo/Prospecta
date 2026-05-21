@@ -54,8 +54,6 @@ export function FollowupItem({ followup, leadId }: Props) {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
     const utcValue = dueAtLocal ? localToUtcIso(dueAtLocal) : ''
-    console.log('[FollowupItem] title:', formData.get('title'))
-    console.log('[FollowupItem] dueAtLocal:', dueAtLocal, '→ UTC:', utcValue)
     formData.set('due_at', utcValue)
     updateAction(formData)
   }
