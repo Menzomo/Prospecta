@@ -11,7 +11,7 @@ export default async function SearchPage() {
   if (!user) redirect('/login')
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
+    <>
       <header className="border-b border-gray-200 bg-white px-6 py-4">
         <h1 className="text-lg font-semibold text-gray-900">Buscar Leads</h1>
       </header>
@@ -29,6 +29,6 @@ export default async function SearchPage() {
           <SearchForm />
         </div>
       </main>
-    </div>
+    </>
   )
 }

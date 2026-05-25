@@ -27,7 +27,7 @@ export default async function LeadsPage() {
   const leads = await getLeadsByUserId(supabase, user.id)
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
+    <>
       <header className="border-b border-gray-200 bg-white px-6 py-4">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-semibold text-gray-900">Leads</h1>
@@ -102,6 +102,6 @@ export default async function LeadsPage() {
           </div>
         )}
       </main>
-    </div>
+    </>
   )
 }
