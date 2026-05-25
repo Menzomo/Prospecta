@@ -15,6 +15,9 @@ export async function executeLeadSearch(
   city: string
 ): Promise<SearchApiResponse> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY
+  console.log('[DIAG][searchService] GOOGLE_MAPS_API_KEY present:', !!apiKey)
+  console.log('[DIAG][searchService] category:', category, '| city:', city)
+
   if (!apiKey) {
     throw new Error('GOOGLE_MAPS_API_KEY não configurada')
   }
@@ -22,6 +25,7 @@ export async function executeLeadSearch(
   // Check daily limit
   const savedToday = await countLeadsSavedTodayFromSearch(supabase, userId)
   const remaining = DAILY_LIMIT - savedToday
+  console.log('[DIAG][searchService] savedToday:', savedToday, '| remaining:', remaining)
 
   if (remaining <= 0) {
     return { results: [], saved: 0, daily_remaining: 0 }
@@ -29,6 +33,7 @@ export async function executeLeadSearch(
 
   // 1. Text Search — find places
   const places = await searchPlaces(category, city, apiKey)
+  console.log('[DIAG][searchService] places returned from searchPlaces:', places.length)
   if (places.length === 0) {
     return { results: [], saved: 0, daily_remaining: remaining }
   }

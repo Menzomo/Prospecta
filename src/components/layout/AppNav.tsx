@@ -6,16 +6,26 @@ import { usePathname } from 'next/navigation'
 type NavItem = {
   href: string
   label: string
-  activePrefix: string
+  match: (pathname: string) => boolean
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', activePrefix: '/dashboard' },
-  { href: '/leads', label: 'Leads', activePrefix: '/leads' },
-  { href: '/search', label: 'Buscar leads', activePrefix: '/search' },
-  { href: '/inbox', label: 'Inbox', activePrefix: '/inbox' },
-  { href: '/followups', label: 'Followups', activePrefix: '/followups' },
-  { href: '/settings/company', label: 'Configurações', activePrefix: '/settings' },
+  { href: '/dashboard', label: 'Dashboard', match: (p) => p.startsWith('/dashboard') },
+  { href: '/leads', label: 'Leads', match: (p) => p.startsWith('/leads') },
+  { href: '/search', label: 'Buscar leads', match: (p) => p.startsWith('/search') },
+  { href: '/templates', label: 'Templates', match: (p) => p.startsWith('/templates') },
+  { href: '/inbox', label: 'Inbox', match: (p) => p.startsWith('/inbox') },
+  { href: '/followups', label: 'Followups', match: (p) => p.startsWith('/followups') },
+  {
+    href: '/settings',
+    label: 'Configurações',
+    match: (p) => p === '/settings' || p.startsWith('/settings/company'),
+  },
+  {
+    href: '/settings/gmail',
+    label: 'Conectar Gmail',
+    match: (p) => p.startsWith('/settings/gmail'),
+  },
 ]
 
 export function AppNav() {
@@ -32,9 +42,7 @@ export function AppNav() {
         </Link>
 
         {NAV_ITEMS.map((item) => {
-          const isActive =
-            pathname === item.activePrefix ||
-            pathname.startsWith(item.activePrefix + '/')
+          const isActive = item.match(pathname)
 
           return (
             <Link

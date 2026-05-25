@@ -29,27 +29,44 @@ export async function searchPlaces(
   city: string,
   apiKey: string
 ): Promise<PlaceSearchResult[]> {
-  const query = encodeURIComponent(`${category} em ${city}`)
+  const rawQuery = `${category} em ${city}`
+  const query = encodeURIComponent(rawQuery)
   const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&language=pt-BR&key=${apiKey}`
+
+  console.log('[DIAG][googlePlaces.searchPlaces] query:', rawQuery)
+  console.log('[DIAG][googlePlaces.searchPlaces] endpoint: textsearch/json')
 
   let data: PlacesApiResponse
   try {
     const res = await fetch(url)
-    if (!res.ok) return []
+    console.log('[DIAG][googlePlaces.searchPlaces] HTTP status:', res.status)
+    if (!res.ok) {
+      const body = await res.text()
+      console.error('[DIAG][googlePlaces.searchPlaces] HTTP error body:', body)
+      return []
+    }
     data = await res.json()
-  } catch {
+  } catch (err) {
+    console.error('[DIAG][googlePlaces.searchPlaces] fetch exception:', err)
     return []
+  }
+
+  console.log('[DIAG][googlePlaces.searchPlaces] API status:', data.status)
+  if (data.error_message) {
+    console.error('[DIAG][googlePlaces.searchPlaces] error_message:', data.error_message)
   }
 
   if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-    console.error('[googlePlaces.searchPlaces] API error:', data.status, data.error_message ?? '')
+    console.error('[DIAG][googlePlaces.searchPlaces] non-OK status, returning []')
     return []
   }
 
-  return (data.results ?? []).slice(0, 15).map((r) => ({
+  const results = (data.results ?? []).slice(0, 15).map((r) => ({
     place_id: r.place_id,
     name: r.name,
   }))
+  console.log('[DIAG][googlePlaces.searchPlaces] places found:', results.length)
+  return results
 }
 
 export async function getPlaceDetails(

@@ -35,7 +35,7 @@ export default async function GmailSettingsPage({ searchParams }: Props) {
     <>
       <header className="border-b border-gray-200 bg-white px-6 py-4">
         <div className="flex items-center gap-3">
-          <Link href="/settings/company" className="text-sm text-gray-500 hover:text-gray-700">
+          <Link href="/settings" className="text-sm text-gray-500 hover:text-gray-700">
             ← Configurações
           </Link>
           <span className="text-gray-300">/</span>
