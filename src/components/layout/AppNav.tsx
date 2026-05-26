@@ -28,8 +28,20 @@ const NAV_ITEMS: NavItem[] = [
   },
 ]
 
-export function AppNav() {
+const ADMIN_ITEM: NavItem = {
+  href: '/admin',
+  label: 'Admin',
+  match: (p) => p.startsWith('/admin'),
+}
+
+interface AppNavProps {
+  isAdmin?: boolean
+}
+
+export function AppNav({ isAdmin = false }: AppNavProps) {
   const pathname = usePathname()
+
+  const items = isAdmin ? [...NAV_ITEMS, ADMIN_ITEM] : NAV_ITEMS
 
   return (
     <nav className="border-b border-gray-200 bg-white">
@@ -41,7 +53,7 @@ export function AppNav() {
           Prospecta
         </Link>
 
-        {NAV_ITEMS.map((item) => {
+        {items.map((item) => {
           const isActive = item.match(pathname)
 
           return (
