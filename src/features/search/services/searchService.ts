@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/types'
-import { googlePlacesProvider } from '../providers/googlePlacesProvider'
+import { getSearchProvider } from '../providers/getSearchProvider'
 import { countLeadsSavedTodayFromSearch } from '../repositories/searchRepository'
 import { getLeadCategoryByName } from '@/repositories/leadCategoryRepository'
 import {
@@ -20,11 +20,6 @@ export async function executeLeadSearch(
   city: string,
   state?: string
 ): Promise<SearchApiResponse> {
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY
-  if (!apiKey) {
-    throw new Error('GOOGLE_MAPS_API_KEY não configurada')
-  }
-
   // Check daily limit
   const savedToday = await countLeadsSavedTodayFromSearch(supabase, userId)
   const remaining = DAILY_LIMIT - savedToday
@@ -37,8 +32,8 @@ export async function executeLeadSearch(
   const leadCategory = await getLeadCategoryByName(supabase, category)
   const categoryId = leadCategory?.id ?? null
 
-  // Delegate IO-heavy work to the provider
-  const provider = googlePlacesProvider(apiKey)
+  // Delegate IO-heavy work to the configured provider
+  const provider = getSearchProvider()
   const providerResults = await provider.search({ category, city, state, limit: 15 })
 
   if (providerResults.length === 0) {
