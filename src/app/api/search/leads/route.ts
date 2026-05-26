@@ -2,6 +2,8 @@ import type { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { searchSchema } from '@/features/search/validations/searchSchema'
 import { executeLeadSearch } from '@/features/search/services/searchService'
+import { getLeadCategoryByName } from '@/repositories/leadCategoryRepository'
+import { findCity } from '@/repositories/cityRepository'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 10
@@ -32,6 +34,25 @@ export async function POST(request: NextRequest) {
   }
 
   const { category, city, state } = validation.data
+
+  const [existingCategory, existingCity] = await Promise.all([
+    getLeadCategoryByName(supabase, category),
+    findCity(supabase, city, state),
+  ])
+
+  if (!existingCategory) {
+    return Response.json(
+      { error: 'Categoria inválida. Selecione uma categoria da lista.' },
+      { status: 400 }
+    )
+  }
+
+  if (!existingCity) {
+    return Response.json(
+      { error: 'Cidade inválida. Selecione uma cidade da lista.' },
+      { status: 400 }
+    )
+  }
 
   try {
     const result = await executeLeadSearch(supabase, user.id, category, city, state)

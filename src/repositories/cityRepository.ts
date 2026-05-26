@@ -6,6 +6,26 @@ export type CityResult = {
   state_code: string
 }
 
+export async function findCity(
+  supabase: SupabaseClient<Database>,
+  name: string,
+  stateCode?: string
+): Promise<CityResult | null> {
+  let query = supabase
+    .from('cities')
+    .select('name, state_code')
+    .ilike('name', name)
+
+  if (stateCode) {
+    query = query.eq('state_code', stateCode.toUpperCase())
+  }
+
+  const { data, error } = await query.maybeSingle()
+
+  if (error) return null
+  return data
+}
+
 export async function searchCities(
   supabase: SupabaseClient<Database>,
   query: string
