@@ -15,6 +15,7 @@ export interface Database {
           email: string
           full_name: string | null
           avatar_url: string | null
+          role: string
           created_at: string
           updated_at: string
         }
@@ -23,6 +24,7 @@ export interface Database {
           email: string
           full_name?: string | null
           avatar_url?: string | null
+          role?: string
           created_at?: string
           updated_at?: string
         }
@@ -30,6 +32,7 @@ export interface Database {
           email?: string
           full_name?: string | null
           avatar_url?: string | null
+          role?: string
           updated_at?: string
         }
         Relationships: []
@@ -305,6 +308,118 @@ export interface Database {
           due_at?: string
           status?: string
           completed_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lead_categories: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          search_terms: string[]
+          confidence_rules: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          search_terms?: string[]
+          confidence_rules?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          name?: string
+          slug?: string
+          search_terms?: string[]
+          confidence_rules?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      global_leads: {
+        Row: {
+          id: string
+          company_name: string
+          email: string | null
+          website: string | null
+          phone: string | null
+          city: string | null
+          state: string | null
+          category_id: string | null
+          confidence_score: number
+          provider_source: string | null
+          provider_external_id: string | null
+          status: string
+          review_required: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_name: string
+          email?: string | null
+          website?: string | null
+          phone?: string | null
+          city?: string | null
+          state?: string | null
+          category_id?: string | null
+          confidence_score?: number
+          provider_source?: string | null
+          provider_external_id?: string | null
+          status?: string
+          review_required?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string
+          email?: string | null
+          website?: string | null
+          phone?: string | null
+          city?: string | null
+          state?: string | null
+          category_id?: string | null
+          confidence_score?: number
+          provider_source?: string | null
+          provider_external_id?: string | null
+          status?: string
+          review_required?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_leads: {
+        Row: {
+          id: string
+          user_id: string
+          global_lead_id: string
+          status: string
+          hidden: boolean
+          notes: string | null
+          last_contacted: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          global_lead_id: string
+          status?: string
+          hidden?: boolean
+          notes?: string | null
+          last_contacted?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          status?: string
+          hidden?: boolean
+          notes?: string | null
+          last_contacted?: string | null
           updated_at?: string
         }
         Relationships: []

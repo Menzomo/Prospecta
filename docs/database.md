@@ -34,14 +34,15 @@ Gerenciada pelo Supabase Auth. Não modificar diretamente.
 ### profiles
 Identidade do usuário.
 
-| Campo      | Tipo        |
-|------------|-------------|
-| id         | uuid PK     |
-| email      | text        |
-| full_name  | text        |
-| avatar_url | text        |
-| created_at | timestamptz |
-| updated_at | timestamptz |
+| Campo      | Tipo        | Obs                     |
+|------------|-------------|-------------------------|
+| id         | uuid PK     |                         |
+| email      | text        |                         |
+| full_name  | text        |                         |
+| avatar_url | text        |                         |
+| role       | text        | "admin" \| "user" (default: "user") |
+| created_at | timestamptz |                         |
+| updated_at | timestamptz |                         |
 
 ---
 
@@ -92,15 +93,21 @@ Segurança: tokens nunca expostos no frontend. Logs sem tokens completos.
 ---
 
 ### lead_categories
-Categorias padronizadas de leads.
+Catálogo global de categorias de prospecção.
 
-| Campo      | Tipo    |
-|------------|---------|
-| id         | uuid PK |
-| name       | text    |
-| created_at | timestamptz |
+| Campo            | Tipo        | Obs                                  |
+|------------------|-------------|--------------------------------------|
+| id               | uuid PK     |                                      |
+| name             | text        | ex: "Restaurantes"                   |
+| slug             | text UNIQUE | ex: "restaurantes"                   |
+| search_terms     | text[]      | termos usados no provider de busca   |
+| confidence_rules | jsonb       | regras futuras de score (preparado)  |
+| created_at       | timestamptz |                                      |
+| updated_at       | timestamptz |                                      |
 
-Exemplos: Restaurantes, Dentistas, Academias, Mercados, Advogados.
+**22 categorias iniciais seedadas** (ver migration `20240109000000`).
+
+RLS: leitura para qualquer usuário autenticado. Escrita restrita a admin.
 
 ---
 
@@ -153,6 +160,58 @@ Histórico de mudanças de status do lead.
 | from_status| text        |
 | to_status  | text        |
 | created_at | timestamptz |
+
+---
+
+---
+
+### global_leads
+**Fase 1 — Banco Global Prospecta.**
+Repositório global de empresas. NÃO pertence a nenhum usuário.
+
+| Campo                | Tipo        | Obs                                         |
+|----------------------|-------------|---------------------------------------------|
+| id                   | uuid PK     |                                             |
+| company_name         | text        | obrigatório                                 |
+| email                | text        | opcional                                    |
+| website              | text        | opcional                                    |
+| phone                | text        | opcional                                    |
+| city                 | text        | opcional                                    |
+| state                | text        | opcional                                    |
+| category_id          | uuid        | FK → lead_categories (nullable)             |
+| confidence_score     | integer     | default 0 (preparado para scoring futuro)   |
+| provider_source      | text        | ex: "google_maps", "apify"                  |
+| provider_external_id | text        | ID externo no provider (opcional)           |
+| status               | text        | active \| hidden \| invalid                 |
+| review_required      | boolean     | default true                                |
+| created_at           | timestamptz |                                             |
+| updated_at           | timestamptz |                                             |
+
+RLS: SELECT para qualquer usuário autenticado (apenas status=active). INSERT/UPDATE restrito a admin.
+
+---
+
+### user_leads
+**Fase 1 — Banco Global Prospecta.**
+Vínculo entre usuário e um lead global. Cada usuário possui status, timeline e followups próprios.
+
+| Campo          | Tipo        | Obs                                  |
+|----------------|-------------|--------------------------------------|
+| id             | uuid PK     |                                      |
+| user_id        | uuid        | FK → auth.users                      |
+| global_lead_id | uuid        | FK → global_leads                    |
+| status         | text        | ver Status Oficiais dos Leads        |
+| hidden         | boolean     | default false                        |
+| notes          | text        | opcional                             |
+| last_contacted | timestamptz | opcional                             |
+| created_at     | timestamptz |                                      |
+| updated_at     | timestamptz |                                      |
+
+**Constraint:** UNIQUE (user_id, global_lead_id) — lead não se duplica por usuário.
+
+Cada lead global pode ter vínculos com múltiplos usuários, cada um com status, notas e timeline independentes.
+
+RLS: padrão por user_id.
 
 ---
 
