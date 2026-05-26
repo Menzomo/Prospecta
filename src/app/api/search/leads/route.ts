@@ -31,10 +31,10 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { category, city } = validation.data
+  const { category, city, state } = validation.data
 
   try {
-    const result = await executeLeadSearch(supabase, user.id, category, city)
+    const result = await executeLeadSearch(supabase, user.id, category, city, state)
     return Response.json(result)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erro interno'

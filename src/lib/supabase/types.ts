@@ -424,6 +424,31 @@ export interface Database {
         }
         Relationships: []
       }
+      cities: {
+        Row: {
+          id: string
+          name: string
+          state: string
+          state_code: string
+          search_text: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          state: string
+          state_code: string
+          search_text: string
+          created_at?: string
+        }
+        Update: {
+          name?: string
+          state?: string
+          state_code?: string
+          search_text?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

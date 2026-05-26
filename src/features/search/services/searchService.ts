@@ -18,7 +18,8 @@ export async function executeLeadSearch(
   supabase: SupabaseClient<Database>,
   userId: string,
   category: string,
-  city: string
+  city: string,
+  state?: string
 ): Promise<SearchApiResponse> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY
   if (!apiKey) {
@@ -115,6 +116,7 @@ export async function executeLeadSearch(
         website: details.website,
         phone: details.phone,
         city,
+        state: state ?? null,
         category_id: categoryId,
         provider_source: 'google_maps',
         provider_external_id: place_id,
