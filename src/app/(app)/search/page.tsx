@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { listLeadCategories } from '@/repositories/leadCategoryRepository'
 import { SearchForm } from '@/features/search/components/SearchForm'
 
 export default async function SearchPage() {
@@ -9,6 +10,8 @@ export default async function SearchPage() {
   } = await supabase.auth.getUser()
 
   if (!user) redirect('/login')
+
+  const categories = await listLeadCategories(supabase)
 
   return (
     <>
@@ -26,7 +29,7 @@ export default async function SearchPage() {
             </p>
           </div>
 
-          <SearchForm />
+          <SearchForm categories={categories} />
         </div>
       </main>
     </>

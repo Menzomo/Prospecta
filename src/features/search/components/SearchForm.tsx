@@ -1,12 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { SEARCH_CATEGORIES, type SearchCategory } from '../validations/searchSchema'
 import { SearchResults } from './SearchResults'
 import type { SearchApiResponse } from '../types'
 
-export function SearchForm() {
-  const [category, setCategory] = useState<SearchCategory | ''>('')
+type Category = { id: string; name: string }
+
+interface SearchFormProps {
+  categories: Category[]
+}
+
+export function SearchForm({ categories }: SearchFormProps) {
+  const [category, setCategory] = useState('')
   const [city, setCity] = useState('')
   const [loading, setLoading] = useState(false)
   const [response, setResponse] = useState<SearchApiResponse | null>(null)
@@ -54,14 +59,14 @@ export function SearchForm() {
           </label>
           <select
             value={category}
-            onChange={(e) => setCategory(e.target.value as SearchCategory)}
+            onChange={(e) => setCategory(e.target.value)}
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             required
           >
             <option value="">Selecione uma categoria</option>
-            {SEARCH_CATEGORIES.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.name}>
+                {cat.name}
               </option>
             ))}
           </select>
