@@ -1,9 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/types'
-import { findDuplicateLead, createLead } from '@/repositories/leadRepository'
 import { searchPlaces, getPlaceDetails } from '../integrations/googlePlacesIntegration'
 import { extractEmailFromWebsite } from '../integrations/emailExtractorIntegration'
 import { countLeadsSavedTodayFromSearch } from '../repositories/searchRepository'
+import { getLeadCategoryByName } from '@/repositories/leadCategoryRepository'
+import {
+  findGlobalLeadByProviderExternalId,
+  findGlobalLeadByNameAndCity,
+  createGlobalLead,
+} from '@/repositories/globalLeadRepository'
+import { findUserLeadByGlobalLead, createUserLead } from '@/repositories/userLeadRepository'
 import type { SearchResultItem, SearchApiResponse } from '../types'
 
 const DAILY_LIMIT = 5
@@ -15,9 +21,6 @@ export async function executeLeadSearch(
   city: string
 ): Promise<SearchApiResponse> {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY
-  console.log('[DIAG][searchService] GOOGLE_MAPS_API_KEY present:', !!apiKey)
-  console.log('[DIAG][searchService] category:', category, '| city:', city)
-
   if (!apiKey) {
     throw new Error('GOOGLE_MAPS_API_KEY não configurada')
   }
@@ -25,15 +28,17 @@ export async function executeLeadSearch(
   // Check daily limit
   const savedToday = await countLeadsSavedTodayFromSearch(supabase, userId)
   const remaining = DAILY_LIMIT - savedToday
-  console.log('[DIAG][searchService] savedToday:', savedToday, '| remaining:', remaining)
 
   if (remaining <= 0) {
     return { results: [], saved: 0, daily_remaining: 0 }
   }
 
+  // Resolve category_id once for all global_leads created in this search
+  const leadCategory = await getLeadCategoryByName(supabase, category)
+  const categoryId = leadCategory?.id ?? null
+
   // 1. Text Search — find places
   const places = await searchPlaces(category, city, apiKey)
-  console.log('[DIAG][searchService] places returned from searchPlaces:', places.length)
   if (places.length === 0) {
     return { results: [], saved: 0, daily_remaining: remaining }
   }
@@ -44,10 +49,12 @@ export async function executeLeadSearch(
   )
 
   // 3. Build enriched list, keep only places with a website
+  //    preserve place_id for use as provider_external_id
   const enriched = places
-    .map((p, i) => ({ name: p.name, details: detailsList[i] }))
-    .filter((item): item is { name: string; details: NonNullable<typeof item.details> } =>
-      item.details !== null && item.details.website !== null
+    .map((p, i) => ({ place_id: p.place_id, name: p.name, details: detailsList[i] }))
+    .filter(
+      (item): item is { place_id: string; name: string; details: NonNullable<typeof item.details> } =>
+        item.details !== null && item.details.website !== null
     )
 
   if (enriched.length === 0) {
@@ -64,7 +71,7 @@ export async function executeLeadSearch(
   let savedCount = 0
 
   for (let i = 0; i < enriched.length; i++) {
-    const { details } = enriched[i]
+    const { place_id, details } = enriched[i]
     const email = emails[i]
 
     if (!email) {
@@ -89,9 +96,40 @@ export async function executeLeadSearch(
       continue
     }
 
-    // Deduplication — catches both active and hidden leads
-    const duplicate = await findDuplicateLead(supabase, userId, email, details.website)
-    if (duplicate) {
+    // --- Global lead: find or create ---
+
+    // 1st: check by provider_external_id (most reliable — Google place_id is stable)
+    let globalLead =
+      await findGlobalLeadByProviderExternalId(supabase, 'google_maps', place_id)
+
+    // 2nd: check by company_name + city to avoid cross-provider duplicates
+    if (!globalLead) {
+      globalLead = await findGlobalLeadByNameAndCity(supabase, details.name, city)
+    }
+
+    // 3rd: create if not found
+    if (!globalLead) {
+      globalLead = await createGlobalLead(supabase, {
+        company_name: details.name,
+        email,
+        website: details.website,
+        phone: details.phone,
+        city,
+        category_id: categoryId,
+        provider_source: 'google_maps',
+        provider_external_id: place_id,
+      })
+    }
+
+    if (!globalLead) {
+      console.error('[searchService] Failed to create global_lead for:', details.name)
+      continue
+    }
+
+    // --- User lead: check duplicate then create ---
+    const existingUserLead = await findUserLeadByGlobalLead(supabase, userId, globalLead.id)
+
+    if (existingUserLead) {
       results.push({
         company_name: details.name,
         website: details.website!,
@@ -102,17 +140,12 @@ export async function executeLeadSearch(
       continue
     }
 
-    const saved = await createLead(supabase, userId, {
-      company_name: details.name,
-      email,
-      website: details.website,
-      phone: details.phone,
-      city,
-      source: 'google_maps',
+    const userLead = await createUserLead(supabase, userId, {
+      global_lead_id: globalLead.id,
       status: 'novo',
     })
 
-    if (saved) {
+    if (userLead) {
       savedCount++
       results.push({
         company_name: details.name,

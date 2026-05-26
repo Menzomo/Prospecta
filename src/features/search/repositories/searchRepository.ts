@@ -9,10 +9,9 @@ export async function countLeadsSavedTodayFromSearch(
   startOfDayUtc.setUTCHours(0, 0, 0, 0)
 
   const { count, error } = await supabase
-    .from('leads')
+    .from('user_leads')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
-    .eq('source', 'google_maps')
     .gte('created_at', startOfDayUtc.toISOString())
 
   if (error) return 0

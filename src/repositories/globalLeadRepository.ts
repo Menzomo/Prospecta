@@ -32,6 +32,22 @@ export async function findGlobalLeadByProviderExternalId(
   return data
 }
 
+export async function findGlobalLeadByNameAndCity(
+  supabase: SupabaseClient<Database>,
+  companyName: string,
+  city: string
+): Promise<GlobalLead | null> {
+  const { data, error } = await supabase
+    .from('global_leads')
+    .select('*')
+    .ilike('company_name', companyName)
+    .ilike('city', city)
+    .maybeSingle()
+
+  if (error) return null
+  return data
+}
+
 export async function findGlobalLeadByWebsite(
   supabase: SupabaseClient<Database>,
   website: string

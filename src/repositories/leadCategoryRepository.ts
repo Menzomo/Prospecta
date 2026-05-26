@@ -14,6 +14,20 @@ export async function listLeadCategories(
   return data
 }
 
+export async function getLeadCategoryByName(
+  supabase: SupabaseClient<Database>,
+  name: string
+): Promise<LeadCategory | null> {
+  const { data, error } = await supabase
+    .from('lead_categories')
+    .select('*')
+    .ilike('name', name)
+    .maybeSingle()
+
+  if (error) return null
+  return data
+}
+
 export async function getLeadCategoryBySlug(
   supabase: SupabaseClient<Database>,
   slug: string
