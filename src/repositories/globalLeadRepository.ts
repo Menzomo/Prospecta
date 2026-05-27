@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/types'
 import type { GlobalLead, CreateGlobalLeadDto } from '@/types/globalLeads'
+import { expandStateCode } from '@/utils/stateUtils'
 
 export async function getGlobalLeadById(
   supabase: SupabaseClient<Database>,
@@ -117,7 +118,7 @@ export async function findAvailableGlobalLeadsForUser(
     .limit(limit)
 
   if (state) {
-    query = query.ilike('state', state)
+    query = query.ilike('state', expandStateCode(state))
   }
 
   if (excludeIds.length > 0) {
