@@ -102,13 +102,9 @@
 
 ## LOW — Limpeza e qualidade sem impacto em produção
 
-### DT-L1 — Campo `category` em `ImportRow` é parseado mas ignorado
+### ~~DT-L1~~ — ✅ Resolvido
 
-**Problema:** `parseImportFile.ts` ainda extrai o campo `category` do JSON/CSV do Apify para montar `ImportRow`. A API de import (`/api/admin/import`) não aceita mais esse campo (foi removido do `importRowSchema`). O campo é stripado pelo Zod sem ser usado.
-
-**Localização:** `src/features/admin/utils/parseImportFile.ts` — campo `category` na função `normalizeRaw`
-
-**Solução esperada:** Remover `category` do tipo `ImportRow` e da função `normalizeRaw`.
+Campo `category` removido de `ImportRow` e de `normalizeRaw()` em `parseImportFile.ts` (migration `20240114000000`).
 
 ---
 

@@ -88,7 +88,7 @@ Categorias deixaram de ser hardcoded no frontend.
 - `search/page.tsx` busca `listLeadCategories(supabase)` server-side
 - Passa `categories: Category[]` como prop para `SearchForm`
 - Backend valida categoria informada contra `lead_categories` antes de processar
-- 22 categorias seedadas em `20240109000000`
+- 22 categorias seedadas em `20240109000000` (reduzidas para 5 em `20240114000000`)
 
 ---
 
@@ -112,6 +112,18 @@ Validação de existência de categoria e cidade contra o banco antes de process
 - `getLeadCategoryByName` verifica se categoria existe
 - `findCity` verifica se cidade existe na tabela `cities`
 - Retorna 400 com mensagem amigável se algum não for encontrado
+
+---
+
+### Redução de Categorias para 5 Nichos Oficiais
+
+MVP focado em 5 nichos industriais/comerciais com alto potencial B2B.
+
+- Migration `20240114000000`: inseriu 2 novas categorias (Construção Civil, Consultórios Médicos) e removeu as 17 restantes
+- `global_leads.category_id` FK é `ON DELETE SET NULL` — nulled automaticamente para leads das categorias removidas
+- Categorias oficiais: **Metalúrgica**, **Indústria Plástica**, **Construção Civil**, **Restaurantes**, **Consultórios Médicos**
+- Frontend já era 100% dinâmico (sem hardcode) — nenhuma alteração necessária no código TypeScript
+- DT-L1 resolvido: campo `category` removido de `ImportRow` e `normalizeRaw()` em `parseImportFile.ts` — campo do Apify era parseado mas ignorado pela API desde a implementação da seleção obrigatória de categoria no admin
 
 ---
 

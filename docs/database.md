@@ -108,7 +108,7 @@ Catálogo global de categorias de prospecção.
 | created_at       | timestamptz |                                      |
 | updated_at       | timestamptz |                                      |
 
-**22 categorias iniciais seedadas** (ver migration `20240109000000`).
+**5 categorias oficiais do MVP** (Metalúrgica, Indústria Plástica, Construção Civil, Restaurantes, Consultórios Médicos — migration `20240114000000`).
 
 RLS: leitura para qualquer usuário autenticado. Escrita restrita a admin.
 

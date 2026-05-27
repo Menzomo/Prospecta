@@ -6,7 +6,6 @@ export type ImportRow = {
   phone: string | null
   city: string | null
   state: string | null
-  category: string | null
 }
 
 export type ImportSummary = {
@@ -90,7 +89,6 @@ function normalizeRaw(raw: Record<string, unknown>): ImportRow | null {
     phone: get(['phone', 'phoneNumber', 'telefone', 'phone_number', 'tel']),
     city: get(['city', 'cidade', 'addressCity', 'address_city']),
     state: get(['state', 'estado', 'stateCode', 'state_code', 'uf', 'addressState', 'address_state']),
-    category: get(['categoryName', 'category', 'categoria', 'category_name']),
   }
 }
 

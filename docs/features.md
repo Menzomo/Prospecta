@@ -139,7 +139,12 @@
 ### Categoria dinâmica
 
 - Categorias não são hardcoded
-- Vêm da tabela `lead_categories` (22 seedadas)
+- Vêm da tabela `lead_categories` — **5 categorias oficiais do MVP:**
+  - Metalúrgica
+  - Indústria Plástica
+  - Construção Civil
+  - Restaurantes
+  - Consultórios Médicos
 - Backend valida categoria informada contra o banco antes de processar
 
 ---
