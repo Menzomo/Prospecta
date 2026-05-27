@@ -92,21 +92,25 @@ export async function findAvailableGlobalLeadsForUser(
     city,
     state,
     limit,
+    skipExcludeOwned = false,
   }: {
     userId: string
     categoryId: string
     city: string
     state?: string
     limit: number
+    skipExcludeOwned?: boolean
   }
 ): Promise<GlobalLead[]> {
-  // Collect global_lead_ids the user already owns to exclude them
-  const { data: existingLinks } = await supabase
-    .from('user_leads')
-    .select('global_lead_id')
-    .eq('user_id', userId)
+  let excludeIds: string[] = []
 
-  const excludeIds = (existingLinks ?? []).map((l) => l.global_lead_id)
+  if (!skipExcludeOwned) {
+    const { data: existingLinks } = await supabase
+      .from('user_leads')
+      .select('global_lead_id')
+      .eq('user_id', userId)
+    excludeIds = (existingLinks ?? []).map((l) => l.global_lead_id)
+  }
 
   let query = supabase
     .from('global_leads')

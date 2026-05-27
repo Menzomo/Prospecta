@@ -35,9 +35,10 @@ export async function POST(request: NextRequest) {
 
   const { category, city, state } = validation.data
 
-  const [existingCategory, existingCity] = await Promise.all([
+  const [existingCategory, existingCity, profileData] = await Promise.all([
     getLeadCategoryByName(supabase, category),
     findCity(supabase, city, state),
+    supabase.from('profiles').select('role').eq('id', user.id).single(),
   ])
 
   if (!existingCategory) {
@@ -54,8 +55,10 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  const isAdmin = profileData.data?.role === 'admin'
+
   try {
-    const result = await executeLeadSearch(supabase, user.id, existingCategory.id, city, state)
+    const result = await executeLeadSearch(supabase, user.id, existingCategory.id, city, state, isAdmin)
     return Response.json(result)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erro interno'
