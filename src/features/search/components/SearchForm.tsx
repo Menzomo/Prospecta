@@ -181,10 +181,7 @@ export function SearchForm({ categories }: SearchFormProps) {
 
       {loading && (
         <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm text-center">
-          <p className="text-sm text-gray-500">
-            Buscando empresas e extraindo emails dos sites...
-          </p>
-          <p className="mt-1 text-xs text-gray-400">Isso pode levar alguns segundos.</p>
+          <p className="text-sm text-gray-500">Buscando leads disponíveis...</p>
         </div>
       )}
 

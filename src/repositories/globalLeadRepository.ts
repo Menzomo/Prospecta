@@ -83,6 +83,57 @@ export async function createGlobalLead(
   return data
 }
 
+export async function findAvailableGlobalLeadsForUser(
+  supabase: SupabaseClient<Database>,
+  {
+    userId,
+    categoryId,
+    city,
+    state,
+    limit,
+  }: {
+    userId: string
+    categoryId: string
+    city: string
+    state?: string
+    limit: number
+  }
+): Promise<GlobalLead[]> {
+  // Collect global_lead_ids the user already owns to exclude them
+  const { data: existingLinks } = await supabase
+    .from('user_leads')
+    .select('global_lead_id')
+    .eq('user_id', userId)
+
+  const excludeIds = (existingLinks ?? []).map((l) => l.global_lead_id)
+
+  let query = supabase
+    .from('global_leads')
+    .select('*')
+    .eq('category_id', categoryId)
+    .ilike('city', city)
+    .eq('status', 'active')
+    .eq('lead_quality_status', 'email_found')
+    .limit(limit)
+
+  if (state) {
+    query = query.ilike('state', state)
+  }
+
+  if (excludeIds.length > 0) {
+    query = query.not('id', 'in', `(${excludeIds.join(',')})`)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('[globalLeadRepository.findAvailableGlobalLeadsForUser]', error.message)
+    return []
+  }
+
+  return data ?? []
+}
+
 export async function updateGlobalLeadStatus(
   supabase: SupabaseClient<Database>,
   id: string,

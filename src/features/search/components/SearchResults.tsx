@@ -45,8 +45,12 @@ export function SearchResults({ response }: Props) {
       {/* No results */}
       {response.results.length === 0 && (
         <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm text-center">
-          <p className="text-sm text-gray-500">Nenhuma empresa encontrada para essa busca.</p>
-          <p className="mt-1 text-xs text-gray-400">Tente outra categoria ou cidade.</p>
+          <p className="text-sm text-gray-500">
+            {response.message ?? 'Nenhuma empresa encontrada para essa busca.'}
+          </p>
+          {!response.message && (
+            <p className="mt-1 text-xs text-gray-400">Tente outra categoria ou cidade.</p>
+          )}
         </div>
       )}
 

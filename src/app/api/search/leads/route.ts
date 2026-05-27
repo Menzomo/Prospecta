@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const result = await executeLeadSearch(supabase, user.id, category, city, state)
+    const result = await executeLeadSearch(supabase, user.id, existingCategory.id, city, state)
     return Response.json(result)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Erro interno'
