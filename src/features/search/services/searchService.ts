@@ -10,6 +10,7 @@ import {
 } from '@/repositories/globalLeadRepository'
 import { findUserLeadByGlobalLead, createUserLead } from '@/repositories/userLeadRepository'
 import type { SearchResultItem, SearchApiResponse } from '../types'
+import { classifyLeadQuality } from '@/utils/classifyLeadQuality'
 
 const DAILY_LIMIT = 5
 
@@ -97,6 +98,7 @@ export async function executeLeadSearch(
         category_id: categoryId,
         provider_source: result.provider_source,
         provider_external_id: result.provider_external_id,
+        lead_quality_status: classifyLeadQuality({ email, website: result.website }),
       })
     }
 

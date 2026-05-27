@@ -8,6 +8,9 @@ import {
 import { AdminGlobalLeads } from '@/features/admin/components/AdminGlobalLeads'
 import { AdminCategories } from '@/features/admin/components/AdminCategories'
 import { AdminUsers } from '@/features/admin/components/AdminUsers'
+import { getManualReviewQueue, getLeadQualityOverview } from '@/repositories/leadQualityRepository'
+import { AdminManualReviewQueue } from '@/features/admin/components/AdminManualReviewQueue'
+import { AdminLeadQualityOverview } from '@/features/admin/components/AdminLeadQualityOverview'
 
 export default async function AdminPage() {
   const supabase = await createClient()
@@ -25,10 +28,12 @@ export default async function AdminPage() {
 
   if (profile?.role !== 'admin') redirect('/dashboard')
 
-  const [leads, categories, users] = await Promise.all([
+  const [leads, categories, users, reviewQueue, overview] = await Promise.all([
     getGlobalLeadsForAdmin(supabase),
     getCategoriesForAdmin(supabase),
     getUsersForAdmin(supabase),
+    getManualReviewQueue(supabase),
+    getLeadQualityOverview(supabase),
   ])
 
   return (
@@ -39,6 +44,8 @@ export default async function AdminPage() {
 
       <main className="flex-1 p-6">
         <div className="mx-auto max-w-6xl flex flex-col gap-10">
+          <AdminLeadQualityOverview overview={overview} />
+          <AdminManualReviewQueue leads={reviewQueue} />
           <AdminGlobalLeads leads={leads} />
           <AdminCategories categories={categories} />
           <AdminUsers users={users} />

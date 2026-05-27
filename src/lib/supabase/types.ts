@@ -355,6 +355,7 @@ export interface Database {
           provider_external_id: string | null
           status: string
           review_required: boolean
+          lead_quality_status: string
           created_at: string
           updated_at: string
         }
@@ -372,6 +373,7 @@ export interface Database {
           provider_external_id?: string | null
           status?: string
           review_required?: boolean
+          lead_quality_status?: string
           created_at?: string
           updated_at?: string
         }
@@ -388,6 +390,7 @@ export interface Database {
           provider_external_id?: string | null
           status?: string
           review_required?: boolean
+          lead_quality_status?: string
           updated_at?: string
         }
         Relationships: []
