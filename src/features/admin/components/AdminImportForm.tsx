@@ -9,11 +9,18 @@ import {
 
 type FormStatus = 'idle' | 'preview' | 'importing' | 'done'
 
+type Category = { id: string; name: string }
+
+interface Props {
+  categories: Category[]
+}
+
 const PREVIEW_LIMIT = 20
 
-export function AdminImportForm() {
+export function AdminImportForm({ categories }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [status, setStatus] = useState<FormStatus>('idle')
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('')
   const [rows, setRows] = useState<ImportRow[]>([])
   const [summary, setSummary] = useState<ImportSummary | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -47,7 +54,7 @@ export function AdminImportForm() {
       const res = await fetch('/api/admin/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rows }),
+        body: JSON.stringify({ category_id: selectedCategoryId, rows }),
       })
 
       if (!res.ok) {
@@ -66,15 +73,44 @@ export function AdminImportForm() {
 
   function handleReset() {
     setStatus('idle')
+    setSelectedCategoryId('')
     setRows([])
     setSummary(null)
     setError(null)
     if (fileRef.current) fileRef.current.value = ''
   }
 
+  const selectedCategory = categories.find((c) => c.id === selectedCategoryId)
+  const canImport = !!selectedCategoryId && rows.length > 0 && status !== 'importing'
+
   return (
     <div className="flex flex-col gap-6">
-      {/* File picker — always visible until done */}
+      {/* Step 1 — Category select */}
+      {status !== 'done' && (
+        <div className="rounded-lg border border-gray-200 bg-white px-6 py-5">
+          <label className="mb-1 block text-sm font-medium text-gray-700">
+            Categoria da importação <span className="text-red-500">*</span>
+          </label>
+          <p className="mb-3 text-xs text-gray-400">
+            Todos os leads deste arquivo serão vinculados a esta categoria.
+          </p>
+          <select
+            value={selectedCategoryId}
+            onChange={(e) => setSelectedCategoryId(e.target.value)}
+            disabled={status === 'importing'}
+            className="w-full max-w-sm rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+          >
+            <option value="">Selecione uma categoria...</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Step 2 — File picker */}
       {status !== 'done' && (
         <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white px-6 py-10 text-center">
           <p className="mb-2 text-sm font-medium text-gray-700">
@@ -103,12 +139,22 @@ export function AdminImportForm() {
       {(status === 'preview' || status === 'importing') && rows.length > 0 && (
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-gray-900">
-              Preview{' '}
-              <span className="text-sm font-normal text-gray-400">
-                ({rows.length} lead{rows.length !== 1 ? 's' : ''} encontrado{rows.length !== 1 ? 's' : ''})
-              </span>
-            </h2>
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">
+                Preview{' '}
+                <span className="text-sm font-normal text-gray-400">
+                  ({rows.length} lead{rows.length !== 1 ? 's' : ''} encontrado{rows.length !== 1 ? 's' : ''})
+                </span>
+              </h2>
+              {selectedCategory && (
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Categoria: <span className="font-medium text-gray-700">{selectedCategory.name}</span>
+                </p>
+              )}
+              {!selectedCategory && (
+                <p className="mt-0.5 text-xs text-red-500">Selecione uma categoria para importar</p>
+              )}
+            </div>
 
             <div className="flex items-center gap-3">
               <button
@@ -122,8 +168,8 @@ export function AdminImportForm() {
               <button
                 type="button"
                 onClick={handleImport}
-                disabled={status === 'importing'}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                disabled={!canImport}
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {status === 'importing'
                   ? 'Importando...'
@@ -142,7 +188,6 @@ export function AdminImportForm() {
                   <th className="px-4 py-3 text-left font-medium text-gray-600">Site</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-600">Telefone</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-600">Email</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">Categoria</th>
                 </tr>
               </thead>
               <tbody>
@@ -160,7 +205,6 @@ export function AdminImportForm() {
                     </td>
                     <td className="px-4 py-3 text-gray-600">{row.phone ?? '—'}</td>
                     <td className="px-4 py-3 text-gray-600">{row.email ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-600">{row.category ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>

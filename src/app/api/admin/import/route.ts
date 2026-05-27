@@ -16,10 +16,10 @@ const importRowSchema = z.object({
   phone: z.string().nullable().optional(),
   city: z.string().nullable().optional(),
   state: z.string().nullable().optional(),
-  category: z.string().nullable().optional(),
 })
 
 const bodySchema = z.object({
+  category_id: z.string().uuid('category_id deve ser um UUID válido'),
   rows: z.array(importRowSchema).min(1).max(500),
 })
 
@@ -56,11 +56,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Dados inválidos', details: parsed.error.flatten() }, { status: 400 })
   }
 
-  const { rows } = parsed.data
+  const { category_id, rows } = parsed.data
 
-  // Load all categories once — resolve name→id in memory
+  // Validate that the chosen category exists
   const categories = await listLeadCategories(supabase)
-  const categoryMap = new Map(categories.map((c) => [c.name.toLowerCase(), c.id]))
+  const categoryExists = categories.some((c) => c.id === category_id)
+  if (!categoryExists) {
+    return NextResponse.json({ error: 'Categoria não encontrada' }, { status: 400 })
+  }
 
   const summary: ImportSummary = {
     imported: 0,
@@ -92,10 +95,6 @@ export async function POST(request: Request) {
       }
     }
 
-    const categoryId = row.category
-      ? (categoryMap.get(row.category.toLowerCase().trim()) ?? null)
-      : null
-
     const qualityStatus = classifyLeadQuality({ email, website })
 
     const created = await createGlobalLead(supabase, {
@@ -105,7 +104,7 @@ export async function POST(request: Request) {
       phone: row.phone?.trim() || null,
       city,
       state: row.state?.trim() || null,
-      category_id: categoryId,
+      category_id,
       provider_source: 'apify',
       provider_external_id: null,
       lead_quality_status: qualityStatus,

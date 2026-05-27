@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { listLeadCategories } from '@/repositories/leadCategoryRepository'
 import { AdminImportForm } from '@/features/admin/components/AdminImportForm'
 
 export default async function AdminImportPage() {
@@ -19,6 +20,8 @@ export default async function AdminImportPage() {
 
   if (profile?.role !== 'admin') redirect('/dashboard')
 
+  const categories = await listLeadCategories(supabase)
+
   return (
     <>
       <header className="border-b border-gray-200 bg-white px-6 py-4">
@@ -36,7 +39,7 @@ export default async function AdminImportPage() {
 
       <main className="flex-1 p-6">
         <div className="mx-auto max-w-5xl">
-          <AdminImportForm />
+          <AdminImportForm categories={categories.map((c) => ({ id: c.id, name: c.name }))} />
         </div>
       </main>
     </>
