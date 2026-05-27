@@ -23,14 +23,15 @@ Aplicação fullstack em Next.js com Supabase como backend-as-a-service. Arquite
 
 ```
 /features
-  /leads        → gestão de leads
+  /leads        → gestão de leads (user_leads)
   /templates    → templates de email
   /followups    → controle de follow-ups
   /gmail        → integração Gmail
-  /search       → busca de leads via Apify
+  /search       → busca no Banco Global (global_leads)
   /dashboard    → métricas e atividades
   /settings     → configurações do usuário e empresa
   /inbox        → emails recebidos (replies)
+  /admin        → painel admin: global_leads, categorias, usuários, importação
 ```
 
 ## Camadas da Aplicação
@@ -69,15 +70,41 @@ Usuário seleciona lead
 → thread registrada no banco
 ```
 
-## Fluxo de Busca de Leads
+## Fluxo de Busca de Leads (atual — Banco Global)
 
 ```
-Usuário define categoria + cidade
-→ API Route aciona Apify
-→ resultados retornam
-→ deduplicação aplicada
-→ leads salvos no banco
+Admin (uma vez):
+  /admin/import → upload JSON/CSV Apify
+  → classifyLeadQuality() → global_leads
+
+Usuário:
+  /search → categoria + cidade
+  → POST /api/search/leads
+  → findAvailableGlobalLeadsForUser()
+      filtra: category_id, city ILIKE, status=active, lead_quality_status=email_found
+      exclui: global_lead_ids já em user_leads do usuário
+  → createUserLead para cada lead disponível
+  → UNIQUE (user_id, global_lead_id) garante nunca repetir
 ```
+
+**Limite diário:** 5 leads por usuário por dia UTC (`DAILY_LIMIT` em `searchService.ts`).
+
+## Search Provider Layer (preservado, fora do fluxo ativo)
+
+O provider layer existe mas não é chamado pelo fluxo de busca do usuário.
+
+```
+src/features/search/providers/
+  types.ts              → SearchLeadProvider interface, SearchProviderParams, SearchProviderResult
+  getSearchProvider.ts  → factory: lê env SEARCH_PROVIDER (default: google_maps)
+  googlePlacesProvider.ts → implementação Google Places API
+  apifyProvider.ts      → stub (throws "not implemented")
+```
+
+**`getSearchProvider()`:** lê `process.env.SEARCH_PROVIDER`. Suporta `google_maps` | `apify`.  
+**`googlePlacesProvider`:** chama `textsearch/json` + `getPlaceDetails` + `extractEmailFromWebsite`.  
+**`apifyProvider`:** stub — lança erro se chamado.  
+**Ativação futura:** conectar provider ao `searchService` ou a um job administrativo separado.
 
 ## Sincronização de Replies
 

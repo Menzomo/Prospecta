@@ -113,13 +113,34 @@
 
 ## Busca de Leads — /search
 
-- Usuário seleciona categoria padronizada (ex: Restaurantes)
-- Usuário informa cidade
-- Sistema aciona Apify
-- Resultados retornam e são exibidos
-- Deduplicação aplicada antes de salvar
-- Leads ocultos não são reimportados
-- Usuário pode importar leads selecionados
+**Implementado:** Search consome Banco Global (não chama provider externo).
+
+- Usuário seleciona categoria (lista dinâmica da tabela `lead_categories`)
+- Usuário informa cidade via autocomplete (tabela `cities`, 20 cidades seedadas)
+- Backend valida categoria e cidade contra o banco
+- Sistema busca `global_leads` disponíveis:
+  - `category_id` = categoria selecionada
+  - `city ILIKE` cidade selecionada
+  - `status = active`
+  - `lead_quality_status = email_found`
+  - Exclui global_leads já vinculados ao usuário via `user_leads`
+- Cria `user_leads` para cada lead entregue
+- Limite diário: 5 leads por usuário por dia UTC
+- Se não houver leads disponíveis: mensagem "Nenhum lead disponível para essa categoria e cidade no momento."
+- Deduplicação garantida por `UNIQUE (user_id, global_lead_id)` — nunca entrega o mesmo lead duas vezes
+
+### Cidade autocomplete
+
+- Campo livre substituído por autocomplete
+- `GET /api/cities?q=` — debounce 250ms no cliente
+- Busca por `name ILIKE` e `search_text ILIKE` (normalizado sem acentos)
+- Usuário deve selecionar da lista — campo livre não é aceito
+
+### Categoria dinâmica
+
+- Categorias não são hardcoded
+- Vêm da tabela `lead_categories` (22 seedadas)
+- Backend valida categoria informada contra o banco antes de processar
 
 ---
 
@@ -143,6 +164,48 @@
   - Replies nessas threads
 - Sistema NÃO sincroniza inbox completa do Gmail
 - Ao detectar reply: atualiza last_reply_at do lead e do thread
+
+---
+
+## Admin — /admin
+
+**Implementado.** Somente usuários com `profiles.role = 'admin'`. Não-admin é redirecionado para `/dashboard`.
+
+### Painel Admin — /admin
+
+- **Lead Quality Overview:** 4 cards — Email Found / Website Only / Manual Review / Invalid (contagens de `global_leads`)
+- **Manual Review Queue:** tabela dos 20 leads mais recentes com `lead_quality_status = manual_review`
+- **Global Leads:** últimos 20 leads do banco global (empresa, cidade, estado, email, status, score)
+- **Categorias:** todas as categorias cadastradas (nome, slug, search_terms)
+- **Usuários:** últimos 20 usuários cadastrados (email, role, data)
+- Botão "Importar Leads" → `/admin/import`
+
+### Import Leads — /admin/import
+
+**Implementado:** intake manual de exportações Apify.
+
+Fluxo:
+1. Admin seleciona categoria obrigatória (select, vem do banco)
+2. Admin faz upload de arquivo `.json` ou `.csv` exportado do Apify
+3. Preview mostra 20 primeiros rows (empresa, cidade, estado, site, telefone, email)
+4. Botão "Importar N leads" habilitado somente se categoria selecionada
+5. POST `/api/admin/import` processa:
+   - Valida `category_id` existe no banco
+   - Dedup: company_name + city → skip se já existe
+   - `classifyLeadQuality({ email, website })` → `lead_quality_status`
+   - `createGlobalLead` com `provider_source: 'apify'` e `category_id` selecionado
+6. Resumo final: Importados / Ignorados (duplicata) / Inválidos / Email Found / Website Only / Manual Review
+
+**Campo `category` do arquivo Apify é ignorado** — admin escolhe a categoria explicitamente.  
+**Limite:** 500 rows por upload.
+
+### Lead Quality Pipeline
+
+**Implementado.** Classificação automática de qualidade de lead.
+
+- `classifyLeadQuality({ email, website })` em `src/utils/classifyLeadQuality.ts`
+- Aplicado em todo `createGlobalLead`: no import manual e no provider (quando ativo)
+- Migration `20240113000000` backfilla rows existentes
 
 ---
 

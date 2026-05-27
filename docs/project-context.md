@@ -1,5 +1,74 @@
 Você está ajudando no desenvolvimento de um MVP SaaS de prospecção comercial por email.
 
+---
+
+# ESTADO ATUAL — MAIO 2026
+
+O ciclo principal do MVP foi fechado. As seções abaixo descrevem a arquitetura **em produção**.
+
+## Fluxo oficial de leads
+
+```
+Admin
+  ↓ acessa /admin/import
+  ↓ seleciona categoria (lead_categories)
+  ↓ faz upload JSON/CSV exportado do Apify
+  ↓ preview 20 rows
+  ↓ confirma importação
+
+API POST /api/admin/import
+  ↓ valida category_id existe no banco
+  ↓ para cada row:
+      - dedup: company_name + city (ILIKE) → skip se já existe
+      - classifyLeadQuality({ email, website }) → lead_quality_status
+      - createGlobalLead → global_leads (provider_source: 'apify')
+
+global_leads
+  ↓ status: active
+  ↓ lead_quality_status: email_found | website_only | manual_review | invalid
+
+Usuário acessa /search
+  ↓ seleciona categoria + cidade (autocomplete cities table)
+  ↓ POST /api/search/leads
+
+API POST /api/search/leads
+  ↓ valida categoria e cidade contra banco
+  ↓ findAvailableGlobalLeadsForUser:
+      - category_id = categoria selecionada
+      - city ILIKE cidade
+      - status = active
+      - lead_quality_status = email_found
+      - NOT IN user_leads do usuário (dedup por UNIQUE constraint)
+  ↓ limit: DAILY_LIMIT - savedToday (limite diário: 5)
+  ↓ createUserLead para cada lead entregue
+
+user_leads
+  ↓ UNIQUE (user_id, global_lead_id) — nunca entrega o mesmo lead duas vezes
+```
+
+## Decisões arquiteturais fechadas
+
+- Usuário NÃO chama Apify diretamente
+- Search consome Banco Global, não provider externo
+- Provider layer (`googlePlacesProvider`, `apifyProvider`, `getSearchProvider`) preservado para uso futuro, mas fora do fluxo principal
+- Categorias vêm da tabela `lead_categories` (não hardcoded)
+- Cidades vêm da tabela `cities` com autocomplete (não campo livre)
+- Intake manual Apify via /admin/import (somente admin)
+- lead_quality_status classificado automaticamente por `classifyLeadQuality()`
+- Search entrega somente leads com `lead_quality_status = email_found`
+
+## Proteção de rotas Admin
+
+Proteção feita dentro do server component via redirect: `if (profile?.role !== 'admin') redirect('/dashboard')`.  
+**Sem middleware de rota** — ver débito técnico HIGH #1.
+
+## Limite diário
+
+`DAILY_LIMIT = 5` — definido em `src/features/search/services/searchService.ts`.  
+Conta user_leads criados no dia UTC atual pelo usuário.
+
+---
+
 # OBJETIVO PRINCIPAL
 
 O sistema ajudará pequenas empresas a:

@@ -40,9 +40,12 @@ Identidade do usuário.
 | email      | text        |                         |
 | full_name  | text        |                         |
 | avatar_url | text        |                         |
-| role       | text        | "admin" \| "user" (default: "user") |
+| role       | text        | `"admin"` \| `"user"` (default: `"user"`) |
 | created_at | timestamptz |                         |
 | updated_at | timestamptz |                         |
+
+**role:** controla acesso ao painel `/admin` e às políticas RLS de admin.  
+Verificação feita em server components via `profile.role !== 'admin'` → redirect `/dashboard`.
 
 ---
 
@@ -166,28 +169,50 @@ Histórico de mudanças de status do lead.
 ---
 
 ### global_leads
-**Fase 1 — Banco Global Prospecta.**
-Repositório global de empresas. NÃO pertence a nenhum usuário.
+Banco global de empresas. NÃO pertence a nenhum usuário. Abastecido via `/admin/import` pelo admin.
 
-| Campo                | Tipo        | Obs                                         |
-|----------------------|-------------|---------------------------------------------|
-| id                   | uuid PK     |                                             |
-| company_name         | text        | obrigatório                                 |
-| email                | text        | opcional                                    |
-| website              | text        | opcional                                    |
-| phone                | text        | opcional                                    |
-| city                 | text        | opcional                                    |
-| state                | text        | opcional                                    |
-| category_id          | uuid        | FK → lead_categories (nullable)             |
-| confidence_score     | integer     | default 0 (preparado para scoring futuro)   |
-| provider_source      | text        | ex: "google_maps", "apify"                  |
-| provider_external_id | text        | ID externo no provider (opcional)           |
-| status               | text        | active \| hidden \| invalid                 |
-| review_required      | boolean     | default true                                |
-| created_at           | timestamptz |                                             |
-| updated_at           | timestamptz |                                             |
+| Campo                | Tipo        | Obs                                                  |
+|----------------------|-------------|------------------------------------------------------|
+| id                   | uuid PK     |                                                      |
+| company_name         | text        | obrigatório                                          |
+| email                | text        | opcional                                             |
+| website              | text        | opcional                                             |
+| phone                | text        | opcional                                             |
+| city                 | text        | opcional — armazenado como veio do Apify             |
+| state                | text        | opcional — código UF (ex: "SP", "RS")                |
+| category_id          | uuid        | FK → lead_categories (nullable)                      |
+| confidence_score     | integer     | default 0 (preparado para scoring futuro)            |
+| provider_source      | text        | `"apify"` \| `"google_maps"` (ver valores abaixo)    |
+| provider_external_id | text        | ID externo no provider (opcional)                    |
+| status               | text        | `active` \| `hidden` \| `invalid`                   |
+| review_required      | boolean     | default true                                         |
+| lead_quality_status  | text        | `email_found` \| `website_only` \| `manual_review` \| `invalid` — default `manual_review` |
+| created_at           | timestamptz |                                                      |
+| updated_at           | timestamptz |                                                      |
 
-RLS: SELECT para qualquer usuário autenticado (apenas status=active). INSERT/UPDATE restrito a admin.
+**lead_quality_status — valores oficiais:**
+
+| Valor          | Quando é atribuído                                      |
+|----------------|---------------------------------------------------------|
+| `email_found`  | email preenchido e não vazio                            |
+| `website_only` | website preenchido, email vazio                         |
+| `manual_review`| sem email e sem website — precisa revisão               |
+| `invalid`      | company_name vazio na importação (não salvo no banco)   |
+
+Classificação feita por `classifyLeadQuality()` em `src/utils/classifyLeadQuality.ts`.  
+O status `invalid` na contagem do resumo do import é computado antes do insert — rows inválidos nunca chegam ao banco.
+
+**provider_source — valores conhecidos:**
+
+| Valor         | Origem                                       |
+|---------------|----------------------------------------------|
+| `apify`       | Import manual via `/admin/import`            |
+| `google_maps` | Provider Google Places (fora do fluxo ativo) |
+
+**Search entrega somente:** `status = active` AND `lead_quality_status = email_found`.
+
+RLS: SELECT para qualquer usuário autenticado (apenas `status = active`). Admin vê todos os status.  
+INSERT permitido a usuários autenticados (migration `20240110000000`).
 
 ---
 
@@ -212,6 +237,25 @@ Vínculo entre usuário e um lead global. Cada usuário possui status, timeline 
 Cada lead global pode ter vínculos com múltiplos usuários, cada um com status, notas e timeline independentes.
 
 RLS: padrão por user_id.
+
+---
+
+### cities
+Catálogo de cidades para autocomplete no Search. NÃO pertence a nenhum usuário.
+
+| Campo       | Tipo        | Obs                                                  |
+|-------------|-------------|------------------------------------------------------|
+| id          | uuid PK     |                                                      |
+| name        | text        | nome com acentos (ex: "São Paulo")                   |
+| state       | text        | nome do estado (ex: "São Paulo")                     |
+| state_code  | text        | UF 2 chars (ex: "SP")                                |
+| search_text | text        | nome normalizado sem acentos (ex: "sao paulo") — para busca robusta |
+| created_at  | timestamptz |                                                      |
+
+**Seedadas:** 20 cidades principais no Brasil (migration `20240111000000`).  
+**Autocomplete:** `GET /api/cities?q=` — busca por `name ILIKE` ou `search_text ILIKE` (normalizado).  
+**RLS:** SELECT para qualquer usuário autenticado. Escrita restrita ao admin.  
+**Índices:** `cities_search_text_idx`, `cities_name_idx`, `cities_state_code_idx`.
 
 ---
 
