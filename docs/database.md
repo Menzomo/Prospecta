@@ -115,7 +115,8 @@ RLS: leitura para qualquer usuário autenticado. Escrita restrita a admin.
 ---
 
 ### leads
-Leads do usuário.
+**Tabela de leads manuais.** Leads criados diretamente pelo usuário via `/leads/new`.  
+Coexiste com `global_leads` / `user_leads` (DT-L3). As tabelas `email_threads`, `email_messages`, `followups` e `lead_status_history` têm FK para `leads.id`, não para `user_leads`.
 
 | Campo             | Tipo        | Obs                     |
 |-------------------|-------------|-------------------------|

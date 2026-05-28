@@ -75,7 +75,9 @@ Usuário seleciona lead
 ```
 Admin (uma vez):
   /admin/import → upload JSON/CSV Apify
-  → classifyLeadQuality() → global_leads
+  → classifyLeadQuality() → global_leads (email_found | website_only | manual_review)
+  → se email ausente: /admin/global-leads/[id] → admin insere email
+  → updateGlobalLeadEmailAndPromote() → lead_quality_status=email_found, status=active
 
 Usuário:
   Fase 1 — Prévia:
@@ -94,6 +96,7 @@ Usuário:
   → valida limite mensal, existência e qualidade dos leads
   → createUserLead apenas para os selecionados
   → UNIQUE (user_id, global_lead_id) garante nunca repetir
+  → retorna { added, already_owned, monthly_remaining }
 
 Admin:
   → Sem limite mensal, até 50 leads por prévia
@@ -102,6 +105,21 @@ Admin:
 ```
 
 **Limite mensal:** 200 leads por usuário por mês UTC (`MONTHLY_LIMIT` em `searchService.ts` e `confirm/route.ts`).
+
+## Aba Leads — Fontes Unificadas
+
+```
+/leads
+  → getLeadsByUserId()         → tabela leads (leads manuais)   → link /leads/[id]
+  → getUserLeadsWithGlobalData() → user_leads JOIN global_leads   → link /leads/global/[id]
+
+Filtros (GET params):
+  ?category=<slug>  → filtra por lead_categories.slug
+  ?city=<texto>     → substring match app-level em lead.city
+
+/leads/[id]         → detalhe manual: edição completa, email, followup
+/leads/global/[id]  → detalhe da busca: status, ocultar (sem email/followup — DT-L3)
+```
 
 ## Search Provider Layer (preservado, fora do fluxo ativo)
 

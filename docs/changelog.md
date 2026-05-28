@@ -146,6 +146,48 @@ MVP focado em 5 nichos industriais/comerciais com alto potencial B2B.
 
 ---
 
+### Aba Leads Unificada — /leads
+
+A aba Leads passou a exibir as duas fontes de leads na mesma tabela: leads manuais (tabela `leads`) e leads confirmados via busca (tabela `user_leads` + `global_leads`).
+
+- `getUserLeadsWithGlobalData()` adicionado a `userLeadRepository.ts` — join `user_leads` com `global_leads` via PostgREST, retorna shape unificado com `category_id`
+- `/leads/page.tsx` reescrito: busca ambas as fontes em paralelo (`Promise.all`), renderiza na mesma tabela
+- Leads manuais linkam para `/leads/[id]`; leads da busca linkam para `/leads/global/[id]`
+- Botão "Ocultar" disponível para ambas as fontes (`hideLeadAction` e `hideUserLeadAction`)
+
+---
+
+### Filtros por Nicho e Cidade na Aba Leads
+
+- Filtro de nicho: `<select>` preenchido dinamicamente do banco (`lead_categories`), submetido via GET param `?category=<slug>`
+- Filtro de cidade: input de texto, GET param `?city=`, substring match app-level
+- Botão "Limpar filtros" aparece somente quando filtro ativo
+- Contador de leads exibido acima da tabela
+- Coluna "Nicho" adicionada — leads manuais exibem "Sem categoria" (tabela `leads` não possui `category_id`)
+- Quando filtro de nicho específico está ativo, leads manuais são ocultados (comportamento esperado)
+
+---
+
+### Detalhe de Lead da Busca — /leads/global/[id]
+
+Nova página para leads confirmados via busca (user_leads).
+
+- Exibe dados da empresa (somente-leitura) do `global_leads`: nome, email, telefone, site, cidade, estado
+- Exibe status atual com badge colorido
+- Formulário para alterar status (server action com redirect)
+- Botão "Ocultar lead" (server action, redireciona para `/leads`)
+- Sem funcionalidade de email ou follow-up (FKs dependem de `leads.id` — DT-L3)
+
+---
+
+### UX — Feedback already_owned na Confirmação de Leads
+
+- `/api/user-leads/confirm` passou a retornar `already_owned` — quantidade de leads selecionados que já estavam em `user_leads`
+- `SearchForm.tsx` exibe mensagem específica para cada caso: `added > 0`, `already_owned > 0`, combinação dos dois, ou zero de ambos
+- Tipo `ConfirmLeadsResponse` atualizado com campo `already_owned: number`
+
+---
+
 ### Admin — Edição Manual de Email em Leads Globais
 
 Permite que o admin adicione email manualmente a leads importados sem email e os libere para o banco pesquisável.

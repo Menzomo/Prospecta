@@ -1,6 +1,6 @@
 # Débitos Técnicos — Prospecta
 
-Última atualização: Maio 2026
+Última atualização: 27 Mai 2026
 
 ---
 
@@ -120,11 +120,16 @@ Campo `category` removido de `ImportRow` e de `normalizeRaw()` em `parseImportFi
 
 ### DT-L3 — Tabela `leads` (legacy) coexiste com `global_leads` / `user_leads`
 
-**Problema:** A tabela `leads` original (criada em migration `20240101000000`) ainda existe no banco. O sistema atual usa `global_leads` + `user_leads`. A tabela `leads` é usada por `email_threads`, `email_messages`, `followups` e `lead_status_history` via FK.
+**Problema:** A tabela `leads` original ainda existe e coexiste com `global_leads` + `user_leads`. As tabelas `email_threads`, `email_messages`, `followups` e `lead_status_history` têm FK para `leads.id`.
+
+**Estado atual (parcialmente resolvido):**
+- ✅ A aba `/leads` exibe ambas as fontes unificadas na mesma tabela
+- ✅ Leads da busca têm página própria em `/leads/global/[id]` com alteração de status e ocultar
+- ⚠️ Envio de email e follow-ups disponíveis apenas para leads manuais (`/leads/[id]`) — funcionalidade depende de `leads.id` FK
 
 **Localização:** `supabase/migrations/20240101000000_create_leads.sql`
 
-**Solução esperada:** Plano de migração para vincular threads/followups ao `user_leads` e deprecar a tabela `leads`. Não é urgente — o sistema de email usa `leads` ativamente.
+**Solução esperada:** Migrar FKs de `email_threads`, `email_messages`, `followups` para suportar `user_leads`. Vincular ao `user_leads.id` em vez de `leads.id`. Deprecar a tabela `leads` após migração completa. Alta complexidade — não urgente para MVP.
 
 ---
 
@@ -135,3 +140,44 @@ Campo `category` removido de `ImportRow` e de `normalizeRaw()` em `parseImportFi
 **Localização:** `docs/database.md`, migrations
 
 **Solução esperada:** Avaliar se fazem sentido no novo modelo (banco global + user_leads) ou se devem ser removidas.
+
+---
+
+### DT-L5 — Leads visualizados na prévia mas não confirmados não são rastreados
+
+**Problema:** Quando o usuário recebe a prévia de 10 leads e não confirma nenhum (ou confirma apenas alguns), os não-selecionados reaparecem em buscas futuras do mesmo usuário. Não há mecanismo de "dispensar" ou "já vi esse lead".
+
+**Impacto:** Usuário pode ver repetidamente os mesmos leads se não os confirmar. Experiência potencialmente confusa no MVP avançado.
+
+**Localização:** `src/features/search/services/searchService.ts`, `src/repositories/globalLeadRepository.ts`
+
+**Solução esperada:** Tabela `user_lead_views` ou coluna `dismissed_at` para marcar leads visualizados mas não confirmados. Alternativa mais simples: botão "Não me interessou" na prévia que cria registro sem consumir crédito mensal.
+
+---
+
+### DT-L6 — Sem analytics de consumo e dispensa de leads
+
+**Problema:** Não há rastreamento de quantos leads foram visualizados em prévia vs confirmados vs ignorados por usuário/mês. Impossível medir taxa de conversão da busca ou calibrar o limite de 200/mês.
+
+**Localização:** `src/app/api/search/leads/route.ts`, `src/app/api/user-leads/confirm/route.ts`
+
+**Solução esperada:** Registrar eventos de busca (categoria, cidade, qtd preview) e confirmação (qtd selecionados, qtd já owned) em tabela de analytics ou via log estruturado.
+
+---
+
+### DT-L7 — Estado vazio da busca é genérico
+
+**Problema:** Quando a busca retorna 0 leads, a mensagem exibida é genérica ("Nenhum lead encontrado para esta busca"). Não informa se: (a) não há leads nessa categoria/cidade no banco, (b) o usuário já adicionou todos os leads disponíveis, ou (c) não existem leads com `email_found` mas existem com outros status.
+
+**Localização:** `src/features/search/services/searchService.ts`, `src/features/search/components/SearchForm.tsx`
+
+**Solução esperada:** Backend retorna motivo específico no campo `message`: `"Todos os leads disponíveis já foram adicionados"` vs `"Nenhum lead cadastrado para esta combinação"`.
+
+---
+
+### DT-L8 — Dedup do import Apify frágil quando city é null
+
+**(Mesmo que DT-H3 — registrado aqui para referência cruzada)**  
+Ver DT-H3 para detalhes. A regra `company_name + city` falha quando city é null, inserindo duplicatas sem verificação.
+
+**Localização:** `src/app/api/admin/import/route.ts`

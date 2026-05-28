@@ -34,22 +34,41 @@
 ## Leads
 
 ### Listagem — /leads
-- Listar leads do usuário com filtros:
-  - status
-  - cidade
-  - categoria
-- Leads ocultos (is_hidden = true) não aparecem na listagem
-- Ação para ocultar lead da listagem
 
-### Detalhe — /leads/[id]
+A aba Leads exibe **duas fontes unificadas** na mesma tabela:
+
+1. **Leads manuais** — criados manualmente pelo usuário (tabela `leads`). Link → `/leads/[id]`.
+2. **Leads da busca** — confirmados via `/api/user-leads/confirm` (tabela `user_leads` + `global_leads`). Link → `/leads/global/[id]`.
+
+Filtros disponíveis (GET params, form submit sem JS necessário):
+- **Nicho** — select com categorias do banco (`lead_categories`). "Todos os nichos" exibe as duas fontes; uma categoria específica oculta leads manuais (não têm categoria).
+- **Cidade** — input de texto, substring match contra `lead.city` (case-insensitive, app-level).
+
+Comportamento:
+- Leads ocultos não aparecem (`is_hidden = true` para leads manuais; `hidden = true` para user_leads)
+- Botão "Ocultar" disponível para ambas as fontes
+- Contagem de leads visível acima da tabela
+- Coluna "Nicho" mostra categoria do lead; leads manuais mostram "Sem categoria"
+- Coluna "Contato" disponível apenas para leads manuais
+
+### Detalhe de lead manual — /leads/[id]
 - Ver todos os dados do lead
-- Editar dados do lead
-- Ver histórico de status (lead_status_history)
-- Ver emails enviados ao lead
-- Ver follow-ups do lead
+- Editar dados do lead (empresa, contato, email, telefone, site, cidade, status, observações)
+- Ver emails enviados ao lead e histórico de threads
+- Ver e criar follow-ups do lead
 - Alterar status do lead
-- Criar follow-up
 - Enviar email ao lead
+
+### Detalhe de lead da busca — /leads/global/[id]
+- Dados somente-leitura do lead global: empresa, email, site, telefone, cidade, estado
+- Alterar status do lead (user_lead.status)
+- Ocultar lead (user_leads.hidden = true)
+- Sem funcionalidade de email ou follow-up (FKs ainda vinculadas à tabela `leads` — DT-L3)
+
+### Adicionar lead manual — /leads/new
+- Formulário de criação manual de lead
+- Campos: empresa, contato, email, telefone, site, cidade, observações
+- Deduplicação: impede criar lead com mesmo email ou website já existente
 
 ### Deduplicação
 - Lead duplicado detectado por: mesmo user_id + email OU mesmo user_id + website
@@ -67,8 +86,9 @@
 - `sem_resposta` — emails enviados sem resposta
 
 ### Leads Ocultos
-- Lead ocultado não reaparece em buscas futuras via Apify
-- Campos: is_hidden, hidden_at
+- Leads manuais: `is_hidden = true` + `hidden_at` na tabela `leads`
+- Leads da busca: `hidden = true` na tabela `user_leads`
+- Leads ocultos nunca reaparecem na listagem
 
 ---
 
@@ -141,10 +161,13 @@
 ### Confirmação — POST /api/user-leads/confirm
 
 - Recebe `global_lead_ids: string[]` (max 10)
-- Valida autenticação, limite mensal, existência e qualidade dos leads
+- Valida autenticação, limite mensal, existência e qualidade dos leads (`status=active`, `lead_quality_status=email_found`)
 - Pula leads já em `user_leads` (evita violação da constraint UNIQUE)
 - Capa ao limite disponível (não rejeita — adiciona o que couber)
-- Retorna `{ added, monthly_remaining }`
+- Retorna `{ added, already_owned, monthly_remaining }`
+  - `added` — quantos foram efetivamente criados
+  - `already_owned` — quantos já estavam em `user_leads` e foram ignorados
+  - `monthly_remaining` — créditos restantes após a operação (-1 para admin)
 
 ### Admin
 
