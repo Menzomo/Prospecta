@@ -2,7 +2,8 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getLeadsByUserId } from '@/repositories/leadRepository'
-import { hideLeadAction } from '@/features/leads/actions'
+import { getUserLeadsWithGlobalData } from '@/repositories/userLeadRepository'
+import { hideLeadAction, hideUserLeadAction } from '@/features/leads/actions'
 import { LEAD_STATUS_LABELS } from '@/types/leads'
 import type { LeadStatus } from '@/types/leads'
 
@@ -24,7 +25,12 @@ export default async function LeadsPage() {
 
   if (!user) redirect('/login')
 
-  const leads = await getLeadsByUserId(supabase, user.id)
+  const [manualLeads, searchLeads] = await Promise.all([
+    getLeadsByUserId(supabase, user.id),
+    getUserLeadsWithGlobalData(supabase, user.id),
+  ])
+
+  const isEmpty = manualLeads.length === 0 && searchLeads.length === 0
 
   return (
     <>
@@ -41,7 +47,7 @@ export default async function LeadsPage() {
       </header>
 
       <main className="flex flex-1 flex-col p-6">
-        {leads.length === 0 ? (
+        {isEmpty ? (
           <div className="flex flex-1 flex-col items-center justify-center text-center">
             <p className="text-sm text-gray-500">Nenhum lead cadastrado ainda.</p>
             <Link href="/leads/new" className="mt-3 text-sm text-blue-600 hover:underline">
@@ -62,10 +68,42 @@ export default async function LeadsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {leads.map((lead) => {
+                {searchLeads.map((lead) => {
                   const status = lead.status as LeadStatus
                   return (
-                    <tr key={lead.id} className="hover:bg-gray-50">
+                    <tr key={`search-${lead.id}`} className="hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <Link
+                          href={`/leads/global/${lead.id}`}
+                          className="font-medium text-gray-900 hover:text-blue-600"
+                        >
+                          {lead.company_name}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">—</td>
+                      <td className="px-4 py-3 text-gray-600">{lead.email ?? '—'}</td>
+                      <td className="px-4 py-3 text-gray-600">{lead.city ?? '—'}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[status] ?? 'bg-gray-100 text-gray-600'}`}
+                        >
+                          {LEAD_STATUS_LABELS[status] ?? lead.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <form action={hideUserLeadAction.bind(null, lead.id)}>
+                          <button type="submit" className="text-xs text-gray-400 hover:text-red-500">
+                            Ocultar
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  )
+                })}
+                {manualLeads.map((lead) => {
+                  const status = lead.status as LeadStatus
+                  return (
+                    <tr key={`manual-${lead.id}`} className="hover:bg-gray-50">
                       <td className="px-4 py-3">
                         <Link
                           href={`/leads/${lead.id}`}
@@ -86,10 +124,7 @@ export default async function LeadsPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <form action={hideLeadAction.bind(null, lead.id)}>
-                          <button
-                            type="submit"
-                            className="text-xs text-gray-400 hover:text-red-500"
-                          >
+                          <button type="submit" className="text-xs text-gray-400 hover:text-red-500">
                             Ocultar
                           </button>
                         </form>

@@ -5,8 +5,10 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createLeadSchema, updateLeadSchema } from '@/validations/leadSchema'
 import { updateLead, hideLead } from '@/repositories/leadRepository'
+import { hideUserLead, updateUserLead } from '@/repositories/userLeadRepository'
 import { createLeadWithDuplicateCheck } from '@/services/leadService'
 import type { LeadStatus } from '@/types/leads'
+import type { UserLeadStatus } from '@/types/globalLeads'
 
 // --- Create ---
 
@@ -156,4 +158,46 @@ export async function hideLeadAction(id: string, _formData: FormData): Promise<v
   await hideLead(supabase, id)
   revalidatePath('/leads')
   redirect('/leads')
+}
+
+// --- User Lead (search-confirmed) ---
+
+export async function hideUserLeadAction(id: string, _formData: FormData): Promise<void> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) redirect('/login')
+
+  await hideUserLead(supabase, id)
+  revalidatePath('/leads')
+  redirect('/leads')
+}
+
+export async function updateUserLeadStatusAction(id: string, formData: FormData): Promise<void> {
+  const status = formData.get('status') as string
+  if (!status) return
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) redirect('/login')
+
+  // Verify ownership before updating
+  const { data: existing } = await supabase
+    .from('user_leads')
+    .select('id')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (!existing) return
+
+  await updateUserLead(supabase, id, { status: status as UserLeadStatus })
+  revalidatePath(`/leads/global/${id}`)
+  revalidatePath('/leads')
+  redirect(`/leads/global/${id}`)
 }

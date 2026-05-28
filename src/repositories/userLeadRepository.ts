@@ -2,6 +2,56 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/types'
 import type { UserLead, CreateUserLeadDto, UpdateUserLeadDto } from '@/types/globalLeads'
 
+export type UserLeadWithGlobalData = {
+  id: string
+  status: string
+  created_at: string
+  company_name: string
+  email: string | null
+  website: string | null
+  phone: string | null
+  city: string | null
+  state: string | null
+}
+
+export async function getUserLeadsWithGlobalData(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<UserLeadWithGlobalData[]> {
+  const { data, error } = await supabase
+    .from('user_leads')
+    .select('id, status, created_at, global_leads(company_name, email, website, phone, city, state)')
+    .eq('user_id', userId)
+    .eq('hidden', false)
+    .order('created_at', { ascending: false })
+
+  if (error) return []
+
+  return (data ?? [])
+    .filter((row) => row.global_leads != null)
+    .map((row) => {
+      const g = row.global_leads as unknown as {
+        company_name: string
+        email: string | null
+        website: string | null
+        phone: string | null
+        city: string | null
+        state: string | null
+      }
+      return {
+        id: row.id,
+        status: row.status,
+        created_at: row.created_at,
+        company_name: g.company_name,
+        email: g.email,
+        website: g.website,
+        phone: g.phone,
+        city: g.city,
+        state: g.state,
+      }
+    })
+}
+
 export async function getUserLeads(
   supabase: SupabaseClient<Database>,
   userId: string
