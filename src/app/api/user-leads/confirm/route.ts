@@ -90,11 +90,13 @@ export async function POST(request: NextRequest) {
     .eq('user_id', user.id)
     .in('global_lead_id', idsToProcess)
 
-  const alreadyOwned = new Set((existingLinks ?? []).map((l) => l.global_lead_id))
+  const alreadyOwnedSet = new Set((existingLinks ?? []).map((l) => l.global_lead_id))
 
   const eligibleIds = idsToProcess.filter(
-    (id) => validIds.has(id) && !alreadyOwned.has(id)
+    (id) => validIds.has(id) && !alreadyOwnedSet.has(id)
   )
+
+  const already_owned = idsToProcess.filter((id) => alreadyOwnedSet.has(id)).length
 
   let added = 0
   for (const globalLeadId of eligibleIds) {
@@ -107,5 +109,5 @@ export async function POST(request: NextRequest) {
 
   const finalRemaining = isAdmin ? -1 : monthly_remaining - added
 
-  return Response.json({ added, monthly_remaining: finalRemaining })
+  return Response.json({ added, already_owned, monthly_remaining: finalRemaining })
 }

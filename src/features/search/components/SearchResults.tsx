@@ -17,7 +17,7 @@ export function SearchResults({ leads, selectedIds, onToggle, disabled = false }
           {leads.length} {leads.length === 1 ? 'lead encontrado' : 'leads encontrados'}
         </h3>
         <p className="mt-0.5 text-xs text-gray-400">
-          Selecione os que deseja adicionar em Meus Leads
+          Selecione os que deseja adicionar em Leads
         </p>
       </div>
 
@@ -36,11 +36,12 @@ export function SearchResults({ leads, selectedIds, onToggle, disabled = false }
                 <input
                   type="checkbox"
                   checked={isSelected}
-                  onChange={() => !disabled && onToggle(lead.id)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  onChange={(e) => {
+                    e.stopPropagation()
+                    if (!disabled) onToggle(lead.id)
+                  }}
+                  className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   disabled={disabled}
-                  readOnly
                 />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-800">{lead.company_name}</p>

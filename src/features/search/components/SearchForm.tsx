@@ -250,10 +250,17 @@ export function SearchForm({ categories }: SearchFormProps) {
       {!loading && confirmResult !== null && (
         <div className="rounded-xl border border-green-200 bg-green-50 p-6 shadow-sm">
           <p className="text-sm font-semibold text-green-800">
-            {confirmResult.added === 0
-              ? 'Nenhum lead foi adicionado.'
-              : `${confirmResult.added} ${confirmResult.added === 1 ? 'lead adicionado' : 'leads adicionados'} em Meus Leads!`}
+            {confirmResult.added > 0
+              ? `${confirmResult.added} ${confirmResult.added === 1 ? 'lead adicionado' : 'leads adicionados'} à aba Leads!`
+              : confirmResult.already_owned > 0
+                ? `${confirmResult.already_owned} ${confirmResult.already_owned === 1 ? 'lead selecionado já estava' : 'leads selecionados já estavam'} em Leads.`
+                : 'Nenhum lead foi adicionado.'}
           </p>
+          {confirmResult.added > 0 && confirmResult.already_owned > 0 && (
+            <p className="mt-0.5 text-xs text-green-700">
+              {confirmResult.already_owned} {confirmResult.already_owned === 1 ? 'lead já estava' : 'leads já estavam'} em Leads e foram ignorados.
+            </p>
+          )}
           {confirmResult.monthly_remaining >= 0 && (
             <p className="mt-1 text-xs text-green-700">
               Créditos restantes este mês: {confirmResult.monthly_remaining}
@@ -344,7 +351,7 @@ export function SearchForm({ categories }: SearchFormProps) {
                 ? 'Adicionando...'
                 : selectedIds.size === 0
                   ? 'Selecione ao menos 1 lead para adicionar'
-                  : `Adicionar ${selectedIds.size} ${selectedIds.size === 1 ? 'lead' : 'leads'} em Meus Leads`}
+                  : `Adicionar ${selectedIds.size} ${selectedIds.size === 1 ? 'lead' : 'leads'} em Leads`}
             </button>
             <p className="text-center text-xs text-gray-400">
               Leads não selecionados continuarão disponíveis para buscas futuras.
