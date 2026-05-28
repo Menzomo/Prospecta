@@ -24,8 +24,7 @@ export default async function SearchPage() {
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-gray-900">Buscar empresas</h2>
             <p className="mt-1 text-sm text-gray-500">
-              Selecione uma categoria e informe a cidade para encontrar leads com email.
-              Limite: 5 leads por dia.
+              Selecione categoria e cidade, veja os leads disponíveis e escolha quais adicionar em Meus Leads.
             </p>
           </div>
 

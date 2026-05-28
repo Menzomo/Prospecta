@@ -115,6 +115,23 @@ Validação de existência de categoria e cidade contra o banco antes de process
 
 ---
 
+### Busca com Seleção de Leads (Plano Bronze MVP)
+
+Mudança de produto: busca deixou de criar `user_leads` automaticamente. Usuário agora escolhe quais leads quer adicionar.
+
+- `POST /api/search/leads` retorna até 10 leads como **prévia** (sem inserir nada no banco)
+- Novo `POST /api/user-leads/confirm` recebe IDs selecionados, valida tudo e cria `user_leads` apenas para os escolhidos
+- Leads não selecionados continuam disponíveis no banco global para buscas futuras
+- Sair da tela sem confirmar não consome créditos
+- Limite migrado de **5 leads/dia** para **200 leads/mês** (Plano Bronze)
+- Admin: sem limite mensal (`monthly_remaining = -1`), previews de até 50 leads, pode rever leads já vistos
+- `SearchForm` ganhou checkboxes, botão "Adicionar selecionados" e confirmação pós-adição
+- `SearchResults` reescrito como lista de cards selecionáveis
+- `stateUtils.ts`: normaliza UF de 2 letras para nome completo do estado antes do filtro SQL (fix bug RS → Rio Grande do Sul)
+- `DT-M2` resolvido: `maxDuration` removido de `/api/search/leads` (era resquício do provider externo)
+
+---
+
 ### Redução de Categorias para 5 Nichos Oficiais
 
 MVP focado em 5 nichos industriais/comerciais com alto potencial B2B.

@@ -70,7 +70,7 @@ Usuário seleciona lead
 → thread registrada no banco
 ```
 
-## Fluxo de Busca de Leads (atual — Banco Global)
+## Fluxo de Busca de Leads (atual — Banco Global com Seleção)
 
 ```
 Admin (uma vez):
@@ -78,16 +78,30 @@ Admin (uma vez):
   → classifyLeadQuality() → global_leads
 
 Usuário:
+  Fase 1 — Prévia:
   /search → categoria + cidade
   → POST /api/search/leads
   → findAvailableGlobalLeadsForUser()
-      filtra: category_id, city ILIKE, status=active, lead_quality_status=email_found
+      filtra: category_id, city ILIKE, state ILIKE (expandido de UF → nome completo)
+              status=active, lead_quality_status=email_found
       exclui: global_lead_ids já em user_leads do usuário
-  → createUserLead para cada lead disponível
+  → retorna até 10 leads como prévia (sem criar user_leads)
+  → retorna monthly_remaining (créditos restantes no mês)
+
+  Fase 2 — Confirmação:
+  Usuário seleciona leads via checkbox → clica "Adicionar"
+  → POST /api/user-leads/confirm
+  → valida limite mensal, existência e qualidade dos leads
+  → createUserLead apenas para os selecionados
   → UNIQUE (user_id, global_lead_id) garante nunca repetir
+
+Admin:
+  → Sem limite mensal, até 50 leads por prévia
+  → skipExcludeOwned=true: vê leads já vistos em nova busca
+  → monthly_remaining = -1 (ilimitado)
 ```
 
-**Limite diário:** 5 leads por usuário por dia UTC (`DAILY_LIMIT` em `searchService.ts`).
+**Limite mensal:** 200 leads por usuário por mês UTC (`MONTHLY_LIMIT` em `searchService.ts` e `confirm/route.ts`).
 
 ## Search Provider Layer (preservado, fora do fluxo ativo)
 

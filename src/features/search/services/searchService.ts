@@ -1,11 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/types'
-import { countLeadsSavedTodayFromSearch } from '../repositories/searchRepository'
+import { countLeadsAddedThisMonth } from '../repositories/searchRepository'
 import { findAvailableGlobalLeadsForUser } from '@/repositories/globalLeadRepository'
-import { createUserLead } from '@/repositories/userLeadRepository'
-import type { SearchResultItem, SearchApiResponse } from '../types'
+import type { SearchPreviewResponse } from '../types'
 
-const DAILY_LIMIT = 5
+const MONTHLY_LIMIT = 200
+const SEARCH_PREVIEW_LIMIT = 10
 const ADMIN_SEARCH_LIMIT = 50
 
 export async function executeLeadSearch(
@@ -15,8 +15,8 @@ export async function executeLeadSearch(
   city: string,
   state?: string,
   isAdmin = false
-): Promise<SearchApiResponse> {
-  // Admin: unlimited searches, no user_leads created, sees all matching leads each time
+): Promise<SearchPreviewResponse> {
+  // Admin: unlimited preview, sees all matching leads regardless of prior ownership
   if (isAdmin) {
     const available = await findAvailableGlobalLeadsForUser(supabase, {
       userId,
@@ -29,32 +29,34 @@ export async function executeLeadSearch(
 
     if (available.length === 0) {
       return {
-        results: [],
-        saved: 0,
-        daily_remaining: ADMIN_SEARCH_LIMIT,
+        leads: [],
+        monthly_remaining: -1,
         message: 'Nenhum lead disponível para essa categoria e cidade no momento.',
       }
     }
 
     return {
-      results: available.map((lead) => ({
+      leads: available.map((lead) => ({
+        id: lead.id,
         company_name: lead.company_name,
-        website: lead.website,
         email: lead.email ?? '',
+        website: lead.website,
         phone: lead.phone,
-        outcome: 'saved' as const,
       })),
-      saved: available.length,
-      daily_remaining: ADMIN_SEARCH_LIMIT - available.length,
+      monthly_remaining: -1,
     }
   }
 
-  // Regular user: enforce daily limit, create user_leads
-  const savedToday = await countLeadsSavedTodayFromSearch(supabase, userId)
-  const remaining = DAILY_LIMIT - savedToday
+  // Regular user: check monthly limit before querying
+  const addedThisMonth = await countLeadsAddedThisMonth(supabase, userId)
+  const monthly_remaining = MONTHLY_LIMIT - addedThisMonth
 
-  if (remaining <= 0) {
-    return { results: [], saved: 0, daily_remaining: 0 }
+  if (monthly_remaining <= 0) {
+    return {
+      leads: [],
+      monthly_remaining: 0,
+      message: 'Limite mensal de leads atingido. Seu limite renova no início do próximo mês.',
+    }
   }
 
   const available = await findAvailableGlobalLeadsForUser(supabase, {
@@ -62,42 +64,25 @@ export async function executeLeadSearch(
     categoryId,
     city,
     state,
-    limit: remaining,
+    limit: SEARCH_PREVIEW_LIMIT,
   })
 
   if (available.length === 0) {
     return {
-      results: [],
-      saved: 0,
-      daily_remaining: remaining,
+      leads: [],
+      monthly_remaining,
       message: 'Nenhum lead disponível para essa categoria e cidade no momento.',
     }
   }
 
-  const results: SearchResultItem[] = []
-  let savedCount = 0
-
-  for (const lead of available) {
-    const userLead = await createUserLead(supabase, userId, {
-      global_lead_id: lead.id,
-      status: 'novo',
-    })
-
-    if (userLead) {
-      savedCount++
-      results.push({
-        company_name: lead.company_name,
-        website: lead.website,
-        email: lead.email ?? '',
-        phone: lead.phone,
-        outcome: 'saved',
-      })
-    }
-  }
-
   return {
-    results,
-    saved: savedCount,
-    daily_remaining: remaining - savedCount,
+    leads: available.map((lead) => ({
+      id: lead.id,
+      company_name: lead.company_name,
+      email: lead.email ?? '',
+      website: lead.website,
+      phone: lead.phone,
+    })),
+    monthly_remaining,
   }
 }

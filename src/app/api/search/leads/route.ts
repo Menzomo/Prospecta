@@ -6,7 +6,6 @@ import { getLeadCategoryByName } from '@/repositories/leadCategoryRepository'
 import { findCity } from '@/repositories/cityRepository'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 10
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()

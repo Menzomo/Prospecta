@@ -113,21 +113,45 @@
 
 ## Busca de Leads — /search
 
-**Implementado:** Search consome Banco Global (não chama provider externo).
+**Implementado:** Busca com prévia selecionável — usuário escolhe quais leads adicionar.
 
-- Usuário seleciona categoria (lista dinâmica da tabela `lead_categories`)
-- Usuário informa cidade via autocomplete (tabela `cities`, 20 cidades seedadas)
-- Backend valida categoria e cidade contra o banco
-- Sistema busca `global_leads` disponíveis:
-  - `category_id` = categoria selecionada
-  - `city ILIKE` cidade selecionada
-  - `status = active`
-  - `lead_quality_status = email_found`
-  - Exclui global_leads já vinculados ao usuário via `user_leads`
-- Cria `user_leads` para cada lead entregue
-- Limite diário: 5 leads por usuário por dia UTC
-- Se não houver leads disponíveis: mensagem "Nenhum lead disponível para essa categoria e cidade no momento."
-- Deduplicação garantida por `UNIQUE (user_id, global_lead_id)` — nunca entrega o mesmo lead duas vezes
+### Fluxo completo (usuário comum)
+
+1. Usuário seleciona categoria e cidade
+2. Backend retorna até **10 leads como prévia** (sem criar `user_leads`)
+3. Usuário seleciona quais quer adicionar via checkboxes
+4. Clica em "Adicionar selecionados em Meus Leads"
+5. `POST /api/user-leads/confirm` valida e cria os `user_leads` selecionados
+6. Leads não selecionados continuam disponíveis no banco global para buscas futuras
+7. Sair da tela sem confirmar não consome créditos
+
+### Plano Bronze MVP
+
+- **200 leads/mês** (limite mensal, não diário)
+- Até **10 leads por prévia de busca**
+- Limite verificado em dois pontos: na prévia (informa restante) e na confirmação (capa e valida)
+
+### Regras da prévia
+
+- `lead_quality_status = email_found`
+- `status = active`
+- Exclui global_leads já em `user_leads` do usuário (já adicionados)
+- Retorna `monthly_remaining` (-1 para admin = ilimitado)
+
+### Confirmação — POST /api/user-leads/confirm
+
+- Recebe `global_lead_ids: string[]` (max 10)
+- Valida autenticação, limite mensal, existência e qualidade dos leads
+- Pula leads já em `user_leads` (evita violação da constraint UNIQUE)
+- Capa ao limite disponível (não rejeita — adiciona o que couber)
+- Retorna `{ added, monthly_remaining }`
+
+### Admin
+
+- Sem limite mensal (`monthly_remaining = -1`)
+- Vê até 50 leads por prévia
+- Não filtra leads já vistos (pode rever os mesmos leads a cada busca)
+- Pode usar o confirm endpoint sem restrições de limite
 
 ### Cidade autocomplete
 

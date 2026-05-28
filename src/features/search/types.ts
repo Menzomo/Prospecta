@@ -1,16 +1,18 @@
-export type SearchOutcome = 'saved' | 'duplicate' | 'no_email' | 'fetch_error' | 'limit_reached'
-
-export type SearchResultItem = {
+export type LeadPreviewItem = {
+  id: string
   company_name: string
-  website: string | null
   email: string
+  website: string | null
   phone: string | null
-  outcome: SearchOutcome
 }
 
-export type SearchApiResponse = {
-  results: SearchResultItem[]
-  saved: number
-  daily_remaining: number
+export type SearchPreviewResponse = {
+  leads: LeadPreviewItem[]
+  monthly_remaining: number // -1 means unlimited (admin)
   message?: string
+}
+
+export type ConfirmLeadsResponse = {
+  added: number
+  monthly_remaining: number // -1 means unlimited (admin)
 }

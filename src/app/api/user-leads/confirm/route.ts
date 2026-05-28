@@ -1,0 +1,111 @@
+import { z } from 'zod'
+import type { NextRequest } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { countLeadsAddedThisMonth } from '@/features/search/repositories/searchRepository'
+import { createUserLead } from '@/repositories/userLeadRepository'
+
+const MONTHLY_LIMIT = 200
+
+const confirmSchema = z.object({
+  global_lead_ids: z
+    .array(z.string().uuid('ID de lead inválido'))
+    .min(1, 'Selecione ao menos 1 lead')
+    .max(10, 'Máximo de 10 leads por vez'),
+})
+
+export const dynamic = 'force-dynamic'
+
+export async function POST(request: NextRequest) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return Response.json({ error: 'Não autenticado' }, { status: 401 })
+  }
+
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return Response.json({ error: 'Body inválido' }, { status: 400 })
+  }
+
+  const validation = confirmSchema.safeParse(body)
+  if (!validation.success) {
+    return Response.json(
+      { error: 'Dados inválidos', details: validation.error.flatten() },
+      { status: 400 }
+    )
+  }
+
+  const { global_lead_ids } = validation.data
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  const isAdmin = profile?.role === 'admin'
+
+  // Monthly limit check (skip for admin)
+  let addedThisMonth = 0
+  let monthly_remaining = -1
+
+  if (!isAdmin) {
+    addedThisMonth = await countLeadsAddedThisMonth(supabase, user.id)
+    monthly_remaining = MONTHLY_LIMIT - addedThisMonth
+
+    if (monthly_remaining <= 0) {
+      return Response.json(
+        { error: 'Limite mensal de leads atingido. Seu limite renova no próximo mês.' },
+        { status: 400 }
+      )
+    }
+  }
+
+  // Cap to remaining quota for non-admin
+  const idsToProcess = isAdmin ? global_lead_ids : global_lead_ids.slice(0, monthly_remaining)
+
+  // Validate that leads exist, are active, and have email_found quality
+  const { data: validLeads, error: leadsError } = await supabase
+    .from('global_leads')
+    .select('id')
+    .in('id', idsToProcess)
+    .eq('status', 'active')
+    .eq('lead_quality_status', 'email_found')
+
+  if (leadsError) {
+    return Response.json({ error: 'Erro ao validar leads.' }, { status: 500 })
+  }
+
+  const validIds = new Set((validLeads ?? []).map((l) => l.id))
+
+  // Skip leads already in user_leads (prevent UNIQUE constraint errors)
+  const { data: existingLinks } = await supabase
+    .from('user_leads')
+    .select('global_lead_id')
+    .eq('user_id', user.id)
+    .in('global_lead_id', idsToProcess)
+
+  const alreadyOwned = new Set((existingLinks ?? []).map((l) => l.global_lead_id))
+
+  const eligibleIds = idsToProcess.filter(
+    (id) => validIds.has(id) && !alreadyOwned.has(id)
+  )
+
+  let added = 0
+  for (const globalLeadId of eligibleIds) {
+    const result = await createUserLead(supabase, user.id, {
+      global_lead_id: globalLeadId,
+      status: 'novo',
+    })
+    if (result) added++
+  }
+
+  const finalRemaining = isAdmin ? -1 : monthly_remaining - added
+
+  return Response.json({ added, monthly_remaining: finalRemaining })
+}
