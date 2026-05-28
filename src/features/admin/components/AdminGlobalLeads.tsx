@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { AdminGlobalLead } from '@/repositories/adminRepository'
 
 interface Props {
@@ -32,7 +33,14 @@ export function AdminGlobalLeads({ leads }: Props) {
             <tbody>
               {leads.map((lead) => (
                 <tr key={lead.id} className="border-b border-gray-50 last:border-0">
-                  <td className="px-4 py-3 font-medium text-gray-900">{lead.company_name}</td>
+                  <td className="px-4 py-3 font-medium text-gray-900">
+                    <Link
+                      href={`/admin/global-leads/${lead.id}`}
+                      className="hover:text-blue-600 hover:underline"
+                    >
+                      {lead.company_name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 text-gray-600">{lead.city ?? '—'}</td>
                   <td className="px-4 py-3 text-gray-600">{lead.state ?? '—'}</td>
                   <td className="px-4 py-3 text-gray-600">{lead.email ?? '—'}</td>

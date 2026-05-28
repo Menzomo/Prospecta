@@ -144,6 +144,24 @@ MVP focado em 5 nichos industriais/comerciais com alto potencial B2B.
 
 ---
 
+---
+
+### Admin — Edição Manual de Email em Leads Globais
+
+Permite que o admin adicione email manualmente a leads importados sem email e os libere para o banco pesquisável.
+
+- Nova rota `/admin/global-leads/[id]` — detalhe completo de qualquer `global_lead` (somente admin)
+- Formulário de email com validação (Zod, server action) — ao salvar: `email`, `lead_quality_status = email_found`, `status = active`, `updated_at`
+- Lead promovido aparece imediatamente nas buscas de usuários (`status=active + lead_quality_status=email_found`)
+- Fila "Leads sem Email" expandida: agora inclui `website_only` E `manual_review` (antes só `manual_review`), limite aumentado de 20 para 50
+- Link "Adicionar email" em cada linha da fila; tabela Global Leads tornou-se clicável (nome da empresa → detalhe)
+- `src/features/admin/actions.ts` criado com `addEmailToGlobalLeadAction` (server action, estado com `useActionState`)
+- `src/features/admin/components/GlobalLeadEmailForm.tsx` — form client component
+- `src/repositories/globalLeadRepository.ts` — nova função `updateGlobalLeadEmailAndPromote`
+- `src/repositories/adminRepository.ts` — nova função `getGlobalLeadByIdForAdmin` + tipo `AdminGlobalLeadDetail`
+
+---
+
 ## Pendente (próximo ciclo)
 
 - Middleware de proteção de rotas (DT-H1)

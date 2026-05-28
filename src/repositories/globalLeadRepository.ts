@@ -139,6 +139,32 @@ export async function findAvailableGlobalLeadsForUser(
   return data ?? []
 }
 
+export async function updateGlobalLeadEmailAndPromote(
+  supabase: SupabaseClient<Database>,
+  id: string,
+  email: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('global_leads')
+    .update({
+      email,
+      lead_quality_status: 'email_found',
+      status: 'active',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+
+  if (error) {
+    console.error('[globalLeadRepository.updateGlobalLeadEmailAndPromote] Supabase error:', {
+      code: error.code,
+      message: error.message,
+    })
+    return false
+  }
+
+  return true
+}
+
 export async function updateGlobalLeadStatus(
   supabase: SupabaseClient<Database>,
   id: string,

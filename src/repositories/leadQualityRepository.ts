@@ -24,9 +24,9 @@ export async function getManualReviewQueue(
   const { data, error } = await supabase
     .from('global_leads')
     .select('id, company_name, city, website, email, lead_quality_status, created_at')
-    .eq('lead_quality_status', 'manual_review')
+    .in('lead_quality_status', ['manual_review', 'website_only'])
     .order('created_at', { ascending: false })
-    .limit(20)
+    .limit(50)
 
   if (error) return []
   return data ?? []

@@ -203,7 +203,7 @@
 ### Painel Admin — /admin
 
 - **Lead Quality Overview:** 4 cards — Email Found / Website Only / Manual Review / Invalid (contagens de `global_leads`)
-- **Manual Review Queue:** tabela dos 20 leads mais recentes com `lead_quality_status = manual_review`
+- **Leads sem Email:** tabela dos 50 leads mais recentes com `lead_quality_status = manual_review` OR `website_only` — com link "Adicionar email" para cada lead
 - **Global Leads:** últimos 20 leads do banco global (empresa, cidade, estado, email, status, score)
 - **Categorias:** todas as categorias cadastradas (nome, slug, search_terms)
 - **Usuários:** últimos 20 usuários cadastrados (email, role, data)
@@ -227,6 +227,16 @@ Fluxo:
 
 **Campo `category` do arquivo Apify é ignorado** — admin escolhe a categoria explicitamente.  
 **Limite:** 500 rows por upload.
+
+### Detalhe de Lead Global — /admin/global-leads/[id]
+
+**Implementado.** Página de detalhe de qualquer lead do banco global, acessível apenas por admins.
+
+- Exibe todos os dados do lead: empresa, email, site, telefone, cidade, estado, categoria, status, qualidade, fonte, data de importação
+- Formulário para adicionar ou editar email manualmente
+- Ao salvar email: `lead_quality_status` → `email_found`, `status` → `active` — lead fica imediatamente disponível nas buscas dos usuários
+- Acessível via link "Adicionar email" na fila "Leads sem Email" ou clicando no nome na tabela Global Leads
+- Validação server-side: admin obrigatório, formato de email, existência do lead
 
 ### Lead Quality Pipeline
 

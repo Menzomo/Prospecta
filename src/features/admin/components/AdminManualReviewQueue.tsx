@@ -1,14 +1,20 @@
+import Link from 'next/link'
 import type { ManualReviewLead } from '@/repositories/leadQualityRepository'
 
 interface Props {
   leads: ManualReviewLead[]
 }
 
+const QUALITY_BADGE: Record<string, string> = {
+  manual_review: 'bg-yellow-50 text-yellow-700',
+  website_only: 'bg-blue-50 text-blue-700',
+}
+
 export function AdminManualReviewQueue({ leads }: Props) {
   return (
     <section>
       <h2 className="mb-3 text-base font-semibold text-gray-900">
-        Manual Review Queue{' '}
+        Leads sem Email{' '}
         <span className="text-sm font-normal text-gray-400">({leads.length} aguardando)</span>
       </h2>
 
@@ -26,11 +32,12 @@ export function AdminManualReviewQueue({ leads }: Props) {
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Site</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Email</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Status</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600"></th>
               </tr>
             </thead>
             <tbody>
               {leads.map((lead) => (
-                <tr key={lead.id} className="border-b border-gray-50 last:border-0">
+                <tr key={lead.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-900">{lead.company_name}</td>
                   <td className="px-4 py-3 text-gray-600">{lead.city ?? '—'}</td>
                   <td className="px-4 py-3 text-gray-600">
@@ -47,11 +54,19 @@ export function AdminManualReviewQueue({ leads }: Props) {
                       '—'
                     )}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{lead.email ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-400">{lead.email ?? 'Sem email'}</td>
                   <td className="px-4 py-3">
-                    <span className="inline-block rounded-full bg-yellow-50 px-2 py-0.5 text-xs font-medium text-yellow-700">
+                    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${QUALITY_BADGE[lead.lead_quality_status] ?? 'bg-gray-100 text-gray-500'}`}>
                       {lead.lead_quality_status}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Link
+                      href={`/admin/global-leads/${lead.id}`}
+                      className="text-xs font-medium text-blue-600 hover:underline"
+                    >
+                      Adicionar email
+                    </Link>
                   </td>
                 </tr>
               ))}
