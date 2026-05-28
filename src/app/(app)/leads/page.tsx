@@ -3,9 +3,11 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getLeadsByUserId } from '@/repositories/leadRepository'
 import { getUserLeadsWithGlobalData } from '@/repositories/userLeadRepository'
+import { listLeadCategories } from '@/repositories/leadCategoryRepository'
 import { hideLeadAction, hideUserLeadAction } from '@/features/leads/actions'
 import { LEAD_STATUS_LABELS } from '@/types/leads'
 import type { LeadStatus } from '@/types/leads'
+import type { LeadCategory } from '@/types/globalLeads'
 
 const STATUS_COLORS: Record<LeadStatus, string> = {
   novo: 'bg-blue-100 text-blue-700',
@@ -17,7 +19,11 @@ const STATUS_COLORS: Record<LeadStatus, string> = {
   sem_resposta: 'bg-red-100 text-red-700',
 }
 
-export default async function LeadsPage() {
+type SearchParams = Promise<{ category?: string; city?: string }>
+
+export default async function LeadsPage({ searchParams }: { searchParams: SearchParams }) {
+  const { category: categoryFilter = 'all', city: cityFilter = '' } = await searchParams
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -25,12 +31,42 @@ export default async function LeadsPage() {
 
   if (!user) redirect('/login')
 
-  const [manualLeads, searchLeads] = await Promise.all([
+  const [manualLeads, searchLeads, categories] = await Promise.all([
     getLeadsByUserId(supabase, user.id),
     getUserLeadsWithGlobalData(supabase, user.id),
+    listLeadCategories(supabase),
   ])
 
-  const isEmpty = manualLeads.length === 0 && searchLeads.length === 0
+  // Build category lookup maps
+  const categoryById = new Map<string, LeadCategory>(categories.map((c) => [c.id, c]))
+  const categoryBySlug = new Map<string, LeadCategory>(categories.map((c) => [c.slug, c]))
+
+  // Resolve active category filter
+  const activeCategoryId =
+    categoryFilter === 'all' ? null : (categoryBySlug.get(categoryFilter)?.id ?? null)
+
+  // Filter and enrich search leads
+  const filteredSearchLeads = searchLeads
+    .filter((l) => {
+      if (activeCategoryId !== null && l.category_id !== activeCategoryId) return false
+      if (cityFilter && !l.city?.toLowerCase().includes(cityFilter.toLowerCase())) return false
+      return true
+    })
+    .map((l) => ({
+      ...l,
+      category_name: l.category_id ? (categoryById.get(l.category_id)?.name ?? null) : null,
+    }))
+
+  // Filter manual leads (no category — only show under "Todos")
+  const filteredManualLeads =
+    activeCategoryId === null
+      ? manualLeads.filter((l) => {
+          if (cityFilter && !l.city?.toLowerCase().includes(cityFilter.toLowerCase())) return false
+          return true
+        })
+      : []
+
+  const totalCount = filteredSearchLeads.length + filteredManualLeads.length
 
   return (
     <>
@@ -46,21 +82,71 @@ export default async function LeadsPage() {
         </div>
       </header>
 
-      <main className="flex flex-1 flex-col p-6">
-        {isEmpty ? (
-          <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <p className="text-sm text-gray-500">Nenhum lead cadastrado ainda.</p>
-            <Link href="/leads/new" className="mt-3 text-sm text-blue-600 hover:underline">
-              Adicionar seu primeiro lead
+      <main className="flex flex-1 flex-col gap-4 p-6">
+        {/* Filters */}
+        <form method="GET" action="/leads" className="flex flex-wrap items-center gap-3">
+          <select
+            name="category"
+            defaultValue={categoryFilter}
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="all">Todos os nichos</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.slug}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+
+          <input
+            type="text"
+            name="city"
+            defaultValue={cityFilter}
+            placeholder="Filtrar por cidade..."
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          />
+
+          <button
+            type="submit"
+            className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+          >
+            Filtrar
+          </button>
+
+          {(categoryFilter !== 'all' || cityFilter) && (
+            <Link
+              href="/leads"
+              className="text-sm text-gray-400 hover:text-gray-600 hover:underline"
+            >
+              Limpar filtros
             </Link>
+          )}
+        </form>
+
+        {/* Table or empty state */}
+        {totalCount === 0 ? (
+          <div className="flex flex-1 flex-col items-center justify-center text-center">
+            <p className="text-sm text-gray-500">
+              {categoryFilter !== 'all' || cityFilter
+                ? 'Nenhum lead encontrado para os filtros selecionados.'
+                : 'Nenhum lead cadastrado ainda.'}
+            </p>
+            {!categoryFilter || categoryFilter === 'all' ? (
+              <Link href="/leads/new" className="mt-3 text-sm text-blue-600 hover:underline">
+                Adicionar seu primeiro lead
+              </Link>
+            ) : null}
           </div>
         ) : (
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="border-b border-gray-100 px-4 py-2 text-xs text-gray-400">
+              {totalCount} {totalCount === 1 ? 'lead' : 'leads'}
+            </div>
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50 text-left">
                   <th className="px-4 py-3 font-medium text-gray-600">Empresa</th>
-                  <th className="px-4 py-3 font-medium text-gray-600">Contato</th>
+                  <th className="px-4 py-3 font-medium text-gray-600">Nicho</th>
                   <th className="px-4 py-3 font-medium text-gray-600">Email</th>
                   <th className="px-4 py-3 font-medium text-gray-600">Cidade</th>
                   <th className="px-4 py-3 font-medium text-gray-600">Status</th>
@@ -68,7 +154,7 @@ export default async function LeadsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {searchLeads.map((lead) => {
+                {filteredSearchLeads.map((lead) => {
                   const status = lead.status as LeadStatus
                   return (
                     <tr key={`search-${lead.id}`} className="hover:bg-gray-50">
@@ -80,7 +166,11 @@ export default async function LeadsPage() {
                           {lead.company_name}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-gray-600">—</td>
+                      <td className="px-4 py-3 text-gray-500">
+                        {lead.category_name ?? (
+                          <span className="text-gray-300">Sem categoria</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-gray-600">{lead.email ?? '—'}</td>
                       <td className="px-4 py-3 text-gray-600">{lead.city ?? '—'}</td>
                       <td className="px-4 py-3">
@@ -100,7 +190,7 @@ export default async function LeadsPage() {
                     </tr>
                   )
                 })}
-                {manualLeads.map((lead) => {
+                {filteredManualLeads.map((lead) => {
                   const status = lead.status as LeadStatus
                   return (
                     <tr key={`manual-${lead.id}`} className="hover:bg-gray-50">
@@ -112,7 +202,9 @@ export default async function LeadsPage() {
                           {lead.company_name}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{lead.contact_name ?? '—'}</td>
+                      <td className="px-4 py-3">
+                        <span className="text-gray-300 text-sm">Sem categoria</span>
+                      </td>
                       <td className="px-4 py-3 text-gray-600">{lead.email ?? '—'}</td>
                       <td className="px-4 py-3 text-gray-600">{lead.city ?? '—'}</td>
                       <td className="px-4 py-3">

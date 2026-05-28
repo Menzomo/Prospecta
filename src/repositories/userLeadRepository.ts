@@ -12,6 +12,7 @@ export type UserLeadWithGlobalData = {
   phone: string | null
   city: string | null
   state: string | null
+  category_id: string | null
 }
 
 export async function getUserLeadsWithGlobalData(
@@ -20,7 +21,7 @@ export async function getUserLeadsWithGlobalData(
 ): Promise<UserLeadWithGlobalData[]> {
   const { data, error } = await supabase
     .from('user_leads')
-    .select('id, status, created_at, global_leads(company_name, email, website, phone, city, state)')
+    .select('id, status, created_at, global_leads(company_name, email, website, phone, city, state, category_id)')
     .eq('user_id', userId)
     .eq('hidden', false)
     .order('created_at', { ascending: false })
@@ -37,6 +38,7 @@ export async function getUserLeadsWithGlobalData(
         phone: string | null
         city: string | null
         state: string | null
+        category_id: string | null
       }
       return {
         id: row.id,
@@ -48,6 +50,7 @@ export async function getUserLeadsWithGlobalData(
         phone: g.phone,
         city: g.city,
         state: g.state,
+        category_id: g.category_id,
       }
     })
 }
