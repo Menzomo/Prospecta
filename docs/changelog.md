@@ -2,6 +2,21 @@
 
 ---
 
+## Maio 2026 — Ciclo MVP Principal (continuação)
+
+### Admin V2 — Dashboard por Nicho e Global Leads Filtrável
+
+Reorganização e expansão do painel admin para suportar gestão do banco global por nicho.
+
+- **Leads por Nicho:** nova seção com tabela de totais por categoria (total, email_found, website_only, manual_review, invalid) — categorias dinâmicas via `lead_categories`, agregação app-side em `getLeadStatsByCategory`
+- **Global Leads:** expandido de 20 para 50 leads, agora filtráveis por nicho e cidade via GET params (`?category=slug&city=texto`) — form submit sem JS, limpar filtros disponível
+- **Colunas adicionadas:** Nicho e Qualidade na tabela Global Leads
+- **Organização visual:** Overview geral → Resumo por Nicho → Leads sem Email → Global Leads — mesma separação em todas as larguras
+- **Correção checkbox busca:** `e.stopPropagation()` movido de `onChange` para `onClick` no checkbox — seleção individual agora funciona corretamente (toggle duplo corrigido)
+- **Correção owned leads:** filtro in-memory adicionado em `findAvailableGlobalLeadsForUser` como camada extra — leads já adicionados nunca aparecem na busca mesmo se o NOT IN do SQL falhar silenciosamente
+
+---
+
 ## Maio 2026 — Ciclo MVP Principal
 
 ### Banco Global de Leads

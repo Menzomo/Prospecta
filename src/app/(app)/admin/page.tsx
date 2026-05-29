@@ -5,15 +5,21 @@ import {
   getGlobalLeadsForAdmin,
   getCategoriesForAdmin,
   getUsersForAdmin,
+  getLeadStatsByCategory,
 } from '@/repositories/adminRepository'
 import { AdminGlobalLeads } from '@/features/admin/components/AdminGlobalLeads'
 import { AdminCategories } from '@/features/admin/components/AdminCategories'
 import { AdminUsers } from '@/features/admin/components/AdminUsers'
+import { AdminNichoOverview } from '@/features/admin/components/AdminNichoOverview'
 import { getManualReviewQueue, getLeadQualityOverview } from '@/repositories/leadQualityRepository'
 import { AdminManualReviewQueue } from '@/features/admin/components/AdminManualReviewQueue'
 import { AdminLeadQualityOverview } from '@/features/admin/components/AdminLeadQualityOverview'
 
-export default async function AdminPage() {
+type SearchParams = Promise<{ category?: string; city?: string }>
+
+export default async function AdminPage({ searchParams }: { searchParams: SearchParams }) {
+  const { category: categoryFilter = '', city: cityFilter = '' } = await searchParams
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -29,12 +35,22 @@ export default async function AdminPage() {
 
   if (profile?.role !== 'admin') redirect('/dashboard')
 
-  const [leads, categories, users, reviewQueue, overview] = await Promise.all([
-    getGlobalLeadsForAdmin(supabase),
-    getCategoriesForAdmin(supabase),
+  // Load categories first to resolve slug → id for filtering
+  const categories = await getCategoriesForAdmin(supabase)
+  const categoryBySlug = new Map(categories.map((c) => [c.slug, c]))
+  const activeCategoryId = categoryFilter
+    ? (categoryBySlug.get(categoryFilter)?.id ?? undefined)
+    : undefined
+
+  const [leads, users, reviewQueue, overview, nichoStats] = await Promise.all([
+    getGlobalLeadsForAdmin(supabase, {
+      categoryId: activeCategoryId,
+      city: cityFilter || undefined,
+    }),
     getUsersForAdmin(supabase),
     getManualReviewQueue(supabase),
     getLeadQualityOverview(supabase),
+    getLeadStatsByCategory(supabase),
   ])
 
   return (
@@ -53,9 +69,23 @@ export default async function AdminPage() {
 
       <main className="flex-1 p-6">
         <div className="mx-auto max-w-6xl flex flex-col gap-10">
+          {/* Overview geral */}
           <AdminLeadQualityOverview overview={overview} />
+
+          {/* Resumo por nicho */}
+          <AdminNichoOverview stats={nichoStats} categories={categories} />
+
+          {/* Leads sem Email */}
           <AdminManualReviewQueue leads={reviewQueue} />
-          <AdminGlobalLeads leads={leads} />
+
+          {/* Global Leads com filtros */}
+          <AdminGlobalLeads
+            leads={leads}
+            categories={categories}
+            categoryFilter={categoryFilter}
+            cityFilter={cityFilter}
+          />
+
           <AdminCategories categories={categories} />
           <AdminUsers users={users} />
         </div>

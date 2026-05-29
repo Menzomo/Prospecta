@@ -25,8 +25,19 @@ export type AdminGlobalLead = {
   state: string | null
   email: string | null
   status: string
+  lead_quality_status: string
+  category_id: string | null
   confidence_score: number
   created_at: string
+}
+
+export type NichoStats = {
+  category_id: string | null
+  total: number
+  email_found: number
+  website_only: number
+  manual_review: number
+  invalid: number
 }
 
 export type AdminCategory = {
@@ -60,16 +71,59 @@ export async function getGlobalLeadByIdForAdmin(
 }
 
 export async function getGlobalLeadsForAdmin(
-  supabase: SupabaseClient<Database>
+  supabase: SupabaseClient<Database>,
+  filters?: { categoryId?: string; city?: string }
 ): Promise<AdminGlobalLead[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .from('global_leads')
-    .select('id, company_name, city, state, email, status, confidence_score, created_at')
+    .select('id, company_name, city, state, email, status, lead_quality_status, category_id, confidence_score, created_at')
     .order('created_at', { ascending: false })
-    .limit(20)
+    .limit(50)
 
+  if (filters?.categoryId) {
+    query = query.eq('category_id', filters.categoryId)
+  }
+  if (filters?.city) {
+    query = query.ilike('city', `%${filters.city}%`)
+  }
+
+  const { data, error } = await query
   if (error) return []
   return data ?? []
+}
+
+export async function getLeadStatsByCategory(
+  supabase: SupabaseClient<Database>
+): Promise<NichoStats[]> {
+  const { data, error } = await supabase
+    .from('global_leads')
+    .select('category_id, lead_quality_status')
+
+  if (error || !data) return []
+
+  const statsMap = new Map<string | null, NichoStats>()
+
+  for (const row of data) {
+    const key = row.category_id
+    if (!statsMap.has(key)) {
+      statsMap.set(key, {
+        category_id: key,
+        total: 0,
+        email_found: 0,
+        website_only: 0,
+        manual_review: 0,
+        invalid: 0,
+      })
+    }
+    const stats = statsMap.get(key)!
+    stats.total++
+    if (row.lead_quality_status === 'email_found') stats.email_found++
+    else if (row.lead_quality_status === 'website_only') stats.website_only++
+    else if (row.lead_quality_status === 'manual_review') stats.manual_review++
+    else if (row.lead_quality_status === 'invalid') stats.invalid++
+  }
+
+  return Array.from(statsMap.values()).sort((a, b) => b.total - a.total)
 }
 
 export async function getCategoriesForAdmin(

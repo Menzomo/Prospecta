@@ -105,10 +105,15 @@ export async function findAvailableGlobalLeadsForUser(
   let excludeIds: string[] = []
 
   if (!skipExcludeOwned) {
-    const { data: existingLinks } = await supabase
+    const { data: existingLinks, error: linksError } = await supabase
       .from('user_leads')
       .select('global_lead_id')
       .eq('user_id', userId)
+
+    if (linksError) {
+      console.error('[globalLeadRepository.findAvailableGlobalLeadsForUser] Failed to fetch owned leads:', linksError.message)
+    }
+
     excludeIds = (existingLinks ?? []).map((l) => l.global_lead_id)
   }
 
@@ -136,7 +141,15 @@ export async function findAvailableGlobalLeadsForUser(
     return []
   }
 
-  return data ?? []
+  const results = data ?? []
+
+  // Belt-and-suspenders: filter in memory so owned leads never leak through
+  if (!skipExcludeOwned && excludeIds.length > 0) {
+    const excludeSet = new Set(excludeIds)
+    return results.filter((lead) => !excludeSet.has(lead.id))
+  }
+
+  return results
 }
 
 export async function updateGlobalLeadEmailAndPromote(

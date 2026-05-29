@@ -36,10 +36,8 @@ export function SearchResults({ leads, selectedIds, onToggle, disabled = false }
                 <input
                   type="checkbox"
                   checked={isSelected}
-                  onChange={(e) => {
-                    e.stopPropagation()
-                    if (!disabled) onToggle(lead.id)
-                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={() => { if (!disabled) onToggle(lead.id) }}
                   className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   disabled={disabled}
                 />

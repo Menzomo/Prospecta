@@ -225,9 +225,12 @@ Comportamento:
 
 ### Painel Admin — /admin
 
+Suporta filtros via GET params (`category` slug, `city` texto). Form submit sem JS necessário.
+
 - **Lead Quality Overview:** 4 cards — Email Found / Website Only / Manual Review / Invalid (contagens de `global_leads`)
+- **Leads por Nicho:** tabela com total, email_found, website_only, manual_review, invalid por categoria — categorias dinâmicas do banco, sem hardcode
 - **Leads sem Email:** tabela dos 50 leads mais recentes com `lead_quality_status = manual_review` OR `website_only` — com link "Adicionar email" para cada lead
-- **Global Leads:** últimos 20 leads do banco global (empresa, cidade, estado, email, status, score)
+- **Global Leads:** até 50 leads filtráveis por nicho e cidade (empresa, nicho, cidade, UF, email, qualidade, status) — filtros via form GET, limpar filtros disponível
 - **Categorias:** todas as categorias cadastradas (nome, slug, search_terms)
 - **Usuários:** últimos 20 usuários cadastrados (email, role, data)
 - Botão "Importar Leads" → `/admin/import`
