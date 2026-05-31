@@ -94,6 +94,8 @@ export async function POST(request: Request) {
     onlyPlacesWithWebsite: true,
   }
 
+  console.log('[test-apify] payload:', JSON.stringify(apifyInput))
+
   let rawItems: ApifyRawItem[]
   let runId: string | null = null
 
@@ -152,10 +154,24 @@ export async function POST(request: Request) {
   const executionTimeMs = Date.now() - startedAt
   console.log(`[test-apify] items returned: ${results.length}, execution time: ${executionTimeMs}ms`)
 
+  const firstItem = rawItems[0] as Record<string, unknown> | undefined
+  const rawDebug = firstItem
+    ? {
+        raw_keys: Object.keys(firstItem),
+        raw_email_related_fields: Object.fromEntries(
+          Object.entries(firstItem).filter(([k]) =>
+            /email|mail|contact/i.test(k)
+          )
+        ),
+        raw_sample: firstItem,
+      }
+    : null
+
   return NextResponse.json({
     run_id: runId,
     execution_time_ms: executionTimeMs,
     results_count: results.length,
     results,
+    raw_debug: rawDebug,
   })
 }
