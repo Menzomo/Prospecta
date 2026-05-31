@@ -9,7 +9,7 @@ const bodySchema = z.object({
   cidade: z.string().min(1),
 })
 
-const APIFY_ACTOR_ID = 'nwu9Gu5YrADL7ZDj'
+const APIFY_ACTOR_ID = 'compass~google-maps-extractor'
 const RESULT_LIMIT = 5
 
 type ApifyRawItem = {
