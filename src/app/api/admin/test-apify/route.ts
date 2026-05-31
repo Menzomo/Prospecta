@@ -12,7 +12,7 @@ const bodySchema = z.object({
 const APIFY_ACTOR_ID = 'compass~google-maps-extractor'
 const RESULT_LIMIT = 5
 const POLL_INTERVAL_MS = 5_000
-const POLL_TIMEOUT_MS = 80_000
+const POLL_TIMEOUT_MS = 82_000
 
 type TestApifyResult = {
   company_name: string
@@ -54,6 +54,8 @@ export async function POST(request: Request) {
     maxCrawledPlacesPerSearch: RESULT_LIMIT,
     language: 'pt-BR',
     scrapeContacts: true,
+    maximumLeadsEnrichmentRecords: 0,
+    verifyLeadsEnrichmentEmails: false,
     website: 'withWebsite',
     searchMatching: 'all',
     includeWebResults: false,
@@ -82,7 +84,7 @@ export async function POST(request: Request) {
   let defaultDatasetId: string
   try {
     const startRes = await fetch(
-      `https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/runs?token=${token}&memory=256`,
+      `https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/runs?token=${token}&memory=512`,
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(apifyInput) }
     )
     if (!startRes.ok) {
