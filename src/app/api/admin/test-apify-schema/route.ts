@@ -3,14 +3,6 @@ import { createClient } from '@/lib/supabase/server'
 
 const APIFY_ACTOR_ID = 'compass~google-maps-extractor'
 
-type SchemaProperty = {
-  title?: string
-  description?: string
-  type?: string
-  default?: unknown
-  enum?: unknown[]
-}
-
 export async function GET() {
   const supabase = await createClient()
 
@@ -55,51 +47,25 @@ export async function GET() {
   }
 
   const data = actorData.data as Record<string, unknown> | undefined
-  const rawSchema = data?.inputSchema ?? actorData.inputSchema
+  const exampleRunInput = data?.exampleRunInput as Record<string, unknown> | undefined
 
-  let schema: Record<string, unknown> | null = null
-  if (typeof rawSchema === 'string') {
-    try {
-      schema = JSON.parse(rawSchema) as Record<string, unknown>
-    } catch {
-      return NextResponse.json({ error: 'Falha ao parsear inputSchema', raw: rawSchema }, { status: 500 })
-    }
-  } else if (typeof rawSchema === 'object' && rawSchema !== null) {
-    schema = rawSchema as Record<string, unknown>
-  }
-
-  if (!schema) {
+  if (!exampleRunInput) {
     return NextResponse.json({
-      error: 'inputSchema não encontrado na resposta do actor',
-      actor_keys: Object.keys(actorData),
+      error: 'exampleRunInput não encontrado',
       data_keys: data ? Object.keys(data) : [],
+      actor_keys: Object.keys(actorData),
     })
-  }
-
-  const properties = schema.properties as Record<string, SchemaProperty> | undefined
-
-  if (!properties) {
-    return NextResponse.json({ schema_full: schema })
   }
 
   const enrichmentKeywords = /email|mail|contact|enrich|scrape|crawl|website|extract/i
 
-  const enrichmentFields = Object.fromEntries(
-    Object.entries(properties).filter(([key, val]) =>
-      enrichmentKeywords.test(key) ||
-      enrichmentKeywords.test(val.title ?? '') ||
-      enrichmentKeywords.test(val.description ?? '')
-    )
+  const enrichmentRelated = Object.fromEntries(
+    Object.entries(exampleRunInput).filter(([key]) => enrichmentKeywords.test(key))
   )
 
   return NextResponse.json({
     actor_id: APIFY_ACTOR_ID,
-    all_fields: Object.fromEntries(
-      Object.entries(properties).map(([key, val]) => [
-        key,
-        { title: val.title, type: val.type, default: val.default, description: val.description },
-      ])
-    ),
-    enrichment_related_fields: enrichmentFields,
+    example_run_input: exampleRunInput,
+    enrichment_related_fields: enrichmentRelated,
   })
 }
