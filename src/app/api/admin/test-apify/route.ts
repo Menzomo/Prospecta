@@ -9,7 +9,7 @@ const bodySchema = z.object({
   cidade: z.string().min(1),
 })
 
-const APIFY_ACTOR_ID = 'compass~google-maps-scraper'
+const APIFY_ACTOR_ID = 'bussola~google-maps-data-extractor'
 const RESULT_LIMIT = 5
 
 type ApifyRawItem = {
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json(
-      { error: 'Dados inválidos', details: parsed.error.flatten() },
+      { error: 'Dados inválidos', details: z.flattenError(parsed.error) },
       { status: 400 }
     )
   }
