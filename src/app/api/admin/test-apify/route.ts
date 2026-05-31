@@ -9,10 +9,8 @@ const bodySchema = z.object({
   cidade: z.string().min(1),
 })
 
-const APIFY_ACTOR_ID = 'compass~google-maps-extractor'
+const APIFY_ACTOR_ID = 'compass~crawler-google-places'
 const RESULT_LIMIT = 5
-const POLL_INTERVAL_MS = 5_000
-const POLL_TIMEOUT_MS = 82_000
 
 type TestApifyResult = {
   company_name: string
@@ -52,98 +50,49 @@ export async function POST(request: Request) {
     searchStringsArray: [categoria],
     locationQuery: cidade,
     maxCrawledPlacesPerSearch: RESULT_LIMIT,
+    language: 'pt-BR',
     scrapeContacts: true,
+    website: 'withWebsite',
   }
 
-  console.log(`[test-apify] actor: ${APIFY_ACTOR_ID}, categoria: "${categoria}", cidade: "${cidade}"`)
+  const syncUrl = `https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/run-sync-get-dataset-items?token=${token}&memory=512&timeout=80`
+  const syncUrlDebug = `https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/run-sync-get-dataset-items?memory=512&timeout=80`
 
-  // 1. Start run
-  let runId: string
-  let defaultDatasetId: string
-  try {
-    const startRes = await fetch(
-      `https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/runs?token=${token}&memory=512`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(apifyInput) }
-    )
-    if (!startRes.ok) {
-      const errText = await startRes.text()
-      return NextResponse.json({ error: `Run start falhou ${startRes.status}`, apify_body: errText.slice(0, 500) }, { status: 502 })
-    }
-    const startData = await startRes.json() as { data?: { id?: string; defaultDatasetId?: string } }
-    runId = startData.data?.id ?? ''
-    defaultDatasetId = startData.data?.defaultDatasetId ?? ''
-    if (!runId) return NextResponse.json({ error: 'Apify não retornou run id' }, { status: 502 })
-    console.log(`[test-apify] run id: ${runId}, dataset id: ${defaultDatasetId}`)
-  } catch (err) {
-    return NextResponse.json({ error: 'Falha ao iniciar run', detail: String(err) }, { status: 502 })
-  }
+  console.log(`[test-apify] actor: ${APIFY_ACTOR_ID}`)
+  console.log(`[test-apify] url (sem token): ${syncUrlDebug}`)
+  console.log(`[test-apify] categoria: "${categoria}", cidade: "${cidade}"`)
 
-  // 2. Poll until SUCCEEDED — capture full run details on last poll
-  let runStatus = 'RUNNING'
-  let apifyRunDurationMs: number | null = null
-  let defaultKeyValueStoreId = ''
-  const pollDeadline = Date.now() + POLL_TIMEOUT_MS
-
-  while (Date.now() < pollDeadline && (runStatus === 'RUNNING' || runStatus === 'READY')) {
-    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
-    try {
-      const pollRes = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${token}`)
-      const pollData = await pollRes.json() as {
-        data?: {
-          status?: string
-          defaultDatasetId?: string
-          defaultKeyValueStoreId?: string
-          stats?: { durationMillis?: number }
-        }
-      }
-      runStatus = pollData.data?.status ?? 'UNKNOWN'
-      if (pollData.data?.defaultDatasetId) defaultDatasetId = pollData.data.defaultDatasetId
-      if (pollData.data?.defaultKeyValueStoreId) defaultKeyValueStoreId = pollData.data.defaultKeyValueStoreId
-      if (pollData.data?.stats?.durationMillis) apifyRunDurationMs = pollData.data.stats.durationMillis
-      console.log(`[test-apify] run status: ${runStatus}, apify duration: ${apifyRunDurationMs}ms`)
-    } catch {
-      break
-    }
-  }
-
-  if (runStatus !== 'SUCCEEDED') {
-    return NextResponse.json({
-      error: `Run não concluído. Status: ${runStatus}`,
-      run_id: runId,
-      execution_time_ms: Date.now() - startedAt,
-    }, { status: 502 })
-  }
-
-  // 3. Fetch INPUT stored by Apify to confirm what the actor received
-  let actualInputReceived: unknown = null
-  if (defaultKeyValueStoreId) {
-    try {
-      const inputRes = await fetch(
-        `https://api.apify.com/v2/key-value-stores/${defaultKeyValueStoreId}/records/INPUT?token=${token}`
-      )
-      if (inputRes.ok) actualInputReceived = await inputRes.json()
-    } catch { /* non-critical */ }
-  }
-
-  // 4. Fetch dataset items (no clean=true to avoid stripping any fields)
   let rawItems: Record<string, unknown>[]
+  let runId: string | null = null
+
   try {
-    const itemsRes = await fetch(
-      `https://api.apify.com/v2/datasets/${defaultDatasetId}/items?token=${token}&limit=${RESULT_LIMIT}`
-    )
-    if (!itemsRes.ok) {
-      const errText = await itemsRes.text()
-      return NextResponse.json({ error: `Dataset fetch falhou ${itemsRes.status}`, body: errText.slice(0, 300) }, { status: 502 })
+    const res = await fetch(syncUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(apifyInput),
+      signal: AbortSignal.timeout(85_000),
+    })
+
+    runId = res.headers.get('X-Apify-Run-Id')
+    console.log(`[test-apify] run id: ${runId ?? 'unknown'}`)
+
+    if (!res.ok) {
+      const errText = await res.text()
+      console.error(`[test-apify] Apify error ${res.status}: ${errText.slice(0, 300)}`)
+      return NextResponse.json({
+        error: `Apify retornou erro ${res.status}`,
+        debug: { actor_id: APIFY_ACTOR_ID, url: syncUrlDebug, apify_body: errText.slice(0, 500) },
+      }, { status: 502 })
     }
-    rawItems = await itemsRes.json() as Record<string, unknown>[]
+
+    rawItems = await res.json() as Record<string, unknown>[]
   } catch (err) {
-    return NextResponse.json({ error: 'Falha ao buscar dataset', detail: String(err) }, { status: 502 })
+    return NextResponse.json({ error: 'Falha ao chamar Apify', detail: String(err) }, { status: 502 })
   }
 
   const executionTimeMs = Date.now() - startedAt
   console.log(`[test-apify] items: ${rawItems.length}, time: ${executionTimeMs}ms`)
 
-  // 4. Map simplified results
   const results: TestApifyResult[] = rawItems.map((item) => ({
     company_name: String(item.title ?? item.name ?? ''),
     email: (item.emails as string[] | undefined)?.[0] ?? (item.email as string | undefined) ?? null,
@@ -158,7 +107,6 @@ export async function POST(request: Request) {
     return Array.isArray(emails) && emails.length > 0
   }).length
 
-  // 5. Raw debug — full first item + all keys
   const firstItem = rawItems[0]
   const rawDebug = firstItem
     ? {
@@ -172,19 +120,11 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     run_id: runId,
-    dataset_id: defaultDatasetId,
-    apify_run_duration_ms: apifyRunDurationMs,
+    actor_id: APIFY_ACTOR_ID,
     execution_time_ms: executionTimeMs,
     results_count: rawItems.length,
     items_with_email: itemsWithEmail,
     results,
-    diagnostic: {
-      scrape_contacts_received_by_apify:
-        actualInputReceived !== null
-          ? (actualInputReceived as Record<string, unknown>).scrapeContacts
-          : 'não foi possível verificar',
-      actual_input_received: actualInputReceived,
-    },
     raw_debug: rawDebug,
   })
 }
