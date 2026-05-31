@@ -6,6 +6,7 @@ import {
   getCategoriesForAdmin,
   getUsersForAdmin,
   getLeadStatsByCategory,
+  getStockByCategory,
 } from '@/repositories/adminRepository'
 import { AdminGlobalLeads } from '@/features/admin/components/AdminGlobalLeads'
 import { AdminCategories } from '@/features/admin/components/AdminCategories'
@@ -14,6 +15,7 @@ import { AdminNichoOverview } from '@/features/admin/components/AdminNichoOvervi
 import { getManualReviewQueue, getLeadQualityOverview } from '@/repositories/leadQualityRepository'
 import { AdminManualReviewQueue } from '@/features/admin/components/AdminManualReviewQueue'
 import { AdminLeadQualityOverview } from '@/features/admin/components/AdminLeadQualityOverview'
+import { AdminStockOverview } from '@/features/admin/components/AdminStockOverview'
 
 type SearchParams = Promise<{ category?: string; city?: string }>
 
@@ -42,7 +44,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
     ? (categoryBySlug.get(categoryFilter)?.id ?? undefined)
     : undefined
 
-  const [leads, users, reviewQueue, overview, nichoStats] = await Promise.all([
+  const [leads, users, reviewQueue, overview, nichoStats, stock] = await Promise.all([
     getGlobalLeadsForAdmin(supabase, {
       categoryId: activeCategoryId,
       city: cityFilter || undefined,
@@ -51,6 +53,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
     getManualReviewQueue(supabase),
     getLeadQualityOverview(supabase),
     getLeadStatsByCategory(supabase),
+    getStockByCategory(supabase),
   ])
 
   return (
@@ -58,12 +61,20 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
       <header className="border-b border-gray-200 bg-white px-6 py-4">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-semibold text-gray-900">Admin — Prospecta</h1>
-          <Link
-            href="/admin/import"
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            Importar Leads
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/admin/import-apify"
+              className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+            >
+              Importar via Apify
+            </Link>
+            <Link
+              href="/admin/import"
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Import Manual
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -71,6 +82,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
         <div className="mx-auto max-w-6xl flex flex-col gap-10">
           {/* Overview geral */}
           <AdminLeadQualityOverview overview={overview} />
+
+          {/* Estoque por nicho */}
+          <AdminStockOverview stock={stock} categories={categories} />
 
           {/* Resumo por nicho */}
           <AdminNichoOverview stats={nichoStats} categories={categories} />

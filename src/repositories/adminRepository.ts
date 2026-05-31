@@ -138,6 +138,46 @@ export async function getCategoriesForAdmin(
   return data ?? []
 }
 
+export type NichoStockStats = {
+  category_id: string
+  total_stock: number
+  consumed: number
+  available: number
+}
+
+export async function getStockByCategory(
+  supabase: SupabaseClient<Database>
+): Promise<NichoStockStats[]> {
+  const { data: stockLeads } = await supabase
+    .from('global_leads')
+    .select('id, category_id')
+    .eq('status', 'active')
+    .eq('lead_quality_status', 'email_found')
+
+  if (!stockLeads || stockLeads.length === 0) return []
+
+  const { data: userLeadLinks } = await supabase
+    .from('user_leads')
+    .select('global_lead_id')
+
+  const consumedIds = new Set((userLeadLinks ?? []).map((ul) => ul.global_lead_id))
+
+  const map = new Map<string, NichoStockStats>()
+
+  for (const lead of stockLeads) {
+    if (!lead.category_id) continue
+    if (!map.has(lead.category_id)) {
+      map.set(lead.category_id, { category_id: lead.category_id, total_stock: 0, consumed: 0, available: 0 })
+    }
+    const stat = map.get(lead.category_id)!
+    stat.total_stock++
+    if (consumedIds.has(lead.id)) stat.consumed++
+    else stat.available++
+  }
+
+  return Array.from(map.values())
+}
+
 export async function getUsersForAdmin(
   supabase: SupabaseClient<Database>
 ): Promise<AdminUser[]> {
