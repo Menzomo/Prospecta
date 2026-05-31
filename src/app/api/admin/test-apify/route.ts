@@ -88,7 +88,7 @@ export async function POST(request: Request) {
   const apifyInput = {
     searchStringsArray: [searchQuery],
     maxCrawledPlacesPerSearch: RESULT_LIMIT,
-    language: 'pt',
+    language: 'pt-BR',
     countryCode: 'BR',
   }
 
