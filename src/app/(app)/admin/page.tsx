@@ -7,6 +7,7 @@ import {
   getUsersForAdmin,
   getLeadStatsByCategory,
   getStockByCategory,
+  getStockByUserAndCategory,
 } from '@/repositories/adminRepository'
 import { AdminGlobalLeads } from '@/features/admin/components/AdminGlobalLeads'
 import { AdminCategories } from '@/features/admin/components/AdminCategories'
@@ -16,6 +17,7 @@ import { getManualReviewQueue, getLeadQualityOverview } from '@/repositories/lea
 import { AdminManualReviewQueue } from '@/features/admin/components/AdminManualReviewQueue'
 import { AdminLeadQualityOverview } from '@/features/admin/components/AdminLeadQualityOverview'
 import { AdminStockOverview } from '@/features/admin/components/AdminStockOverview'
+import { AdminUserStockOverview } from '@/features/admin/components/AdminUserStockOverview'
 
 type SearchParams = Promise<{ category?: string; city?: string }>
 
@@ -44,7 +46,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
     ? (categoryBySlug.get(categoryFilter)?.id ?? undefined)
     : undefined
 
-  const [leads, users, reviewQueue, overview, nichoStats, stock] = await Promise.all([
+  const [leads, users, reviewQueue, overview, nichoStats, stock, userStock] = await Promise.all([
     getGlobalLeadsForAdmin(supabase, {
       categoryId: activeCategoryId,
       city: cityFilter || undefined,
@@ -54,6 +56,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
     getLeadQualityOverview(supabase),
     getLeadStatsByCategory(supabase),
     getStockByCategory(supabase),
+    getStockByUserAndCategory(supabase),
   ])
 
   return (
@@ -85,6 +88,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
 
           {/* Estoque por nicho */}
           <AdminStockOverview stock={stock} categories={categories} />
+
+          {/* Estoque por usuário e nicho */}
+          <AdminUserStockOverview stock={userStock} categories={categories} />
 
           {/* Resumo por nicho */}
           <AdminNichoOverview stats={nichoStats} categories={categories} />

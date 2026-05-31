@@ -17,10 +17,11 @@ type Status = 'idle' | 'loading' | 'done' | 'error'
 
 interface Props {
   categories: Category[]
+  initialCategoryId?: string
 }
 
-export function AdminImportApifyForm({ categories }: Props) {
-  const [categoryId, setCategoryId] = useState('')
+export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Props) {
+  const [categoryId, setCategoryId] = useState(initialCategoryId)
   const [city, setCity] = useState('')
   const [limit, setLimit] = useState(10)
   const [status, setStatus] = useState<Status>('idle')

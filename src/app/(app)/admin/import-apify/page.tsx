@@ -4,7 +4,11 @@ import { createClient } from '@/lib/supabase/server'
 import { listLeadCategories } from '@/repositories/leadCategoryRepository'
 import { AdminImportApifyForm } from '@/features/admin/components/AdminImportApifyForm'
 
-export default async function AdminImportApifyPage() {
+type SearchParams = Promise<{ categoryId?: string }>
+
+export default async function AdminImportApifyPage({ searchParams }: { searchParams: SearchParams }) {
+  const { categoryId } = await searchParams
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -34,6 +38,7 @@ export default async function AdminImportApifyPage() {
           </p>
           <AdminImportApifyForm
             categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+            initialCategoryId={categoryId ?? ''}
           />
         </div>
       </main>

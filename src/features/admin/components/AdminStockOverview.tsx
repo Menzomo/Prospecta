@@ -58,7 +58,7 @@ export function AdminStockOverview({ stock, categories }: Props) {
                     <td className="px-4 py-2.5 text-right">
                       {isLow && (
                         <Link
-                          href="/admin/import-apify"
+                          href={`/admin/import-apify?categoryId=${row.category_id}`}
                           className="rounded bg-yellow-500 px-2 py-1 text-xs font-medium text-white hover:bg-yellow-600"
                         >
                           Importar Mais

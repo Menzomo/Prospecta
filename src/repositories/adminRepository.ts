@@ -138,6 +138,79 @@ export async function getCategoriesForAdmin(
   return data ?? []
 }
 
+export type UserNichoStock = {
+  user_id: string
+  user_email: string
+  category_id: string
+  total_global: number
+  consumed: number
+  available: number
+}
+
+export async function getStockByUserAndCategory(
+  supabase: SupabaseClient<Database>
+): Promise<UserNichoStock[]> {
+  const { data: globalLeads } = await supabase
+    .from('global_leads')
+    .select('id, category_id')
+    .eq('status', 'active')
+    .eq('lead_quality_status', 'email_found')
+
+  if (!globalLeads || globalLeads.length === 0) return []
+
+  const leadCategoryMap = new Map(globalLeads.map((gl) => [gl.id, gl.category_id]))
+
+  const totalPerCategory = new Map<string, number>()
+  for (const gl of globalLeads) {
+    if (!gl.category_id) continue
+    totalPerCategory.set(gl.category_id, (totalPerCategory.get(gl.category_id) ?? 0) + 1)
+  }
+
+  const { data: userLeads } = await supabase
+    .from('user_leads')
+    .select('user_id, global_lead_id')
+
+  if (!userLeads || userLeads.length === 0) return []
+
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, email')
+
+  const userEmailMap = new Map((profiles ?? []).map((p) => [p.id, p.email ?? p.id]))
+
+  const consumedMap = new Map<string, number>()
+  for (const ul of userLeads) {
+    const catId = leadCategoryMap.get(ul.global_lead_id)
+    if (!catId) continue
+    const key = `${ul.user_id}:${catId}`
+    consumedMap.set(key, (consumedMap.get(key) ?? 0) + 1)
+  }
+
+  const seen = new Set<string>()
+  const results: UserNichoStock[] = []
+
+  for (const ul of userLeads) {
+    const catId = leadCategoryMap.get(ul.global_lead_id)
+    if (!catId) continue
+    const key = `${ul.user_id}:${catId}`
+    if (seen.has(key)) continue
+    seen.add(key)
+
+    const consumed = consumedMap.get(key) ?? 0
+    const total = totalPerCategory.get(catId) ?? 0
+    results.push({
+      user_id: ul.user_id,
+      user_email: userEmailMap.get(ul.user_id) ?? ul.user_id,
+      category_id: catId,
+      total_global: total,
+      consumed,
+      available: Math.max(0, total - consumed),
+    })
+  }
+
+  return results.sort((a, b) => a.available - b.available)
+}
+
 export type NichoStockStats = {
   category_id: string
   total_stock: number
