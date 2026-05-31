@@ -100,18 +100,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Falha ao iniciar run', detail: String(err) }, { status: 502 })
   }
 
-  // 2. Poll until SUCCEEDED
+  // 2. Poll until SUCCEEDED — capture full run details on last poll
   let runStatus = 'RUNNING'
+  let apifyRunDurationMs: number | null = null
+  let defaultKeyValueStoreId = ''
   const pollDeadline = Date.now() + POLL_TIMEOUT_MS
 
   while (Date.now() < pollDeadline && (runStatus === 'RUNNING' || runStatus === 'READY')) {
     await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
     try {
-      const pollRes = await fetch(`https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/runs/${runId}?token=${token}`)
-      const pollData = await pollRes.json() as { data?: { status?: string; defaultDatasetId?: string } }
+      const pollRes = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${token}`)
+      const pollData = await pollRes.json() as {
+        data?: {
+          status?: string
+          defaultDatasetId?: string
+          defaultKeyValueStoreId?: string
+          stats?: { durationMillis?: number }
+        }
+      }
       runStatus = pollData.data?.status ?? 'UNKNOWN'
       if (pollData.data?.defaultDatasetId) defaultDatasetId = pollData.data.defaultDatasetId
-      console.log(`[test-apify] run status: ${runStatus}`)
+      if (pollData.data?.defaultKeyValueStoreId) defaultKeyValueStoreId = pollData.data.defaultKeyValueStoreId
+      if (pollData.data?.stats?.durationMillis) apifyRunDurationMs = pollData.data.stats.durationMillis
+      console.log(`[test-apify] run status: ${runStatus}, apify duration: ${apifyRunDurationMs}ms`)
     } catch {
       break
     }
@@ -125,11 +136,22 @@ export async function POST(request: Request) {
     }, { status: 502 })
   }
 
-  // 3. Fetch all items from defaultDataset
+  // 3. Fetch INPUT stored by Apify to confirm what the actor received
+  let actualInputReceived: unknown = null
+  if (defaultKeyValueStoreId) {
+    try {
+      const inputRes = await fetch(
+        `https://api.apify.com/v2/key-value-stores/${defaultKeyValueStoreId}/records/INPUT?token=${token}`
+      )
+      if (inputRes.ok) actualInputReceived = await inputRes.json()
+    } catch { /* non-critical */ }
+  }
+
+  // 4. Fetch dataset items (no clean=true to avoid stripping any fields)
   let rawItems: Record<string, unknown>[]
   try {
     const itemsRes = await fetch(
-      `https://api.apify.com/v2/datasets/${defaultDatasetId}/items?token=${token}&limit=${RESULT_LIMIT}&clean=true`
+      `https://api.apify.com/v2/datasets/${defaultDatasetId}/items?token=${token}&limit=${RESULT_LIMIT}`
     )
     if (!itemsRes.ok) {
       const errText = await itemsRes.text()
@@ -173,10 +195,18 @@ export async function POST(request: Request) {
   return NextResponse.json({
     run_id: runId,
     dataset_id: defaultDatasetId,
+    apify_run_duration_ms: apifyRunDurationMs,
     execution_time_ms: executionTimeMs,
     results_count: rawItems.length,
     items_with_email: itemsWithEmail,
     results,
+    diagnostic: {
+      scrape_contacts_received_by_apify:
+        actualInputReceived !== null
+          ? (actualInputReceived as Record<string, unknown>).scrapeContacts
+          : 'não foi possível verificar',
+      actual_input_received: actualInputReceived,
+    },
     raw_debug: rawDebug,
   })
 }
