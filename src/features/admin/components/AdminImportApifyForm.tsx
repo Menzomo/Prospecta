@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { CityAutocomplete } from '@/components/CityAutocomplete'
 
 type Category = { id: string; name: string }
 
@@ -22,6 +23,7 @@ interface Props {
 
 export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Props) {
   const [categoryId, setCategoryId] = useState(initialCategoryId)
+  const [cityInput, setCityInput] = useState('')
   const [city, setCity] = useState('')
   const [limit, setLimit] = useState(200)
   const [status, setStatus] = useState<Status>('idle')
@@ -31,7 +33,7 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
   const selectedCategory = categories.find((c) => c.id === categoryId)
 
   function handleClickImport() {
-    if (!categoryId || !city.trim()) return
+    if (!categoryId || !city) return
     setStatus('confirming')
   }
 
@@ -67,7 +69,7 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
     }
   }
 
-  const canProceed = !!categoryId && !!city.trim() && status === 'idle'
+  const canProceed = !!categoryId && !!city && status === 'idle'
 
   return (
     <div className="flex flex-col gap-6">
@@ -92,13 +94,20 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
 
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-gray-600">Cidade</label>
-            <input
-              type="text"
-              value={city}
-              onChange={(e) => { setCity(e.target.value); setStatus('idle') }}
+            <CityAutocomplete
+              value={cityInput}
+              onSelect={(_name, stateCode, display) => {
+                setCityInput(display)
+                setCity(display)
+                setStatus('idle')
+              }}
+              onClear={() => {
+                setCityInput('')
+                setCity('')
+                setStatus('idle')
+              }}
+              placeholder="Digite para buscar..."
               disabled={status === 'loading' || status === 'confirming'}
-              placeholder="Ex: Caxias do Sul, RS"
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
             />
           </div>
 

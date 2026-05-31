@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { SearchResults } from './SearchResults'
+import { CityAutocomplete } from '@/components/CityAutocomplete'
 import type { LeadPreviewItem, SearchPreviewResponse, ConfirmLeadsResponse } from '../types'
 
 type Category = { id: string; name: string }
-type CityResult = { name: string; state_code: string }
 
 interface SearchFormProps {
   categories: Category[]
@@ -16,9 +16,6 @@ export function SearchForm({ categories }: SearchFormProps) {
   const [cityInput, setCityInput] = useState('')
   const [selectedCity, setSelectedCity] = useState('')
   const [selectedState, setSelectedState] = useState('')
-  const [suggestions, setSuggestions] = useState<CityResult[]>([])
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const [searching, setSearching] = useState(false)
 
   const [loading, setLoading] = useState(false)
   const [confirming, setConfirming] = useState(false)
@@ -29,46 +26,6 @@ export function SearchForm({ categories }: SearchFormProps) {
   const [confirmResult, setConfirmResult] = useState<ConfirmLeadsResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [searchMessage, setSearchMessage] = useState<string | null>(null)
-
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  function handleCityInput(value: string) {
-    setCityInput(value)
-    setSelectedCity('')
-    setSelectedState('')
-    setSuggestions([])
-
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-
-    if (value.length < 2) {
-      setShowSuggestions(false)
-      return
-    }
-
-    debounceRef.current = setTimeout(async () => {
-      setSearching(true)
-      try {
-        const res = await fetch(`/api/cities?q=${encodeURIComponent(value)}`)
-        if (res.ok) {
-          const data = await res.json()
-          setSuggestions(data.cities ?? [])
-          setShowSuggestions(true)
-        }
-      } catch {
-        // silent — autocomplete is best-effort
-      } finally {
-        setSearching(false)
-      }
-    }, 250)
-  }
-
-  function selectCity(city: CityResult) {
-    setCityInput(`${city.name}, ${city.state_code}`)
-    setSelectedCity(city.name)
-    setSelectedState(city.state_code)
-    setSuggestions([])
-    setShowSuggestions(false)
-  }
 
   function toggleLead(id: string) {
     setSelectedIds((prev) => {
@@ -190,38 +147,22 @@ export function SearchForm({ categories }: SearchFormProps) {
           <label className="text-sm font-medium text-gray-700">
             Cidade <span className="text-red-500">*</span>
           </label>
-          <div className="relative">
-            <input
-              type="text"
-              value={cityInput}
-              onChange={(e) => handleCityInput(e.target.value)}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-              placeholder="Digite para buscar a cidade..."
-              autoComplete="off"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-            {searching && (
-              <span className="absolute right-3 top-2 text-xs text-gray-400">Buscando...</span>
-            )}
-            {showSuggestions && suggestions.length > 0 && (
-              <ul className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-md">
-                {suggestions.map((city) => (
-                  <li
-                    key={`${city.name}-${city.state_code}`}
-                    onMouseDown={() => selectCity(city)}
-                    className="cursor-pointer px-3 py-2 text-sm text-gray-700 hover:bg-blue-50 first:rounded-t-lg last:rounded-b-lg"
-                  >
-                    {city.name}, {city.state_code}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          {cityInput.length >= 2 && !selectedCity && !searching && suggestions.length === 0 && (
-            <p className="text-xs text-gray-400">Nenhuma cidade encontrada. Tente outro termo.</p>
-          )}
-          {cityInput.length >= 2 && !selectedCity && !searching && suggestions.length > 0 && (
+          <CityAutocomplete
+            value={cityInput}
+            onSelect={(name, stateCode, display) => {
+              setCityInput(display)
+              setSelectedCity(name)
+              setSelectedState(stateCode)
+            }}
+            onClear={() => {
+              setCityInput('')
+              setSelectedCity('')
+              setSelectedState('')
+            }}
+            placeholder="Digite para buscar a cidade..."
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          />
+          {cityInput.length >= 2 && !selectedCity && (
             <p className="text-xs text-gray-400">Selecione uma cidade da lista</p>
           )}
         </div>
