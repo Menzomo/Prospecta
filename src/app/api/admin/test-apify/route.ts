@@ -11,7 +11,7 @@ const bodySchema = z.object({
 
 const APIFY_ACTOR_ID = 'compass~google-maps-extractor'
 const RESULT_LIMIT = 5
-const POLL_INTERVAL_MS = 4_000
+const POLL_INTERVAL_MS = 5_000
 const POLL_TIMEOUT_MS = 80_000
 
 type TestApifyResult = {
@@ -21,28 +21,6 @@ type TestApifyResult = {
   phone: string | null
   city: string | null
   state: string | null
-}
-
-// Recursively find all values where the key matches a pattern
-function deepFindByKey(
-  obj: unknown,
-  pattern: RegExp,
-  found: Record<string, unknown> = {},
-  path = ''
-): Record<string, unknown> {
-  if (obj === null || typeof obj !== 'object') return found
-  for (const [key, val] of Object.entries(obj as Record<string, unknown>)) {
-    const fullKey = path ? `${path}.${key}` : key
-    if (pattern.test(key)) found[fullKey] = val
-    deepFindByKey(val, pattern, found, fullKey)
-  }
-  return found
-}
-
-async function apifyGet(path: string, token: string): Promise<unknown> {
-  const res = await fetch(`https://api.apify.com/v2/${path}?token=${token}`)
-  if (!res.ok) return null
-  return res.json()
 }
 
 export async function POST(request: Request) {
@@ -79,13 +57,11 @@ export async function POST(request: Request) {
     website: 'withWebsite',
     searchMatching: 'all',
     includeWebResults: false,
-    maximumLeadsEnrichmentRecords: 0,
-    verifyLeadsEnrichmentEmails: false,
     scrapeDirectories: false,
     scrapeImageAuthors: false,
     scrapeOrderOnline: false,
     scrapePlaceDetailPage: false,
-    scrapeReviewsPersonalData: true,
+    scrapeReviewsPersonalData: false,
     scrapeSocialMediaProfiles: { facebooks: false, instagrams: false, tiktoks: false, twitters: false, youtubes: false },
     scrapeTableReservationProvider: false,
     skipClosedPlaces: false,
@@ -100,10 +76,10 @@ export async function POST(request: Request) {
   }
 
   console.log(`[test-apify] actor: ${APIFY_ACTOR_ID}, categoria: "${categoria}", cidade: "${cidade}"`)
-  console.log('[test-apify] payload:', JSON.stringify(apifyInput))
 
-  // --- 1. Start async run ---
+  // 1. Start run
   let runId: string
+  let defaultDatasetId: string
   try {
     const startRes = await fetch(
       `https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/runs?token=${token}&memory=256`,
@@ -111,97 +87,94 @@ export async function POST(request: Request) {
     )
     if (!startRes.ok) {
       const errText = await startRes.text()
-      return NextResponse.json({
-        error: `Apify run start falhou ${startRes.status}`,
-        apify_body: errText.slice(0, 500),
-      }, { status: 502 })
+      return NextResponse.json({ error: `Run start falhou ${startRes.status}`, apify_body: errText.slice(0, 500) }, { status: 502 })
     }
-    const startData = await startRes.json() as { data?: { id?: string } }
+    const startData = await startRes.json() as { data?: { id?: string; defaultDatasetId?: string } }
     runId = startData.data?.id ?? ''
+    defaultDatasetId = startData.data?.defaultDatasetId ?? ''
     if (!runId) return NextResponse.json({ error: 'Apify não retornou run id' }, { status: 502 })
-    console.log(`[test-apify] run started: ${runId}`)
+    console.log(`[test-apify] run id: ${runId}, dataset id: ${defaultDatasetId}`)
   } catch (err) {
-    return NextResponse.json({ error: 'Falha ao iniciar run Apify', detail: String(err) }, { status: 502 })
+    return NextResponse.json({ error: 'Falha ao iniciar run', detail: String(err) }, { status: 502 })
   }
 
-  // --- 2. Poll until SUCCEEDED or timeout ---
+  // 2. Poll until SUCCEEDED
   let runStatus = 'RUNNING'
-  let defaultDatasetId = ''
   const pollDeadline = Date.now() + POLL_TIMEOUT_MS
 
-  while (Date.now() < pollDeadline && runStatus === 'RUNNING') {
+  while (Date.now() < pollDeadline && (runStatus === 'RUNNING' || runStatus === 'READY')) {
     await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
-    const runData = await apifyGet(`acts/${APIFY_ACTOR_ID}/runs/${runId}`, token) as { data?: { status?: string; defaultDatasetId?: string } } | null
-    runStatus = runData?.data?.status ?? 'UNKNOWN'
-    defaultDatasetId = runData?.data?.defaultDatasetId ?? ''
-    console.log(`[test-apify] run status: ${runStatus}`)
+    try {
+      const pollRes = await fetch(`https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/runs/${runId}?token=${token}`)
+      const pollData = await pollRes.json() as { data?: { status?: string; defaultDatasetId?: string } }
+      runStatus = pollData.data?.status ?? 'UNKNOWN'
+      if (pollData.data?.defaultDatasetId) defaultDatasetId = pollData.data.defaultDatasetId
+      console.log(`[test-apify] run status: ${runStatus}`)
+    } catch {
+      break
+    }
   }
 
   if (runStatus !== 'SUCCEEDED') {
     return NextResponse.json({
-      error: `Run não concluído a tempo. Status: ${runStatus}`,
+      error: `Run não concluído. Status: ${runStatus}`,
       run_id: runId,
       execution_time_ms: Date.now() - startedAt,
     }, { status: 502 })
   }
 
-  // --- 3. Discover all datasets for this run ---
-  const datasetsResp = await apifyGet(`actor-runs/${runId}/datasets`, token) as { data?: { items?: Array<{ id: string; name?: string }> } } | null
-  const extraDatasets = datasetsResp?.data?.items ?? []
-
-  console.log(`[test-apify] defaultDatasetId: ${defaultDatasetId}, extra datasets: ${extraDatasets.length}`)
-
-  // --- 4. Fetch items from default dataset ---
-  const mainItemsResp = await apifyGet(`datasets/${defaultDatasetId}/items?limit=${RESULT_LIMIT}`, token) as unknown[] | null
-  const mainItems = Array.isArray(mainItemsResp) ? mainItemsResp : []
-
-  // --- 5. Fetch items from extra named datasets ---
-  const namedDatasets: Record<string, unknown[]> = {}
-  for (const ds of extraDatasets) {
-    if (ds.id === defaultDatasetId) continue
-    const items = await apifyGet(`datasets/${ds.id}/items?limit=10`, token) as unknown[] | null
-    if (Array.isArray(items) && items.length > 0) {
-      namedDatasets[ds.name ?? ds.id] = items
+  // 3. Fetch all items from defaultDataset
+  let rawItems: Record<string, unknown>[]
+  try {
+    const itemsRes = await fetch(
+      `https://api.apify.com/v2/datasets/${defaultDatasetId}/items?token=${token}&limit=${RESULT_LIMIT}&clean=true`
+    )
+    if (!itemsRes.ok) {
+      const errText = await itemsRes.text()
+      return NextResponse.json({ error: `Dataset fetch falhou ${itemsRes.status}`, body: errText.slice(0, 300) }, { status: 502 })
     }
+    rawItems = await itemsRes.json() as Record<string, unknown>[]
+  } catch (err) {
+    return NextResponse.json({ error: 'Falha ao buscar dataset', detail: String(err) }, { status: 502 })
   }
 
   const executionTimeMs = Date.now() - startedAt
-  console.log(`[test-apify] main items: ${mainItems.length}, named datasets: ${Object.keys(namedDatasets).length}, time: ${executionTimeMs}ms`)
+  console.log(`[test-apify] items: ${rawItems.length}, time: ${executionTimeMs}ms`)
 
-  // --- 6. Map simplified results ---
-  const EMAIL_PATTERN = /email|mail|contact|domain|leads/i
+  // 4. Map simplified results
+  const results: TestApifyResult[] = rawItems.map((item) => ({
+    company_name: String(item.title ?? item.name ?? ''),
+    email: (item.emails as string[] | undefined)?.[0] ?? (item.email as string | undefined) ?? null,
+    website: (item.website as string | undefined) ?? null,
+    phone: (item.phone as string | undefined) ?? null,
+    city: (item.city as string | undefined) ?? null,
+    state: (item.state as string | undefined) ?? null,
+  }))
 
-  const results: TestApifyResult[] = mainItems.map((item) => {
-    const it = item as Record<string, unknown>
-    const emailFields = deepFindByKey(it, /^emails?$/i)
-    const firstEmail = Object.values(emailFields).flatMap((v) => Array.isArray(v) ? v : [v]).find((v) => typeof v === 'string') as string | undefined
-    return {
-      company_name: (it.title ?? it.name ?? '') as string,
-      email: firstEmail ?? null,
-      website: (it.website ?? null) as string | null,
-      phone: (it.phone ?? null) as string | null,
-      city: (it.city ?? null) as string | null,
-      state: (it.state ?? null) as string | null,
-    }
-  })
+  const itemsWithEmail = rawItems.filter((it) => {
+    const emails = it.emails as string[] | undefined
+    return Array.isArray(emails) && emails.length > 0
+  }).length
 
-  // --- 7. Deep debug on first item ---
-  const firstItem = mainItems[0] as Record<string, unknown> | undefined
+  // 5. Raw debug — full first item + all keys
+  const firstItem = rawItems[0]
   const rawDebug = firstItem
     ? {
-        raw_keys: Object.keys(firstItem),
-        deep_email_fields: deepFindByKey(firstItem, EMAIL_PATTERN),
+        all_keys: Object.keys(firstItem),
+        email_related: Object.fromEntries(
+          Object.entries(firstItem).filter(([k]) => /email|mail|contact|domain|enrich/i.test(k))
+        ),
         raw_sample: firstItem,
       }
     : null
 
   return NextResponse.json({
     run_id: runId,
-    run_status: runStatus,
+    dataset_id: defaultDatasetId,
     execution_time_ms: executionTimeMs,
-    results_count: results.length,
+    results_count: rawItems.length,
+    items_with_email: itemsWithEmail,
     results,
-    named_datasets: Object.keys(namedDatasets).length > 0 ? namedDatasets : null,
     raw_debug: rawDebug,
   })
 }
