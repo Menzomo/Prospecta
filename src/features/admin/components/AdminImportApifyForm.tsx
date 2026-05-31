@@ -14,6 +14,15 @@ type ImportSummary = {
   manual_review: number
 }
 
+type ApifyErrorDetail = {
+  error?: string
+  apify_status?: number
+  apify_body?: string
+  payload_sent?: Record<string, unknown>
+  hint?: string
+  run_id?: string
+}
+
 type Status = 'idle' | 'confirming' | 'loading' | 'done' | 'error'
 
 interface Props {
@@ -24,10 +33,10 @@ interface Props {
 export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Props) {
   const [categoryId, setCategoryId] = useState(initialCategoryId)
   const [city, setCity] = useState('')
-  const [limit, setLimit] = useState(200)
+  const [limit, setLimit] = useState(20)
   const [status, setStatus] = useState<Status>('idle')
   const [summary, setSummary] = useState<ImportSummary | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [errorDetail, setErrorDetail] = useState<ApifyErrorDetail | null>(null)
 
   const selectedCategory = categories.find((c) => c.id === categoryId)
 
@@ -42,20 +51,20 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
 
   async function handleConfirm() {
     setStatus('loading')
-    setError(null)
+    setErrorDetail(null)
     setSummary(null)
 
     try {
       const res = await fetch('/api/admin/import-apify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categoryId, city: city.trim(), limit }),
+        body: JSON.stringify({ categoryId, city, limit }),
       })
 
-      const data = await res.json() as { summary?: ImportSummary; error?: string }
+      const data = await res.json() as ApifyErrorDetail & { summary?: ImportSummary }
 
       if (!res.ok) {
-        setError(data.error ?? 'Erro ao importar')
+        setErrorDetail(data)
         setStatus('error')
         return
       }
@@ -63,7 +72,7 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
       setSummary(data.summary ?? null)
       setStatus('done')
     } catch {
-      setError('Falha na requisição')
+      setErrorDetail({ error: 'Falha na requisição' })
       setStatus('error')
     }
   }
@@ -75,7 +84,7 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
       <div className="rounded-lg border border-gray-200 bg-white p-6">
         <h2 className="mb-4 text-sm font-semibold text-gray-700">Configurar importação</h2>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end flex-wrap">
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-gray-600">Nicho</label>
             <select
@@ -91,7 +100,7 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
             </select>
           </div>
 
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 min-w-[200px]">
             <label className="text-xs font-medium text-gray-600">Cidade</label>
             <CityAutocomplete
               onSelect={(_name, _stateCode, display) => {
@@ -108,15 +117,17 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Quantidade (máx. 200)</label>
+            <label className="text-xs font-medium text-gray-600">
+              Quantidade <span className="text-gray-400">(máx. 30)</span>
+            </label>
             <input
               type="number"
               min={5}
-              max={200}
+              max={30}
               value={limit}
-              onChange={(e) => setLimit(Math.min(200, Math.max(5, Number(e.target.value))))}
+              onChange={(e) => setLimit(Math.min(30, Math.max(5, Number(e.target.value))))}
               disabled={status === 'loading' || status === 'confirming'}
-              className="w-28 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+              className="w-24 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
             />
           </div>
 
@@ -131,16 +142,17 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
           )}
         </div>
 
+        <p className="mt-3 text-xs text-gray-400">
+          Importações acima de 30 leads requerem job assíncrono — em desenvolvimento.
+        </p>
+
         {status === 'confirming' && (
           <div className="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
-            <p className="text-sm font-medium text-yellow-800">
-              Confirmar importação via Apify
-            </p>
+            <p className="text-sm font-medium text-yellow-800">Confirmar importação via Apify</p>
             <p className="mt-1 text-sm text-yellow-700">
               Esta ação irá buscar até <strong>{limit} leads</strong> de{' '}
-              <strong>{selectedCategory?.name}</strong> em{' '}
-              <strong>{city}</strong> e pode consumir créditos da Apify.
-              Verifique o saldo antes de confirmar.
+              <strong>{selectedCategory?.name}</strong> em <strong>{city}</strong> e pode
+              consumir créditos da Apify. Verifique o saldo antes de confirmar.
             </p>
             <div className="mt-3 flex gap-2">
               <button
@@ -161,14 +173,36 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
 
         {status === 'loading' && (
           <p className="mt-3 text-xs text-gray-500">
-            Consultando Apify e inserindo leads — pode levar até 90 segundos para quantidades grandes...
+            Executando run na Apify e aguardando conclusão — pode levar até 90 segundos...
           </p>
         )}
       </div>
 
-      {status === 'error' && error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {error}
+      {status === 'error' && errorDetail && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 flex flex-col gap-2">
+          <p className="text-sm font-medium text-red-800">
+            {errorDetail.error ?? 'Erro ao importar'}
+          </p>
+          {errorDetail.hint && (
+            <p className="text-xs text-red-700">{errorDetail.hint}</p>
+          )}
+          {errorDetail.apify_status && (
+            <p className="text-xs text-red-600">Status Apify: {errorDetail.apify_status}</p>
+          )}
+          {errorDetail.apify_body && (
+            <details className="text-xs">
+              <summary className="cursor-pointer text-red-600 hover:underline">Ver resposta da Apify</summary>
+              <pre className="mt-1 overflow-x-auto rounded bg-red-100 p-2 text-red-800">{errorDetail.apify_body}</pre>
+            </details>
+          )}
+          {errorDetail.payload_sent && (
+            <details className="text-xs">
+              <summary className="cursor-pointer text-red-600 hover:underline">Ver payload enviado</summary>
+              <pre className="mt-1 overflow-x-auto rounded bg-red-100 p-2 text-red-800">
+                {JSON.stringify(errorDetail.payload_sent, null, 2)}
+              </pre>
+            </details>
+          )}
         </div>
       )}
 
