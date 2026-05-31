@@ -89,7 +89,7 @@ export async function POST(request: Request) {
     searchStringsArray: [searchQuery],
     maxCrawledPlacesPerSearch: RESULT_LIMIT,
     language: 'pt-BR',
-    countryCode: 'BR',
+    countryCode: 'br',
   }
 
   let rawItems: ApifyRawItem[]
