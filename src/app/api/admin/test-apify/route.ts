@@ -79,9 +79,11 @@ export async function POST(request: Request) {
   }
 
   const searchQuery = `${categoria} ${cidade}`
-  console.log(`[test-apify] actor ${APIFY_ACTOR_ID}, query: "${searchQuery}"`)
+  const apifyUrlDebug = `https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/run-sync-get-dataset-items?memory=128&timeout=80`
+  const apifyUrl = `${apifyUrlDebug}&token=${apifyToken}`
 
-  const apifyUrl = `https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/run-sync-get-dataset-items?token=${apifyToken}&memory=128&timeout=80`
+  console.log(`[test-apify] actor: ${APIFY_ACTOR_ID}, query: "${searchQuery}"`)
+  console.log(`[test-apify] url (sem token): ${apifyUrlDebug}`)
 
   const apifyInput = {
     searchStringsArray: [searchQuery],
@@ -106,9 +108,17 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error(`[test-apify] Apify error ${response.status}: ${errorText}`)
+      console.error(`[test-apify] Apify error ${response.status}: ${errorText.slice(0, 300)}`)
       return NextResponse.json(
-        { error: `Apify retornou erro ${response.status}` },
+        {
+          error: `Apify retornou erro ${response.status}`,
+          debug: {
+            actor_id: APIFY_ACTOR_ID,
+            apify_url: apifyUrlDebug,
+            apify_status: response.status,
+            apify_body: errorText.slice(0, 500),
+          },
+        },
         { status: 502 }
       )
     }
@@ -116,7 +126,16 @@ export async function POST(request: Request) {
     rawItems = (await response.json()) as ApifyRawItem[]
   } catch (error) {
     console.error('[test-apify] fetch error:', error)
-    return NextResponse.json({ error: 'Falha ao chamar Apify' }, { status: 502 })
+    return NextResponse.json(
+      {
+        error: 'Falha ao chamar Apify',
+        debug: {
+          actor_id: APIFY_ACTOR_ID,
+          apify_url: apifyUrlDebug,
+        },
+      },
+      { status: 502 }
+    )
   }
 
   const results: TestApifyResult[] = rawItems.slice(0, RESULT_LIMIT).map((item) => ({
