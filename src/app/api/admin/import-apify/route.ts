@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Dados inválidos', details: z.flattenError(parsed.error) }, { status: 400 })
   }
 
-  const { categoryId, city, limit } = parsed.data
+  const { categoryId, city: rawCity, limit } = parsed.data
 
   const category = await getLeadCategoryById(supabase, categoryId)
   if (!category) {
@@ -68,6 +68,17 @@ export async function POST(request: Request) {
 
   const token = process.env.APIFY_TOKEN
   if (!token) return NextResponse.json({ error: 'APIFY_TOKEN não configurado' }, { status: 500 })
+
+  // Normalize city: "caxias do sul,rs" → "Caxias do Sul, RS"
+  const city = rawCity
+    .trim()
+    .split(',')
+    .map((part, i) => {
+      const trimmed = part.trim()
+      if (i === 0) return trimmed.replace(/\b\w/g, (c) => c.toUpperCase())
+      return trimmed.toUpperCase()
+    })
+    .join(', ')
 
   const apifyInput = {
     searchStringsArray: [category.name],
@@ -78,17 +89,27 @@ export async function POST(request: Request) {
     website: 'withWebsite',
   }
 
+  const apifyUrlDebug = `https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/run-sync-get-dataset-items?memory=512&timeout=80`
+
   console.log(`[import-apify] categoria: ${category.name}, cidade: ${city}, limit: ${limit}`)
+  console.log(`[import-apify] payload: ${JSON.stringify(apifyInput)}`)
+  console.log(`[import-apify] url (sem token): ${apifyUrlDebug}`)
 
   let rawItems: ApifyItem[]
   try {
     const res = await fetch(
-      `https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/run-sync-get-dataset-items?token=${token}&memory=512&timeout=80`,
+      `${apifyUrlDebug}&token=${token}`,
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(apifyInput), signal: AbortSignal.timeout(85_000) }
     )
     if (!res.ok) {
       const errText = await res.text()
-      return NextResponse.json({ error: `Apify retornou ${res.status}`, detail: errText.slice(0, 300) }, { status: 502 })
+      console.error(`[import-apify] Apify error ${res.status}: ${errText.slice(0, 400)}`)
+      return NextResponse.json({
+        error: `Apify retornou ${res.status}`,
+        apify_status: res.status,
+        apify_body: errText.slice(0, 500),
+        payload_sent: apifyInput,
+      }, { status: 502 })
     }
     rawItems = await res.json() as ApifyItem[]
   } catch (err) {
