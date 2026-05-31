@@ -15,7 +15,7 @@ export const maxDuration = 90
 const bodySchema = z.object({
   categoryId: z.string().uuid(),
   city: z.string().min(1),
-  limit: z.number().int().min(5).max(30).default(10),
+  limit: z.number().int().min(5).max(200).default(200),
 })
 
 const APIFY_ACTOR_ID = 'compass~crawler-google-places'

@@ -3,8 +3,48 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { listLeadCategories } from '@/repositories/leadCategoryRepository'
 import { AdminImportApifyForm } from '@/features/admin/components/AdminImportApifyForm'
+import { AdminApifyUsageBox } from '@/features/admin/components/AdminApifyUsageBox'
 
 type SearchParams = Promise<{ categoryId?: string }>
+
+type ApifyUsage = {
+  available: boolean
+  username?: string | null
+  plan_id?: string | null
+  usage_pct?: number | null
+  reason?: string
+  consulted_at?: string
+}
+
+async function fetchApifyUsage(): Promise<ApifyUsage> {
+  const token = process.env.APIFY_TOKEN
+  if (!token) return { available: false, reason: 'APIFY_TOKEN não configurado' }
+
+  try {
+    const res = await fetch(`https://api.apify.com/v2/users/me?token=${token}`, {
+      signal: AbortSignal.timeout(8_000),
+      cache: 'no-store',
+    })
+    if (!res.ok) return { available: false, reason: `Apify retornou ${res.status}` }
+
+    const body = await res.json() as { data?: { username?: string; email?: string; plan?: { id?: string; usageLevel?: number } } }
+    const data = body.data
+    if (!data) return { available: false, reason: 'Resposta inesperada' }
+
+    const plan = data.plan
+    const usagePct = typeof plan?.usageLevel === 'number' ? Math.round(plan.usageLevel * 100) : null
+
+    return {
+      available: true,
+      username: data.username ?? null,
+      plan_id: plan?.id ?? null,
+      usage_pct: usagePct,
+      consulted_at: new Date().toISOString(),
+    }
+  } catch {
+    return { available: false, reason: 'Falha ao consultar Apify' }
+  }
+}
 
 export default async function AdminImportApifyPage({ searchParams }: { searchParams: SearchParams }) {
   const { categoryId } = await searchParams
@@ -17,7 +57,10 @@ export default async function AdminImportApifyPage({ searchParams }: { searchPar
     .from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'admin') redirect('/dashboard')
 
-  const categories = await listLeadCategories(supabase)
+  const [categories, usage] = await Promise.all([
+    listLeadCategories(supabase),
+    fetchApifyUsage(),
+  ])
 
   return (
     <>
@@ -32,10 +75,13 @@ export default async function AdminImportApifyPage({ searchParams }: { searchPar
       </header>
 
       <main className="flex-1 p-6">
-        <div className="mx-auto max-w-3xl">
-          <p className="mb-6 text-sm text-gray-500">
+        <div className="mx-auto flex max-w-3xl flex-col gap-6">
+          <AdminApifyUsageBox usage={usage} />
+
+          <p className="text-sm text-gray-500">
             Busca leads diretamente no Apify e insere no banco global com deduplicação automática.
           </p>
+
           <AdminImportApifyForm
             categories={categories.map((c) => ({ id: c.id, name: c.name }))}
             initialCategoryId={categoryId ?? ''}

@@ -13,7 +13,7 @@ type ImportSummary = {
   manual_review: number
 }
 
-type Status = 'idle' | 'loading' | 'done' | 'error'
+type Status = 'idle' | 'confirming' | 'loading' | 'done' | 'error'
 
 interface Props {
   categories: Category[]
@@ -23,13 +23,23 @@ interface Props {
 export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Props) {
   const [categoryId, setCategoryId] = useState(initialCategoryId)
   const [city, setCity] = useState('')
-  const [limit, setLimit] = useState(10)
+  const [limit, setLimit] = useState(200)
   const [status, setStatus] = useState<Status>('idle')
   const [summary, setSummary] = useState<ImportSummary | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  async function handleImport() {
+  const selectedCategory = categories.find((c) => c.id === categoryId)
+
+  function handleClickImport() {
     if (!categoryId || !city.trim()) return
+    setStatus('confirming')
+  }
+
+  function handleCancel() {
+    setStatus('idle')
+  }
+
+  async function handleConfirm() {
     setStatus('loading')
     setError(null)
     setSummary(null)
@@ -57,7 +67,7 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
     }
   }
 
-  const canImport = !!categoryId && !!city.trim() && status !== 'loading'
+  const canProceed = !!categoryId && !!city.trim() && status === 'idle'
 
   return (
     <div className="flex flex-col gap-6">
@@ -69,8 +79,9 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
             <label className="text-xs font-medium text-gray-600">Nicho</label>
             <select
               value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              onChange={(e) => { setCategoryId(e.target.value); setStatus('idle') }}
+              disabled={status === 'loading' || status === 'confirming'}
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
             >
               <option value="">Selecionar nicho...</option>
               {categories.map((c) => (
@@ -84,36 +95,68 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
             <input
               type="text"
               value={city}
-              onChange={(e) => setCity(e.target.value)}
+              onChange={(e) => { setCity(e.target.value); setStatus('idle') }}
+              disabled={status === 'loading' || status === 'confirming'}
               placeholder="Ex: Caxias do Sul, RS"
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
             />
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Quantidade (máx. 30)</label>
+            <label className="text-xs font-medium text-gray-600">Quantidade (máx. 200)</label>
             <input
               type="number"
               min={5}
-              max={30}
+              max={200}
               value={limit}
-              onChange={(e) => setLimit(Math.min(30, Math.max(5, Number(e.target.value))))}
-              className="w-24 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              onChange={(e) => setLimit(Math.min(200, Math.max(5, Number(e.target.value))))}
+              disabled={status === 'loading' || status === 'confirming'}
+              className="w-28 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
             />
           </div>
 
-          <button
-            onClick={handleImport}
-            disabled={!canImport}
-            className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {status === 'loading' ? 'Importando...' : 'Importar Leads'}
-          </button>
+          {status !== 'confirming' && status !== 'loading' && (
+            <button
+              onClick={handleClickImport}
+              disabled={!canProceed}
+              className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Importar Leads
+            </button>
+          )}
         </div>
+
+        {status === 'confirming' && (
+          <div className="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+            <p className="text-sm font-medium text-yellow-800">
+              Confirmar importação via Apify
+            </p>
+            <p className="mt-1 text-sm text-yellow-700">
+              Esta ação irá buscar até <strong>{limit} leads</strong> de{' '}
+              <strong>{selectedCategory?.name}</strong> em{' '}
+              <strong>{city}</strong> e pode consumir créditos da Apify.
+              Verifique o saldo antes de confirmar.
+            </p>
+            <div className="mt-3 flex gap-2">
+              <button
+                onClick={handleConfirm}
+                className="rounded-md bg-yellow-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-yellow-700"
+              >
+                Confirmar Importação
+              </button>
+              <button
+                onClick={handleCancel}
+                className="rounded-md border border-gray-300 bg-white px-4 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
 
         {status === 'loading' && (
           <p className="mt-3 text-xs text-gray-500">
-            Consultando Apify e inserindo leads — pode levar até 90 segundos...
+            Consultando Apify e inserindo leads — pode levar até 90 segundos para quantidades grandes...
           </p>
         )}
       </div>
@@ -135,6 +178,12 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
             <Stat label="Website Only" value={summary.website_only} color="yellow" />
             <Stat label="Manual Review" value={summary.manual_review} color="orange" />
           </div>
+          <button
+            onClick={() => setStatus('idle')}
+            className="mt-4 text-xs text-gray-500 underline hover:text-gray-700"
+          >
+            Nova importação
+          </button>
         </div>
       )}
     </div>
