@@ -9,7 +9,7 @@ const bodySchema = z.object({
   cidade: z.string().min(1),
 })
 
-const APIFY_ACTOR_ID = 'bussola~google-maps-data-extractor'
+const APIFY_ACTOR_ID = 'nwu9Gu5YrADL7ZDj'
 const RESULT_LIMIT = 5
 
 type ApifyRawItem = {
