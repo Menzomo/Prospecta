@@ -13,7 +13,6 @@ interface SearchFormProps {
 
 export function SearchForm({ categories }: SearchFormProps) {
   const [category, setCategory] = useState('')
-  const [cityInput, setCityInput] = useState('')
   const [selectedCity, setSelectedCity] = useState('')
   const [selectedState, setSelectedState] = useState('')
 
@@ -148,23 +147,17 @@ export function SearchForm({ categories }: SearchFormProps) {
             Cidade <span className="text-red-500">*</span>
           </label>
           <CityAutocomplete
-            value={cityInput}
-            onSelect={(name, stateCode, display) => {
-              setCityInput(display)
+            onSelect={(name, stateCode) => {
               setSelectedCity(name)
               setSelectedState(stateCode)
             }}
             onClear={() => {
-              setCityInput('')
               setSelectedCity('')
               setSelectedState('')
             }}
             placeholder="Digite para buscar a cidade..."
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            inputClassName="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           />
-          {cityInput.length >= 2 && !selectedCity && (
-            <p className="text-xs text-gray-400">Selecione uma cidade da lista</p>
-          )}
         </div>
 
         {error && (

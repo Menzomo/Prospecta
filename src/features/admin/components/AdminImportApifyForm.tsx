@@ -23,7 +23,6 @@ interface Props {
 
 export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Props) {
   const [categoryId, setCategoryId] = useState(initialCategoryId)
-  const [cityInput, setCityInput] = useState('')
   const [city, setCity] = useState('')
   const [limit, setLimit] = useState(200)
   const [status, setStatus] = useState<Status>('idle')
@@ -95,14 +94,11 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-gray-600">Cidade</label>
             <CityAutocomplete
-              value={cityInput}
-              onSelect={(_name, stateCode, display) => {
-                setCityInput(display)
+              onSelect={(_name, _stateCode, display) => {
                 setCity(display)
                 setStatus('idle')
               }}
               onClear={() => {
-                setCityInput('')
                 setCity('')
                 setStatus('idle')
               }}

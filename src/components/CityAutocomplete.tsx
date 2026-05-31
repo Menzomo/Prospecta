@@ -5,23 +5,26 @@ import { useState, useRef } from 'react'
 type CityResult = { name: string; state_code: string }
 
 interface Props {
-  value: string
   onSelect: (cityName: string, stateCode: string, displayValue: string) => void
   onClear: () => void
   placeholder?: string
   disabled?: boolean
-  className?: string
+  inputClassName?: string
 }
 
-export function CityAutocomplete({ value, onSelect, onClear, placeholder = 'Digite para buscar a cidade...', disabled, className }: Props) {
+export function CityAutocomplete({ onSelect, onClear, placeholder = 'Digite para buscar a cidade...', disabled, inputClassName }: Props) {
+  const [inputValue, setInputValue] = useState('')
+  const [isSelected, setIsSelected] = useState(false)
   const [suggestions, setSuggestions] = useState<CityResult[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [searching, setSearching] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function handleInput(raw: string) {
-    onClear()
+    setInputValue(raw)
+    setIsSelected(false)
     setSuggestions([])
+    onClear()
 
     if (debounceRef.current) clearTimeout(debounceRef.current)
 
@@ -48,28 +51,31 @@ export function CityAutocomplete({ value, onSelect, onClear, placeholder = 'Digi
   }
 
   function handleSelect(city: CityResult) {
+    const display = `${city.name}, ${city.state_code}`
+    setInputValue(display)
+    setIsSelected(true)
     setSuggestions([])
     setShowSuggestions(false)
-    onSelect(city.name, city.state_code, `${city.name}, ${city.state_code}`)
+    onSelect(city.name, city.state_code, display)
   }
 
-  const baseInput = `rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 ${className ?? 'w-full'}`
+  const base = inputClassName ?? 'w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50'
 
   return (
     <div className="relative">
       <input
         type="text"
-        value={value}
+        value={inputValue}
         onChange={(e) => handleInput(e.target.value)}
         onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
         onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
         placeholder={placeholder}
         autoComplete="off"
         disabled={disabled}
-        className={baseInput}
+        className={base}
       />
       {searching && (
-        <span className="absolute right-3 top-2 text-xs text-gray-400">Buscando...</span>
+        <span className="absolute right-3 top-2.5 text-xs text-gray-400">Buscando...</span>
       )}
       {showSuggestions && suggestions.length > 0 && (
         <ul className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-md">
@@ -84,8 +90,10 @@ export function CityAutocomplete({ value, onSelect, onClear, placeholder = 'Digi
           ))}
         </ul>
       )}
-      {value.length >= 2 && !searching && suggestions.length === 0 && (
-        <p className="mt-1 text-xs text-gray-400">Nenhuma cidade encontrada.</p>
+      {inputValue.length >= 2 && !isSelected && !searching && (
+        <p className="mt-1 text-xs text-gray-400">
+          {suggestions.length > 0 ? 'Selecione uma cidade da lista' : 'Nenhuma cidade encontrada.'}
+        </p>
       )}
     </div>
   )
