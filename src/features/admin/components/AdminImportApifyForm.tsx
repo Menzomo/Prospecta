@@ -1,17 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { CityAutocomplete } from '@/components/CityAutocomplete'
 
 type Category = { id: string; name: string }
 
-type ImportSummary = {
-  imported: number
-  skipped_duplicate: number
-  invalid: number
-  email_found: number
-  website_only: number
-  manual_review: number
+type JobStarted = {
+  job_id: string
+  apify_run_id: string
+  status: string
 }
 
 type ApifyErrorDetail = {
@@ -20,10 +18,9 @@ type ApifyErrorDetail = {
   apify_body?: string
   payload_sent?: Record<string, unknown>
   hint?: string
-  run_id?: string
 }
 
-type Status = 'idle' | 'confirming' | 'loading' | 'done' | 'error'
+type Status = 'idle' | 'confirming' | 'loading' | 'started' | 'error'
 
 interface Props {
   categories: Category[]
@@ -33,10 +30,12 @@ interface Props {
 export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Props) {
   const [categoryId, setCategoryId] = useState(initialCategoryId)
   const [city, setCity] = useState('')
-  const [limit, setLimit] = useState(20)
+  const [limit, setLimit] = useState(200)
   const [status, setStatus] = useState<Status>('idle')
-  const [summary, setSummary] = useState<ImportSummary | null>(null)
+  const [jobStarted, setJobStarted] = useState<JobStarted | null>(null)
   const [errorDetail, setErrorDetail] = useState<ApifyErrorDetail | null>(null)
+  const router = useRouter()
+  const [, startTransition] = useTransition()
 
   const selectedCategory = categories.find((c) => c.id === categoryId)
 
@@ -52,7 +51,7 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
   async function handleConfirm() {
     setStatus('loading')
     setErrorDetail(null)
-    setSummary(null)
+    setJobStarted(null)
 
     try {
       const res = await fetch('/api/admin/import-apify', {
@@ -61,7 +60,7 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
         body: JSON.stringify({ categoryId, city, limit }),
       })
 
-      const data = await res.json() as ApifyErrorDetail & { summary?: ImportSummary }
+      const data = await res.json() as JobStarted & ApifyErrorDetail
 
       if (!res.ok) {
         setErrorDetail(data)
@@ -69,8 +68,9 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
         return
       }
 
-      setSummary(data.summary ?? null)
-      setStatus('done')
+      setJobStarted(data)
+      setStatus('started')
+      startTransition(() => router.refresh())
     } catch {
       setErrorDetail({ error: 'Falha na requisição' })
       setStatus('error')
@@ -117,17 +117,15 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">
-              Quantidade <span className="text-gray-400">(máx. 30)</span>
-            </label>
+            <label className="text-xs font-medium text-gray-600">Quantidade <span className="text-gray-400">(máx. 200)</span></label>
             <input
               type="number"
               min={5}
-              max={30}
+              max={200}
               value={limit}
-              onChange={(e) => setLimit(Math.min(30, Math.max(5, Number(e.target.value))))}
+              onChange={(e) => setLimit(Math.min(200, Math.max(5, Number(e.target.value))))}
               disabled={status === 'loading' || status === 'confirming'}
-              className="w-24 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+              className="w-28 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
             />
           </div>
 
@@ -143,7 +141,7 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
         </div>
 
         <p className="mt-3 text-xs text-gray-400">
-          Importações acima de 30 leads requerem job assíncrono — em desenvolvimento.
+          O run é iniciado na Apify de forma assíncrona. Use o botão "Atualizar status" na lista abaixo para processar o resultado.
         </p>
 
         {status === 'confirming' && (
@@ -151,8 +149,7 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
             <p className="text-sm font-medium text-yellow-800">Confirmar importação via Apify</p>
             <p className="mt-1 text-sm text-yellow-700">
               Esta ação irá buscar até <strong>{limit} leads</strong> de{' '}
-              <strong>{selectedCategory?.name}</strong> em <strong>{city}</strong> e pode
-              consumir créditos da Apify. Verifique o saldo antes de confirmar.
+              <strong>{selectedCategory?.name}</strong> em <strong>{city}</strong> e pode consumir créditos da Apify.
             </p>
             <div className="mt-3 flex gap-2">
               <button
@@ -172,20 +169,35 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
         )}
 
         {status === 'loading' && (
-          <p className="mt-3 text-xs text-gray-500">
-            Executando run na Apify e aguardando conclusão — pode levar até 90 segundos...
-          </p>
+          <p className="mt-3 text-xs text-gray-500">Iniciando run na Apify...</p>
         )}
       </div>
 
+      {status === 'started' && jobStarted && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <p className="text-sm font-medium text-blue-800">Run iniciado com sucesso!</p>
+          <p className="mt-1 text-xs text-blue-700">
+            Job ID: <code className="font-mono">{jobStarted.job_id}</code>
+          </p>
+          <p className="mt-0.5 text-xs text-blue-700">
+            Apify Run ID: <code className="font-mono">{jobStarted.apify_run_id}</code>
+          </p>
+          <p className="mt-2 text-xs text-blue-600">
+            Aguarde o run concluir na Apify e clique em "Atualizar status" na lista abaixo para importar os leads.
+          </p>
+          <button
+            onClick={() => setStatus('idle')}
+            className="mt-3 text-xs text-blue-600 underline hover:text-blue-800"
+          >
+            Nova importação
+          </button>
+        </div>
+      )}
+
       {status === 'error' && errorDetail && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 flex flex-col gap-2">
-          <p className="text-sm font-medium text-red-800">
-            {errorDetail.error ?? 'Erro ao importar'}
-          </p>
-          {errorDetail.hint && (
-            <p className="text-xs text-red-700">{errorDetail.hint}</p>
-          )}
+          <p className="text-sm font-medium text-red-800">{errorDetail.error ?? 'Erro ao importar'}</p>
+          {errorDetail.hint && <p className="text-xs text-red-700">{errorDetail.hint}</p>}
           {errorDetail.apify_status && (
             <p className="text-xs text-red-600">Status Apify: {errorDetail.apify_status}</p>
           )}
@@ -205,43 +217,6 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
           )}
         </div>
       )}
-
-      {status === 'done' && summary && (
-        <div className="rounded-lg border border-green-200 bg-green-50 p-6">
-          <h3 className="mb-4 text-sm font-semibold text-green-800">Importação concluída</h3>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <Stat label="Importados" value={summary.imported} color="green" />
-            <Stat label="Duplicatas ignoradas" value={summary.skipped_duplicate} color="gray" />
-            <Stat label="Inválidos" value={summary.invalid} color="red" />
-            <Stat label="Email Found" value={summary.email_found} color="blue" />
-            <Stat label="Website Only" value={summary.website_only} color="yellow" />
-            <Stat label="Manual Review" value={summary.manual_review} color="orange" />
-          </div>
-          <button
-            onClick={() => setStatus('idle')}
-            className="mt-4 text-xs text-gray-500 underline hover:text-gray-700"
-          >
-            Nova importação
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function Stat({ label, value, color }: { label: string; value: number; color: string }) {
-  const colors: Record<string, string> = {
-    green: 'text-green-700 bg-green-100',
-    gray: 'text-gray-600 bg-gray-100',
-    red: 'text-red-700 bg-red-100',
-    blue: 'text-blue-700 bg-blue-100',
-    yellow: 'text-yellow-700 bg-yellow-100',
-    orange: 'text-orange-700 bg-orange-100',
-  }
-  return (
-    <div className={`rounded-md px-3 py-2 ${colors[color]}`}>
-      <div className="text-lg font-bold">{value}</div>
-      <div className="text-xs">{label}</div>
     </div>
   )
 }

@@ -2,6 +2,32 @@
 
 ---
 
+## Maio 2026 — Ciclo MVP Principal (continuação 2)
+
+### Import Apify Assíncrono — apify_import_jobs
+
+Importação de leads via Apify migrada para fluxo assíncrono com jobs persistidos.
+
+- Tabela `apify_import_jobs`: rastreia status de cada run Apify por nicho/cidade/limite
+- `POST /api/admin/import-apify`: inicia run na Apify e salva job — retorna imediatamente sem bloquear
+- `POST /api/admin/import-apify/jobs/[id]/sync`: consulta Apify, processa dataset e insere em global_leads
+  - Dedup: placeId → website → company_name + city
+  - classifyLeadQuality() aplicado em cada item
+  - Atualiza contadores e status do job
+- `/admin/import-apify`: exibe status Apify, formulário de importação e lista de jobs recentes com botão "Atualizar status"
+- Limite restaurado para 5–200 leads por importação (default 200)
+- Confirmação visual antes de iniciar — mostra nicho, cidade e quantidade
+- `CityAutocomplete`: componente extraído e reutilizado em `/search` e `/admin/import-apify`
+- Débito técnico: automatizar sync de jobs via Vercel Cron (registrado em technical_debt.md como DT-APIFY1)
+
+### Admin — Dashboard de Estoque
+
+- Estoque global por nicho: disponíveis / consumidos / total com alerta quando < 200
+- Estoque por usuário e nicho: quais usuários estão com baixo estoque em cada categoria
+- Botão "Importar Mais" com nicho pré-selecionado ao clicar pelo dashboard de estoque
+
+---
+
 ## Maio 2026 — Ciclo MVP Principal (continuação)
 
 ### Admin V2 — Dashboard por Nicho e Global Leads Filtrável

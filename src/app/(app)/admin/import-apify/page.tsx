@@ -2,8 +2,10 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { listLeadCategories } from '@/repositories/leadCategoryRepository'
+import { listRecentApifyImportJobs } from '@/repositories/apifyImportJobRepository'
 import { AdminImportApifyForm } from '@/features/admin/components/AdminImportApifyForm'
 import { AdminApifyUsageBox } from '@/features/admin/components/AdminApifyUsageBox'
+import { AdminImportJobsList } from '@/features/admin/components/AdminImportJobsList'
 
 type SearchParams = Promise<{ categoryId?: string }>
 
@@ -27,7 +29,7 @@ async function fetchApifyUsage(): Promise<ApifyUsage> {
     })
     if (!res.ok) return { available: false, reason: `Apify retornou ${res.status}` }
 
-    const body = await res.json() as { data?: { username?: string; email?: string; plan?: { id?: string; usageLevel?: number } } }
+    const body = await res.json() as { data?: { username?: string; plan?: { id?: string; usageLevel?: number } } }
     const data = body.data
     if (!data) return { available: false, reason: 'Resposta inesperada' }
 
@@ -57,9 +59,10 @@ export default async function AdminImportApifyPage({ searchParams }: { searchPar
     .from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'admin') redirect('/dashboard')
 
-  const [categories, usage] = await Promise.all([
+  const [categories, usage, jobs] = await Promise.all([
     listLeadCategories(supabase),
     fetchApifyUsage(),
+    listRecentApifyImportJobs(supabase, 20),
   ])
 
   return (
@@ -75,17 +78,15 @@ export default async function AdminImportApifyPage({ searchParams }: { searchPar
       </header>
 
       <main className="flex-1 p-6">
-        <div className="mx-auto flex max-w-3xl flex-col gap-6">
+        <div className="mx-auto flex max-w-5xl flex-col gap-8">
           <AdminApifyUsageBox usage={usage} />
-
-          <p className="text-sm text-gray-500">
-            Busca leads diretamente no Apify e insere no banco global com deduplicação automática.
-          </p>
 
           <AdminImportApifyForm
             categories={categories.map((c) => ({ id: c.id, name: c.name }))}
             initialCategoryId={categoryId ?? ''}
           />
+
+          <AdminImportJobsList jobs={jobs} />
         </div>
       </main>
     </>

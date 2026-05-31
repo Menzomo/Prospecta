@@ -235,6 +235,25 @@ Suporta filtros via GET params (`category` slug, `city` texto). Form submit sem 
 - **Usuários:** últimos 20 usuários cadastrados (email, role, data)
 - Botão "Importar Leads" → `/admin/import`
 
+### Import Apify Assíncrono — /admin/import-apify
+
+**Implementado.** Importação de leads diretamente da Apify com fluxo assíncrono.
+
+Fluxo:
+1. Admin seleciona nicho, cidade e quantidade (5–200, default 200)
+2. Confirmação visual antes de iniciar
+3. `POST /api/admin/import-apify` inicia run assíncrono na Apify e cria registro em `apify_import_jobs` — retorna imediatamente
+4. Admin vê o job na lista "Importações Recentes"
+5. Clica "Atualizar status" → `POST /api/admin/import-apify/jobs/[id]/sync`:
+   - Consulta status do run na Apify
+   - Se SUCCEEDED: busca dataset, aplica dedup e classifyLeadQuality, insere em global_leads
+   - Atualiza contadores e status do job
+6. Job marcado como `succeeded` com resumo de importados / duplicatas / qualidade
+
+**Actor:** `compass~crawler-google-places` com `scrapeContacts: true` e `website: withWebsite`  
+**Dedup:** placeId → website → company_name + city  
+**Débito técnico:** sync automático via Vercel Cron (DT-APIFY1)
+
 ### Import Leads — /admin/import
 
 **Implementado:** intake manual de exportações Apify.

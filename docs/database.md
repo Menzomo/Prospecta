@@ -377,6 +377,40 @@ Tarefa pendente de controle comercial. Representa follow-ups agendados para lead
 
 ---
 
+---
+
+### apify_import_jobs
+Rastreia jobs de importação assíncrona via Apify. Cada job representa um run do actor `compass~crawler-google-places`.
+
+| Campo                     | Tipo        | Obs                                                         |
+|---------------------------|-------------|-------------------------------------------------------------|
+| id                        | uuid PK     |                                                             |
+| created_by                | uuid        | FK → profiles (admin que criou)                             |
+| category_id               | uuid        | FK → lead_categories (nullable)                             |
+| category_name             | text        | snapshot do nome da categoria no momento da criação         |
+| city                      | text        | cidade normalizada enviada ao Apify                         |
+| requested_limit           | int         | quantidade solicitada (5–200)                               |
+| status                    | text        | `pending` \| `running` \| `processing` \| `succeeded` \| `failed` |
+| apify_run_id              | text        | ID do run na Apify                                          |
+| apify_dataset_id          | text        | defaultDatasetId do run (preenchido após sync)              |
+| imported_count            | int         | leads efetivamente inseridos em global_leads                |
+| skipped_duplicate_count   | int         | leads ignorados por duplicidade                             |
+| email_found_count         | int         | importados com email_found                                  |
+| website_only_count        | int         | importados com website_only                                 |
+| manual_review_count       | int         | importados com manual_review                                |
+| invalid_count             | int         | rows ignorados por company_name vazio                       |
+| error_message             | text        | mensagem de erro se status=failed                           |
+| payload                   | jsonb       | input enviado ao Apify (sem token)                          |
+| created_at                | timestamptz |                                                             |
+| updated_at                | timestamptz |                                                             |
+| finished_at               | timestamptz | quando o sync foi concluído ou falhou                       |
+
+**Fluxo de status:** `pending` → `running` (após iniciar run) → `processing` (buscando dataset) → `succeeded` / `failed`
+
+RLS: somente admins (via `profiles.role = 'admin'`).
+
+---
+
 ## Storage Buckets
 
 | Bucket                   | Uso                        | Visibilidade |

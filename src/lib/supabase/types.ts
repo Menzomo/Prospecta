@@ -452,6 +452,67 @@ export interface Database {
         }
         Relationships: []
       }
+      apify_import_jobs: {
+        Row: {
+          id: string
+          created_by: string
+          category_id: string | null
+          category_name: string
+          city: string
+          requested_limit: number
+          status: string
+          apify_run_id: string | null
+          apify_dataset_id: string | null
+          imported_count: number
+          skipped_duplicate_count: number
+          email_found_count: number
+          website_only_count: number
+          manual_review_count: number
+          invalid_count: number
+          error_message: string | null
+          payload: Json | null
+          created_at: string
+          updated_at: string
+          finished_at: string | null
+        }
+        Insert: {
+          id?: string
+          created_by: string
+          category_id?: string | null
+          category_name: string
+          city: string
+          requested_limit: number
+          status?: string
+          apify_run_id?: string | null
+          apify_dataset_id?: string | null
+          imported_count?: number
+          skipped_duplicate_count?: number
+          email_found_count?: number
+          website_only_count?: number
+          manual_review_count?: number
+          invalid_count?: number
+          error_message?: string | null
+          payload?: Json | null
+          created_at?: string
+          updated_at?: string
+          finished_at?: string | null
+        }
+        Update: {
+          status?: string
+          apify_run_id?: string | null
+          apify_dataset_id?: string | null
+          imported_count?: number
+          skipped_duplicate_count?: number
+          email_found_count?: number
+          website_only_count?: number
+          manual_review_count?: number
+          invalid_count?: number
+          error_message?: string | null
+          updated_at?: string
+          finished_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
