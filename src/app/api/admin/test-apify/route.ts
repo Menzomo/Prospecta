@@ -78,20 +78,45 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'APIFY_TOKEN não configurado' }, { status: 500 })
   }
 
-  const searchQuery = `${categoria} ${cidade}`
   const apifyUrlDebug = `https://api.apify.com/v2/acts/${APIFY_ACTOR_ID}/run-sync-get-dataset-items?memory=128&timeout=80`
   const apifyUrl = `${apifyUrlDebug}&token=${apifyToken}`
 
-  console.log(`[test-apify] actor: ${APIFY_ACTOR_ID}, query: "${searchQuery}"`)
+  console.log(`[test-apify] actor: ${APIFY_ACTOR_ID}, categoria: "${categoria}", cidade: "${cidade}"`)
   console.log(`[test-apify] url (sem token): ${apifyUrlDebug}`)
 
   const apifyInput = {
-    searchStringsArray: [searchQuery],
+    searchStringsArray: [categoria],
+    locationQuery: cidade,
     maxCrawledPlacesPerSearch: RESULT_LIMIT,
     language: 'pt-BR',
-    countryCode: 'br',
     scrapeContacts: true,
-    onlyPlacesWithWebsite: true,
+    website: 'withWebsite',
+    searchMatching: 'all',
+    includeWebResults: false,
+    maximumLeadsEnrichmentRecords: 0,
+    verifyLeadsEnrichmentEmails: false,
+    scrapeDirectories: false,
+    scrapeImageAuthors: false,
+    scrapeOrderOnline: false,
+    scrapePlaceDetailPage: false,
+    scrapeReviewsPersonalData: true,
+    scrapeSocialMediaProfiles: {
+      facebooks: false,
+      instagrams: false,
+      tiktoks: false,
+      twitters: false,
+      youtubes: false,
+    },
+    scrapeTableReservationProvider: false,
+    skipClosedPlaces: false,
+    placeMinimumStars: '',
+    maxQuestions: 0,
+    maxReviews: 0,
+    reviewsSort: 'newest',
+    reviewsFilterString: '',
+    reviewsOrigin: 'all',
+    maxImages: 0,
+    allPlacesNoSearchAction: '',
   }
 
   console.log('[test-apify] payload:', JSON.stringify(apifyInput))
