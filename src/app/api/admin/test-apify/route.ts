@@ -90,6 +90,8 @@ export async function POST(request: Request) {
     maxCrawledPlacesPerSearch: RESULT_LIMIT,
     language: 'pt-BR',
     countryCode: 'br',
+    scrapeContacts: true,
+    onlyPlacesWithWebsite: true,
   }
 
   let rawItems: ApifyRawItem[]
