@@ -161,8 +161,21 @@ export async function POST(_request: Request, { params }: RouteParams) {
 
   console.log(`[import-apify/sync] dataset: ${rawItems.length} itens`)
 
-  let imported = 0, skippedDuplicate = 0, invalid = 0
+  type DiscardedItem = { company_name: string; city: string | null; website: string | null; placeId: string | null; reason: string }
+
+  let imported = 0, invalid = 0
   let emailFound = 0, websiteOnly = 0, manualReview = 0
+  let dedupByPlaceId = 0, dedupByWebsite = 0, dedupByNameCity = 0
+
+  const discardedByPlaceId: DiscardedItem[] = []
+  const discardedByWebsite: DiscardedItem[] = []
+  const discardedByNameCity: DiscardedItem[] = []
+
+  // Intra-batch dedup sets — skip same placeId/website seen earlier in this batch
+  const batchPlaceIds = new Set<string>()
+  const batchWebsites = new Set<string>()
+  const batchNameCities = new Set<string>()
+  let batchDuplicates = 0
 
   for (const item of rawItems) {
     const companyName = item.title?.trim() ?? ''
@@ -175,19 +188,44 @@ export async function POST(_request: Request, { params }: RouteParams) {
     const state = item.state?.trim() || null
     const placeId = item.placeId?.trim() || null
 
+    const discardContext: Omit<DiscardedItem, 'reason'> = { company_name: companyName, city: itemCity, website, placeId }
+
+    // Intra-batch dedup first (fast, no DB)
+    const nameCityKey = `${companyName.toLowerCase()}|${(itemCity ?? '').toLowerCase()}`
+    if (placeId && batchPlaceIds.has(placeId)) { batchDuplicates++; continue }
+    if (website && batchWebsites.has(website)) { batchDuplicates++; continue }
+    if (batchNameCities.has(nameCityKey)) { batchDuplicates++; continue }
+
+    if (placeId) batchPlaceIds.add(placeId)
+    if (website) batchWebsites.add(website)
+    batchNameCities.add(nameCityKey)
+
+    // DB dedup
     if (placeId) {
       const ex = await findGlobalLeadByProviderExternalId(supabase, 'apify', placeId)
-      if (ex) { skippedDuplicate++; continue }
+      if (ex) {
+        dedupByPlaceId++
+        if (discardedByPlaceId.length < 20) discardedByPlaceId.push({ ...discardContext, reason: `placeId: ${placeId}` })
+        continue
+      }
     }
 
     if (website) {
       const ex = await findGlobalLeadByWebsite(supabase, website)
-      if (ex) { skippedDuplicate++; continue }
+      if (ex) {
+        dedupByWebsite++
+        if (discardedByWebsite.length < 20) discardedByWebsite.push({ ...discardContext, reason: `website: ${website}` })
+        continue
+      }
     }
 
     if (companyName && itemCity) {
       const ex = await findGlobalLeadByNameAndCity(supabase, companyName, itemCity)
-      if (ex) { skippedDuplicate++; continue }
+      if (ex) {
+        dedupByNameCity++
+        if (discardedByNameCity.length < 20) discardedByNameCity.push({ ...discardContext, reason: `name+city: ${companyName} / ${itemCity}` })
+        continue
+      }
     }
 
     const qualityStatus = classifyLeadQuality({ email, website })
@@ -213,6 +251,10 @@ export async function POST(_request: Request, { params }: RouteParams) {
     }
   }
 
+  const totalApify = rawItems.length
+  const totalDbDuplicate = dedupByPlaceId + dedupByWebsite + dedupByNameCity
+  const skippedDuplicate = batchDuplicates + totalDbDuplicate
+
   await updateApifyImportJob(supabase, id, {
     status: 'succeeded',
     apify_dataset_id: defaultDatasetId,
@@ -225,23 +267,35 @@ export async function POST(_request: Request, { params }: RouteParams) {
     finished_at: new Date().toISOString(),
   })
 
-  console.log(`[import-apify/sync] concluído — importados: ${imported}, duplicatas: ${skippedDuplicate}`)
+  console.log(`[import-apify/sync] concluído — apify: ${totalApify}, importados: ${imported}, db_dedup: ${totalDbDuplicate}, batch_dedup: ${batchDuplicates}`)
 
   const firstItem = rawItems[0] as Record<string, unknown> | undefined
 
   return NextResponse.json({
     message: 'Sincronização concluída',
-    summary: { imported, skipped_duplicate: skippedDuplicate, email_found: emailFound, website_only: websiteOnly, manual_review: manualReview, invalid },
+    totals: {
+      apify_returned: totalApify,
+      batch_duplicates: batchDuplicates,
+      unique_after_batch_dedup: totalApify - batchDuplicates - invalid,
+      db_duplicates: totalDbDuplicate,
+      inserted: imported,
+      invalid,
+    },
+    dedup_breakdown: {
+      by_place_id: dedupByPlaceId,
+      by_website: dedupByWebsite,
+      by_name_city: dedupByNameCity,
+    },
+    quality: { email_found: emailFound, website_only: websiteOnly, manual_review: manualReview },
+    discarded_samples: {
+      by_place_id: discardedByPlaceId,
+      by_website: discardedByWebsite,
+      by_name_city: discardedByNameCity,
+    },
     debug: {
       dataset_id: defaultDatasetId,
       dataset_url: datasetUrl,
-      items_fetched: rawItems.length,
       first_item_keys: firstItem ? Object.keys(firstItem) : [],
-      first_item_sample: firstItem
-        ? Object.fromEntries(
-            Object.entries(firstItem).filter(([k]) => /email|title|website|phone|city|state|place/i.test(k))
-          )
-        : null,
     },
   })
 }
