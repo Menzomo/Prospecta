@@ -6,8 +6,9 @@ import { createClient } from '@/lib/supabase/server'
 import { sendEmailSchema } from '@/validations/emailSchema'
 import { getLeadById } from '@/repositories/leadRepository'
 import { getGmailConnection } from '@/repositories/gmailRepository'
-import { sendEmailService } from '@/services/emailSendService'
+import { sendEmailService, mimeTypeForExt } from '@/services/emailSendService'
 import { tryRefreshGmailToken } from '@/services/gmailService'
+import { listAttachmentsByTemplate } from '@/repositories/templateAttachmentRepository'
 
 export type SendEmailActionState = {
   errors?: {
@@ -68,6 +69,22 @@ export async function sendEmailAction(
     accessToken = newToken
   }
 
+  // Load and download template attachments
+  const templateAttachmentRecords = validation.data.template_id
+    ? await listAttachmentsByTemplate(supabase, validation.data.template_id)
+    : []
+
+  const attachments = (
+    await Promise.all(
+      templateAttachmentRecords.map(async (att) => {
+        const { data } = await supabase.storage.from('template-attachments').download(att.file_path)
+        if (!data) return null
+        const buf = Buffer.from(await data.arrayBuffer())
+        return { fileName: att.file_name, contentType: mimeTypeForExt(att.file_type), data: buf }
+      })
+    )
+  ).filter((a): a is NonNullable<typeof a> => a !== null)
+
   const result = await sendEmailService(supabase, {
     userId: user.id,
     leadId,
@@ -78,6 +95,7 @@ export async function sendEmailAction(
     refreshToken: connection.refresh_token,
     subject: validation.data.subject,
     body: validation.data.body,
+    attachments,
   })
 
   if ('error' in result) {

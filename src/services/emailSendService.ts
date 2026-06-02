@@ -4,6 +4,12 @@ import { createEmailThread, createEmailMessage } from '@/repositories/emailRepos
 import { markLeadContacted } from '@/repositories/leadRepository'
 import { tryRefreshGmailToken } from '@/services/gmailService'
 
+export type EmailAttachment = {
+  fileName: string
+  contentType: string
+  data: Buffer
+}
+
 type SendEmailInput = {
   userId: string
   leadId: string
@@ -14,6 +20,7 @@ type SendEmailInput = {
   refreshToken: string | null
   subject: string
   body: string
+  attachments?: EmailAttachment[]
 }
 
 export type SendEmailResult =
@@ -35,24 +42,72 @@ function encodeMimeWord(value: string): string {
   return `=?UTF-8?B?${Buffer.from(value, 'utf-8').toString('base64')}?=`
 }
 
-function buildRawEmail(to: string, from: string, subject: string, body: string): string {
+const MIME_TYPES: Record<string, string> = {
+  pdf: 'application/pdf',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  txt: 'text/plain',
+}
+
+export function mimeTypeForExt(ext: string): string {
+  return MIME_TYPES[ext.toLowerCase()] ?? 'application/octet-stream'
+}
+
+function buildRawEmail(to: string, from: string, subject: string, body: string, attachments: EmailAttachment[] = []): string {
   const normalizedBody = body.replace(/\r\n/g, '\n').replace(/\n/g, '\r\n')
+
+  if (attachments.length === 0) {
+    const message = [
+      `From: ${encodeMimeWord(from)}`,
+      `To: ${to}`,
+      `Subject: ${encodeMimeWord(subject)}`,
+      `MIME-Version: 1.0`,
+      `Content-Type: text/plain; charset=utf-8`,
+      ``,
+      normalizedBody,
+    ].join('\r\n')
+    return Buffer.from(message).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+  }
+
+  const boundary = `mp_${Date.now()}_boundary`
+
+  const textPart = [
+    `Content-Type: text/plain; charset=utf-8`,
+    `Content-Transfer-Encoding: 7bit`,
+    ``,
+    normalizedBody,
+  ].join('\r\n')
+
+  const attachmentParts = attachments.map((att) => {
+    const b64 = att.data.toString('base64').match(/.{1,76}/g)?.join('\r\n') ?? att.data.toString('base64')
+    return [
+      `Content-Type: ${att.contentType}`,
+      `Content-Transfer-Encoding: base64`,
+      `Content-Disposition: attachment; filename="${encodeMimeWord(att.fileName)}"`,
+      ``,
+      b64,
+    ].join('\r\n')
+  })
+
+  const allParts = [textPart, ...attachmentParts].map((p) => `--${boundary}\r\n${p}`).join('\r\n')
+  const multipartBody = `${allParts}\r\n--${boundary}--`
 
   const message = [
     `From: ${encodeMimeWord(from)}`,
     `To: ${to}`,
     `Subject: ${encodeMimeWord(subject)}`,
     `MIME-Version: 1.0`,
-    `Content-Type: text/plain; charset=utf-8`,
+    `Content-Type: multipart/mixed; boundary="${boundary}"`,
     ``,
-    normalizedBody,
+    multipartBody,
   ].join('\r\n')
 
-  return Buffer.from(message)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '')
+  return Buffer.from(message).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
 }
 
 async function callGmailSendApi(
@@ -73,7 +128,7 @@ export async function sendEmailService(
   supabase: SupabaseClient<Database>,
   input: SendEmailInput
 ): Promise<SendEmailResult> {
-  const raw = buildRawEmail(input.leadEmail, input.gmailEmail, input.subject, input.body)
+  const raw = buildRawEmail(input.leadEmail, input.gmailEmail, input.subject, input.body, input.attachments ?? [])
 
   let gmailResponse = await callGmailSendApi(input.accessToken, raw)
 

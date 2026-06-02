@@ -6,6 +6,7 @@ import { listTemplates } from '@/repositories/templateRepository'
 import { getCompanyProfileByUserId } from '@/repositories/companyProfileRepository'
 import { getProfileById } from '@/repositories/profileRepository'
 import { getGmailConnection } from '@/repositories/gmailRepository'
+import { listAttachmentsByTemplateIds } from '@/repositories/templateAttachmentRepository'
 import { SendEmailForm } from '@/features/email/components/SendEmailForm'
 
 type Props = {
@@ -29,6 +30,16 @@ export default async function SendEmailPage({ params }: Props) {
     getProfileById(supabase, user.id),
     getGmailConnection(supabase, user.id),
   ])
+
+  const allAttachments = templates.length > 0
+    ? await listAttachmentsByTemplateIds(supabase, templates.map((t) => t.id))
+    : []
+
+  const attachmentsByTemplate = allAttachments.reduce<Record<string, typeof allAttachments>>((acc, att) => {
+    if (!acc[att.template_id]) acc[att.template_id] = []
+    acc[att.template_id].push(att)
+    return acc
+  }, {})
 
   if (!lead) notFound()
 
@@ -88,6 +99,7 @@ export default async function SendEmailPage({ params }: Props) {
                   user_company_name: company?.company_name ?? '',
                   user_name: profile?.full_name ?? '',
                 }}
+                attachmentsByTemplate={attachmentsByTemplate}
               />
             </div>
           ) : null}

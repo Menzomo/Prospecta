@@ -2,8 +2,10 @@ import Link from 'next/link'
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getTemplateById } from '@/repositories/templateRepository'
+import { listAttachmentsByTemplate } from '@/repositories/templateAttachmentRepository'
 import { deleteTemplateAction } from '@/features/templates/actions'
 import { TemplateEditForm } from '@/features/templates/components/TemplateEditForm'
+import { TemplateAttachments } from '@/features/templates/components/TemplateAttachments'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -21,6 +23,8 @@ export default async function TemplateDetailPage({ params }: Props) {
 
   const template = await getTemplateById(supabase, id)
   if (!template) notFound()
+
+  const attachments = await listAttachmentsByTemplate(supabase, id)
 
   return (
     <>
@@ -46,10 +50,15 @@ export default async function TemplateDetailPage({ params }: Props) {
       </header>
 
       <main className="flex flex-1 justify-center p-6">
-        <div className="w-full max-w-lg">
+        <div className="flex w-full max-w-lg flex-col gap-6">
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
             <h2 className="mb-4 text-base font-semibold text-gray-900">Editar template</h2>
             <TemplateEditForm template={template} />
+          </div>
+
+          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-4 text-base font-semibold text-gray-900">Anexos</h2>
+            <TemplateAttachments templateId={id} initialAttachments={attachments} />
           </div>
         </div>
       </main>

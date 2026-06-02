@@ -452,6 +452,32 @@ export interface Database {
         }
         Relationships: []
       }
+      template_attachments: {
+        Row: {
+          id: string
+          user_id: string
+          template_id: string
+          file_name: string
+          file_path: string
+          file_type: string
+          file_size: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          template_id: string
+          file_name: string
+          file_path: string
+          file_type: string
+          file_size: number
+          created_at?: string
+        }
+        Update: {
+          file_name?: string
+        }
+        Relationships: []
+      }
       apify_import_jobs: {
         Row: {
           id: string

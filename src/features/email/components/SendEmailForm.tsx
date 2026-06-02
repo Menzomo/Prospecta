@@ -4,21 +4,25 @@ import { useState, useActionState } from 'react'
 import { sendEmailAction } from '@/features/email/actions'
 import { renderTemplate } from '@/utils/renderTemplate'
 import type { Template } from '@/types/templates'
+import type { TemplateAttachment } from '@/repositories/templateAttachmentRepository'
 import type { TemplateVariables } from '@/utils/renderTemplate'
 
 type Props = {
   leadId: string
   templates: Template[]
   variables: TemplateVariables
+  attachmentsByTemplate?: Record<string, TemplateAttachment[]>
 }
 
-export function SendEmailForm({ leadId, templates, variables }: Props) {
+export function SendEmailForm({ leadId, templates, variables, attachmentsByTemplate = {} }: Props) {
   const boundAction = sendEmailAction.bind(null, leadId)
   const [state, formAction, pending] = useActionState(boundAction, null)
 
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
   const [subject, setSubject] = useState<string>('')
   const [body, setBody] = useState<string>('')
+
+  const selectedAttachments = selectedTemplateId ? (attachmentsByTemplate[selectedTemplateId] ?? []) : []
 
   function handleTemplateChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const id = e.target.value
@@ -93,6 +97,20 @@ export function SendEmailForm({ leadId, templates, variables }: Props) {
           <p className="text-xs text-red-500">{state.errors.body[0]}</p>
         )}
       </div>
+
+      {selectedAttachments.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <p className="text-sm font-medium text-gray-700">Anexos do template</p>
+          <ul className="flex flex-col gap-1">
+            {selectedAttachments.map((att) => (
+              <li key={att.id} className="flex items-center gap-2 rounded-md border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-600">
+                <span className="uppercase font-medium text-gray-400">{att.file_type}</span>
+                <span className="truncate">{att.file_name}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {state?.error && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{state.error}</p>
