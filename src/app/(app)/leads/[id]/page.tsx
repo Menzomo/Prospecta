@@ -9,7 +9,6 @@ import { LeadEditForm } from '@/features/leads/components/LeadEditForm'
 import { LeadTimeline } from '@/features/leads/components/LeadTimeline'
 import { LeadRepliesButton } from '@/features/leads/components/LeadRepliesButton'
 import { LeadFollowupSection } from '@/features/followups/components/LeadFollowupSection'
-import { MarkInboxRead } from '@/features/inbox/components/MarkInboxRead'
 import { LEAD_STATUS_LABELS } from '@/types/leads'
 import type { LeadStatus } from '@/types/leads'
 
@@ -72,7 +71,6 @@ export default async function LeadDetailPage({ params }: Props) {
       </header>
 
       <main className="flex flex-1 justify-center p-6">
-        <MarkInboxRead leadId={id} />
         <div className="w-full max-w-lg space-y-6">
           <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between">

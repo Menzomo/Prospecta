@@ -345,19 +345,26 @@ Threads de email baseadas em Gmail threads. Representa a conversa/thread do Gmai
 **Implementado.**
 Mensagens individuais da thread, tanto enviadas quanto recebidas.
 
-| Campo          | Tipo        |
-|----------------|-------------|
-| id             | uuid PK     |
-| user_id        | uuid        |
-| lead_id        | uuid        | FK → leads |
-| thread_id      | uuid        | FK → email_threads |
-| template_id    | uuid        | FK → templates (nullable) |
-| subject        | text        |
-| body           | text        |
-| direction      | text        | inbound / outbound |
-| gmail_message_id | text      |
-| sent_at        | timestamptz |
-| created_at     | timestamptz |
+| Campo            | Tipo        | Obs                                         |
+|------------------|-------------|---------------------------------------------|
+| id               | uuid PK     |                                             |
+| user_id          | uuid        |                                             |
+| lead_id          | uuid        | FK → leads                                  |
+| thread_id        | uuid        | FK → email_threads                          |
+| template_id      | uuid        | FK → templates (nullable)                   |
+| subject          | text        |                                             |
+| body             | text        |                                             |
+| direction        | text        | `inbound` / `outbound`                      |
+| gmail_message_id | text        |                                             |
+| from_email       | text        | nullable — remetente (respostas inbound)    |
+| sent_at          | timestamptz |                                             |
+| created_at       | timestamptz |                                             |
+| is_read          | boolean     | default false — true quando lida pelo usuário |
+| read_at          | timestamptz | nullable — quando foi marcada como lida     |
+
+**Leitura individual:** `markEmailMessageAsRead(supabase, userId, messageId)` — valida ownership via `user_id` antes de atualizar.
+
+**Dashboard futuro:** `read_at` permite separar respostas novas (ainda não lidas) de respostas já visualizadas, útil para métricas de tempo de resposta e taxa de leitura.
 
 ---
 

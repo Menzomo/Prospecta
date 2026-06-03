@@ -217,6 +217,16 @@ Comportamento:
 - Sistema NÃO sincroniza inbox completa do Gmail
 - Ao detectar reply: atualiza last_reply_at do lead e do thread
 
+### Leitura de respostas — /leads/[id]
+
+- Badge "Respostas recebidas N" no header do detalhe do lead — exibe apenas respostas `is_read = false`
+- Clicar abre modal centralizado com lista das respostas não lidas
+- Cada resposta mostra: "Lead respondeu ao email", data/hora, assunto (truncado), botão "Abrir no Gmail"
+- Botão "Marcar como lida": remove visualmente da lista (otimístico), persiste `is_read = true` + `read_at` no banco via `markSingleReplyAsReadAction`
+- Quando todas marcadas como lidas: modal fecha automaticamente, botão volta a "Sem respostas"
+- Corpo do email não é exibido em nenhum momento no modal
+- Timeline (`LeadTimeline`) continua exibindo todas as respostas (lidas e não lidas), sem corpo
+
 ---
 
 ## Admin — /admin

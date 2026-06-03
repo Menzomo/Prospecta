@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import type { EmailMessage, EmailThread } from '@/types/email'
+import { markSingleReplyAsReadAction } from '@/features/inbox/actions'
 
 type Props = {
   messages: EmailMessage[]
@@ -67,12 +68,33 @@ function XIcon() {
 
 export function LeadRepliesButton({ messages, threads }: Props) {
   const [open, setOpen] = useState(false)
+  const [isPending, startTransition] = useTransition()
 
-  const replies = messages
-    .filter((m) => m.direction === 'inbound')
+  // Optimistic: track IDs marked as read this session; seed with already-read messages
+  const [readIds, setReadIds] = useState<Set<string>>(
+    () => new Set(messages.filter((m) => m.is_read).map((m) => m.id))
+  )
+
+  const allInbound = messages.filter((m) => m.direction === 'inbound')
+  const unread = allInbound
+    .filter((m) => !readIds.has(m.id))
     .sort((a, b) => new Date(b.sent_at).getTime() - new Date(a.sent_at).getTime())
 
-  if (replies.length === 0) {
+  // Auto-close modal when all replies are marked as read during this session
+  useEffect(() => {
+    if (open && unread.length === 0) {
+      setOpen(false)
+    }
+  }, [open, unread.length])
+
+  function handleMarkRead(messageId: string) {
+    setReadIds((prev) => new Set([...prev, messageId]))
+    startTransition(async () => {
+      await markSingleReplyAsReadAction(messageId)
+    })
+  }
+
+  if (unread.length === 0) {
     return (
       <span className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-400">
         <BellIcon />
@@ -91,7 +113,7 @@ export function LeadRepliesButton({ messages, threads }: Props) {
         <BellIcon className="text-blue-600" />
         Respostas recebidas
         <span className="rounded-full bg-blue-200 px-1.5 py-0.5 text-xs font-semibold text-blue-800">
-          {replies.length}
+          {unread.length}
         </span>
       </button>
 
@@ -109,7 +131,7 @@ export function LeadRepliesButton({ messages, threads }: Props) {
                 <BellIcon className="text-blue-600" />
                 <h2 className="text-base font-semibold text-gray-900">Respostas recebidas</h2>
                 <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                  {replies.length}
+                  {unread.length}
                 </span>
               </div>
               <button
@@ -124,12 +146,12 @@ export function LeadRepliesButton({ messages, threads }: Props) {
 
             <div className="max-h-96 overflow-y-auto px-6 py-4">
               <div className="space-y-4">
-                {replies.map((reply) => {
+                {unread.map((reply) => {
                   const gmailUrl = buildGmailUrl(reply, threads)
                   const isExternal = gmailUrl.startsWith('http')
                   return (
-                    <div key={reply.id} className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
+                    <div key={reply.id} className="rounded-lg border border-gray-100 p-3">
+                      <div className="mb-2">
                         <p className="text-sm font-medium text-gray-800">Lead respondeu ao email</p>
                         <p className="text-xs text-gray-500">{formatDateTime(reply.sent_at)}</p>
                         {reply.subject && (
@@ -138,14 +160,24 @@ export function LeadRepliesButton({ messages, threads }: Props) {
                           </p>
                         )}
                       </div>
-                      <a
-                        href={gmailUrl}
-                        target={isExternal ? '_blank' : undefined}
-                        rel={isExternal ? 'noopener noreferrer' : undefined}
-                        className="shrink-0 rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100"
-                      >
-                        Abrir no Gmail
-                      </a>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={gmailUrl}
+                          target={isExternal ? '_blank' : undefined}
+                          rel={isExternal ? 'noopener noreferrer' : undefined}
+                          className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100"
+                        >
+                          Abrir no Gmail
+                        </a>
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={() => handleMarkRead(reply.id)}
+                          className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          Marcar como lida
+                        </button>
+                      </div>
                     </div>
                   )
                 })}

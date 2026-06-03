@@ -130,6 +130,26 @@ export async function getInboundMessagesWithLeads(
   })
 }
 
+export async function markEmailMessageAsRead(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  messageId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('email_messages')
+    .update({ is_read: true, read_at: new Date().toISOString() })
+    .eq('id', messageId)
+    .eq('user_id', userId)
+    .eq('is_read', false)
+
+  if (error) {
+    console.error('[emailRepository.markEmailMessageAsRead] Supabase error:', {
+      code: error.code,
+      message: error.message,
+    })
+  }
+}
+
 export async function markInboundMessagesAsRead(
   supabase: SupabaseClient<Database>,
   userId: string,

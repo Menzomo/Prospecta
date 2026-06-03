@@ -4,6 +4,22 @@
 
 ## Junho 2026 — UX Lead Timeline e Respostas
 
+### Marcar resposta como lida — Lead detail
+
+Usuário pode marcar individualmente cada resposta de lead como lida diretamente no modal de notificações.
+
+- **`markEmailMessageAsRead`** — nova função no `emailRepository.ts`; atualiza `is_read = true` e `read_at = now()` para um único message; valida `user_id` para garantir ownership
+- **`markSingleReplyAsReadAction`** — server action em `inbox/actions.ts`; valida sessão, chama repositório, revalida `/dashboard` e `/inbox` para atualizar contadores
+- **`LeadRepliesButton`** atualizado:
+  - Estado otimístico: `readIds: Set<string>` inicializado com messages já `is_read: true` do servidor
+  - Badge conta apenas respostas não lidas (`unread.length`)
+  - Cada card de resposta no modal ganha botão "Marcar como lida": atualiza estado local imediatamente via `useTransition`, persiste no banco em background
+  - Modal fecha automaticamente quando todas as respostas são marcadas
+  - "Sem respostas" exibido no header quando `unread.length === 0`
+- **`MarkInboxRead` removido de `/leads/[id]`**: componente marcava todas as respostas como lidas automaticamente na abertura da página, conflitando com o modelo de marcação individual; marcação agora é exclusivamente por ação explícita do usuário
+- Sem migration necessária — campos `is_read` e `read_at` já existiam em `email_messages`
+- Timeline continua exibindo todas as respostas independente do status de leitura
+
 ### Lead Replies Card e Timeline melhorada
 
 Melhoria de UX no detalhe do lead: respostas recebidas agora têm um card dedicado com ação direta para o Gmail, e o histórico continua colapsável e sem expor corpo do email.
