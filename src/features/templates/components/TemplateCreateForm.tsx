@@ -71,6 +71,10 @@ export function TemplateCreateForm() {
         </ul>
       </div>
 
+      <p className="text-xs text-gray-400">
+        Você poderá adicionar anexos (PDF, imagens, documentos) após criar o template.
+      </p>
+
       {state?.error && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{state.error}</p>
       )}
