@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import { updateTemplateAction } from '@/features/templates/actions'
+import { TemplateBodyField } from './TemplateBodyField'
 import type { Template } from '@/types/templates'
 
 type Props = {
@@ -50,31 +51,11 @@ export function TemplateEditForm({ template }: Props) {
         <label htmlFor="body" className="text-sm font-medium text-gray-700">
           Corpo do email <span className="text-red-500">*</span>
         </label>
-        <textarea
-          id="body"
+        <TemplateBodyField
           name="body"
-          rows={10}
           defaultValue={template.body}
-          className="resize-y rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          error={state?.errors?.body?.[0]}
         />
-        {state?.errors?.body && (
-          <p className="text-xs text-red-500">{state.errors.body[0]}</p>
-        )}
-      </div>
-
-      <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-        <p className="mb-1 font-medium">Variáveis disponíveis</p>
-        <ul className="space-y-0.5 text-xs">
-          <li>
-            <code className="font-mono">{'{{lead_company_name}}'}</code> — nome da empresa do lead
-          </li>
-          <li>
-            <code className="font-mono">{'{{user_company_name}}'}</code> — nome da sua empresa
-          </li>
-          <li>
-            <code className="font-mono">{'{{user_name}}'}</code> — seu nome
-          </li>
-        </ul>
       </div>
 
       {state?.success && (
