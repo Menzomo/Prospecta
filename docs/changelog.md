@@ -2,6 +2,20 @@
 
 ---
 
+## Junho 2026 — UX Lead Timeline e Respostas
+
+### Lead Replies Card e Timeline melhorada
+
+Melhoria de UX no detalhe do lead: respostas recebidas agora têm um card dedicado com ação direta para o Gmail, e o histórico continua colapsável e sem expor corpo do email.
+
+- **`LeadRepliesCard`** — novo card azul com ícone de sino exibido apenas quando há respostas inbound; mostra resumo de cada resposta ("Lead respondeu ao email", data/hora, assunto truncado) e botão "Abrir no Gmail" por item; link usa `gmail_thread_id` quando disponível, fallback para `/inbox`
+- **Timeline — corpo ocultado** — timeline nunca exibiu o corpo das respostas (apenas assunto truncado); comportamento documentado e validado
+- **Fix: threads passado para `LeadTimeline`** — `page.tsx` não estava buscando nem passando `threads` ao componente, fazendo todos os links "Abrir no Gmail" na timeline caírem para `/inbox`; corrigido com `getEmailThreadsByLeadId` adicionado ao `Promise.all` e prop passada
+- **Organização da página** — ordem na coluna: status card → editar dados → follow-ups → card de respostas (sino) → histórico compacto
+- Não altera envio de email, OAuth Gmail, banco de dados ou armazenamento de corpo das mensagens
+
+---
+
 ## Maio 2026 — Ciclo MVP Principal (continuação 2)
 
 ### Import Apify Assíncrono — apify_import_jobs
