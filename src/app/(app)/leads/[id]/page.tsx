@@ -7,9 +7,8 @@ import { getFollowupsByLeadId } from '@/repositories/followupRepository'
 import { hideLeadAction } from '@/features/leads/actions'
 import { LeadEditForm } from '@/features/leads/components/LeadEditForm'
 import { LeadTimeline } from '@/features/leads/components/LeadTimeline'
-import { LeadRepliesCard } from '@/features/leads/components/LeadRepliesCard'
+import { LeadRepliesButton } from '@/features/leads/components/LeadRepliesButton'
 import { LeadFollowupSection } from '@/features/followups/components/LeadFollowupSection'
-import { SyncButton } from '@/features/gmail/components/SyncButton'
 import { MarkInboxRead } from '@/features/inbox/components/MarkInboxRead'
 import { LEAD_STATUS_LABELS } from '@/types/leads'
 import type { LeadStatus } from '@/types/leads'
@@ -53,7 +52,7 @@ export default async function LeadDetailPage({ params }: Props) {
           </div>
 
           <div className="flex items-center gap-2">
-            <SyncButton leadId={lead.id} />
+            <LeadRepliesButton messages={emailMessages} threads={emailThreads} />
             <Link
               href={`/leads/${lead.id}/send`}
               className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
@@ -100,8 +99,6 @@ export default async function LeadDetailPage({ params }: Props) {
           </div>
 
           <LeadFollowupSection leadId={lead.id} followups={followups} />
-
-          <LeadRepliesCard messages={emailMessages} threads={emailThreads} />
 
           <LeadTimeline lead={lead} messages={emailMessages} followups={followups} threads={emailThreads} />
         </div>
