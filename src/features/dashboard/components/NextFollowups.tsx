@@ -19,10 +19,10 @@ function formatDateTime(timestamp: string): string {
 export function NextFollowups({ followups }: Props) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h2 className="mb-4 text-sm font-semibold text-gray-900">Próximos followups</h2>
+      <h2 className="mb-4 text-sm font-semibold text-gray-900">Próximos acompanhamentos</h2>
 
       {followups.length === 0 ? (
-        <p className="text-sm text-gray-400">Nenhum followup pendente.</p>
+        <p className="text-sm text-gray-400">Nenhum acompanhamento pendente.</p>
       ) : (
         <div className="flex flex-col divide-y divide-gray-100">
           {followups.map((f) => {

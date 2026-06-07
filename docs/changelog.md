@@ -2,6 +2,18 @@
 
 ---
 
+## Junho 2026 — Terminologia "Followups" → "Acompanhamentos" (V1)
+
+Terminologia Followups substituída por Acompanhamentos na interface da V1.
+
+- **AppNav**: label do item `/followups` alterado de "Followups" para "Acompanhamentos"
+- **DashboardKpis**: KPI "Followups pendentes" → "Acompanhamentos pendentes"
+- **NextFollowups**: título "Próximos followups" → "Próximos acompanhamentos"; estado vazio "Nenhum followup pendente." → "Nenhum acompanhamento pendente."
+- **Dashboard page**: botão "Ver followups" → "Ver acompanhamentos"
+- Sem alterações em rotas, tabelas, repositories, services, APIs ou banco de dados
+
+---
+
 ## Junho 2026 — Inbox removido da navegação (V1)
 
 Aba **Inbox** removida do menu principal. Respostas de leads são tratadas exclusivamente no detalhe do lead via botão "Respostas recebidas".

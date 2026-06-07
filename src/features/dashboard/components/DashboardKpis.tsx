@@ -11,7 +11,7 @@ export function DashboardKpis({ kpis }: Props) {
       <KpiCard label="Total de leads" value={kpis.totalLeads} />
       <KpiCard label="Emails enviados" value={kpis.sentEmails} />
       <KpiCard label="Replies recebidas" value={kpis.receivedReplies} />
-      <KpiCard label="Followups pendentes" value={kpis.pendingFollowups} />
+      <KpiCard label="Acompanhamentos pendentes" value={kpis.pendingFollowups} />
       <KpiCard label="Leads interessados" value={kpis.interestedLeads} />
     </div>
   )
