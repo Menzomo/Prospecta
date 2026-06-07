@@ -20,61 +20,66 @@ function formatDateTime(timestamp: string): string {
 export function NextFollowups({ followups }: Props) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h2 className="mb-4 text-sm font-semibold text-gray-900">Próximos acompanhamentos</h2>
+      <h2 className="mb-4 text-sm font-semibold text-gray-900">Acompanhamentos</h2>
 
       {followups.length === 0 ? (
         <p className="text-sm text-gray-400">Nenhum acompanhamento pendente.</p>
       ) : (
-        <div className="flex flex-col divide-y divide-gray-100">
+        <div className="flex gap-3 overflow-x-auto pb-1">
           {followups.map((f) => {
             const overdue = new Date(f.due_at) < new Date()
             const isNoReply = f.type === 'no_reply'
             const isNoReplyOverdue = isNoReply && overdue
 
-            return (
-              <div key={f.id} className="flex flex-col gap-0.5 py-3 first:pt-0 last:pb-0">
-                <div className="flex items-center justify-between gap-2">
-                  <Link
-                    href={`/leads/${f.lead_id}`}
-                    className="text-sm font-medium text-gray-800 hover:opacity-70"
-                  >
-                    {f.company_name}
-                  </Link>
-                  {isNoReplyOverdue && (
-                    <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                      Sem resposta
-                    </span>
-                  )}
-                </div>
+            const badgeLabel = isNoReplyOverdue ? 'Sem resposta' : isNoReply ? 'Aguardando' : 'Manual'
+            const badgeClass = isNoReplyOverdue
+              ? 'bg-amber-100 text-amber-700'
+              : isNoReply
+              ? 'bg-blue-100 text-blue-700'
+              : 'bg-gray-100 text-gray-500'
 
-                {isNoReply ? (
-                  <span className="text-xs text-gray-500">
-                    {isNoReplyOverdue
-                      ? 'Sem resposta ao último email'
-                      : `Aguardando resposta até ${formatDateTime(f.due_at)}`}
-                  </span>
-                ) : (
-                  <>
-                    <span className="text-xs text-gray-500">{f.title}</span>
-                    <span className={`text-xs ${overdue ? 'font-medium text-red-500' : 'text-gray-400'}`}>
-                      {overdue ? 'Atrasado · ' : ''}{formatDateTime(f.due_at)}
-                    </span>
-                  </>
+            const description = isNoReplyOverdue
+              ? 'Sem resposta ao último email'
+              : isNoReply
+              ? `Aguardando até ${formatDateTime(f.due_at)}`
+              : f.title
+
+            return (
+              <div
+                key={f.id}
+                className="flex w-52 shrink-0 flex-col gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4"
+              >
+                <span className={`self-start rounded-full px-2 py-0.5 text-xs font-medium ${badgeClass}`}>
+                  {badgeLabel}
+                </span>
+
+                <Link
+                  href={`/leads/${f.lead_id}`}
+                  className="truncate text-sm font-semibold text-gray-900 hover:underline"
+                >
+                  {f.company_name}
+                </Link>
+
+                <p className="line-clamp-2 text-xs text-gray-500">{description}</p>
+
+                {!isNoReply && (
+                  <p className={`text-xs ${overdue ? 'font-medium text-red-500' : 'text-gray-400'}`}>
+                    {overdue ? 'Atrasado · ' : ''}{formatDateTime(f.due_at)}
+                  </p>
                 )}
 
                 {isNoReplyOverdue && (
                   <>
-                    <span className="text-xs font-medium text-red-500">
+                    <p className="text-xs font-medium text-red-500">
                       Atrasado · {formatDateTime(f.due_at)}
-                    </span>
-                    <div className="mt-1 flex items-center gap-2">
+                    </p>
+                    <div className="mt-auto flex flex-col gap-1.5 border-t border-gray-200 pt-2">
                       <Link
                         href={`/leads/${f.lead_id}/send`}
                         className="text-xs font-medium text-blue-600 hover:underline"
                       >
                         Enviar novo email
                       </Link>
-                      <span className="text-xs text-gray-300">·</span>
                       <form action={dismissNoReplyFollowupAction.bind(null, f.id, f.lead_id)}>
                         <button
                           type="submit"

@@ -136,14 +136,14 @@ export async function getNextFollowups(
   supabase: SupabaseClient<Database>,
   userId: string
 ): Promise<NextFollowup[]> {
-  // Busca mais do que o necessário para absorver a filtragem de no_reply com resposta recente
+  // created_at desc: mais recente primeiro. Limite 20 para absorver filtragem de no_reply.
   const { data, error } = await supabase
     .from('followups')
     .select('id, lead_id, title, due_at, type, created_at, leads(company_name, last_reply_at)')
     .eq('user_id', userId)
     .eq('status', 'pending')
-    .order('due_at', { ascending: true })
-    .limit(10)
+    .order('created_at', { ascending: false })
+    .limit(20)
 
   if (error || !data) return []
 
@@ -166,7 +166,6 @@ export async function getNextFollowups(
       // Ocultar se o lead respondeu após a criação do acompanhamento
       return new Date(lastReplyAt) <= new Date(r.created_at)
     })
-    .slice(0, 3)
     .map((r) => ({
       id: r.id,
       lead_id: r.lead_id,
