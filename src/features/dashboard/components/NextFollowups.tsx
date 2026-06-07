@@ -29,6 +29,7 @@ export function NextFollowups({ followups }: Props) {
           {followups.map((f) => {
             const overdue = new Date(f.due_at) < new Date()
             const isNoReply = f.type === 'no_reply'
+            const isNoReplyOverdue = isNoReply && overdue
 
             return (
               <div key={f.id} className="flex flex-col gap-0.5 py-3 first:pt-0 last:pb-0">
@@ -39,36 +40,51 @@ export function NextFollowups({ followups }: Props) {
                   >
                     {f.company_name}
                   </Link>
-                  {isNoReply && (
+                  {isNoReplyOverdue && (
                     <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
                       Sem resposta
                     </span>
                   )}
                 </div>
-                <span className="text-xs text-gray-500">
-                  {isNoReply ? 'Verificar resposta ao último email' : f.title}
-                </span>
-                <span className={`text-xs ${overdue ? 'font-medium text-red-500' : 'text-gray-400'}`}>
-                  {overdue ? 'Atrasado · ' : ''}{formatDateTime(f.due_at)}
-                </span>
-                {isNoReply && (
-                  <div className="mt-1 flex items-center gap-2">
-                    <Link
-                      href={`/leads/${f.lead_id}/send`}
-                      className="text-xs font-medium text-blue-600 hover:underline"
-                    >
-                      Enviar novo email
-                    </Link>
-                    <span className="text-xs text-gray-300">·</span>
-                    <form action={dismissNoReplyFollowupAction.bind(null, f.id, f.lead_id)}>
-                      <button
-                        type="submit"
-                        className="text-xs text-gray-500 transition-colors hover:text-gray-700"
+
+                {isNoReply ? (
+                  <span className="text-xs text-gray-500">
+                    {isNoReplyOverdue
+                      ? 'Sem resposta ao último email'
+                      : `Aguardando resposta até ${formatDateTime(f.due_at)}`}
+                  </span>
+                ) : (
+                  <>
+                    <span className="text-xs text-gray-500">{f.title}</span>
+                    <span className={`text-xs ${overdue ? 'font-medium text-red-500' : 'text-gray-400'}`}>
+                      {overdue ? 'Atrasado · ' : ''}{formatDateTime(f.due_at)}
+                    </span>
+                  </>
+                )}
+
+                {isNoReplyOverdue && (
+                  <>
+                    <span className="text-xs font-medium text-red-500">
+                      Atrasado · {formatDateTime(f.due_at)}
+                    </span>
+                    <div className="mt-1 flex items-center gap-2">
+                      <Link
+                        href={`/leads/${f.lead_id}/send`}
+                        className="text-xs font-medium text-blue-600 hover:underline"
                       >
-                        Esquecer lead
-                      </button>
-                    </form>
-                  </div>
+                        Enviar novo email
+                      </Link>
+                      <span className="text-xs text-gray-300">·</span>
+                      <form action={dismissNoReplyFollowupAction.bind(null, f.id, f.lead_id)}>
+                        <button
+                          type="submit"
+                          className="text-xs text-gray-500 transition-colors hover:text-gray-700"
+                        >
+                          Esquecer lead
+                        </button>
+                      </form>
+                    </div>
+                  </>
                 )}
               </div>
             )
