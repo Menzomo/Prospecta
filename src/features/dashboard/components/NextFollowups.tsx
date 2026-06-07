@@ -119,8 +119,8 @@ export function NextFollowups({ followups }: Props) {
           </button>
 
           {/* Card content */}
-          <div className="flex min-w-0 flex-1 flex-col justify-center px-4 py-4">
-            <span className={`self-start rounded-full px-2 py-0.5 text-xs font-medium ${badgeClass}`}>
+          <div className="flex min-w-0 flex-1 flex-col items-center justify-center px-4 py-4 text-center">
+            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${badgeClass}`}>
               {badgeLabel}
             </span>
 
