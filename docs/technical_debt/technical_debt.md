@@ -181,3 +181,23 @@ Campo `category` removido de `ImportRow` e de `normalizeRaw()` em `parseImportFi
 Ver DT-H3 para detalhes. A regra `company_name + city` falha quando city é null, inserindo duplicatas sem verificação.
 
 **Localização:** `src/app/api/admin/import/route.ts`
+
+---
+
+### DT-NOREPLY1 — Acompanhamentos no_reply filtrados app-side, não marcados automaticamente
+
+**Problema:** A filtragem de `no_reply` acontece em tempo de leitura — o acompanhamento permanece `status='pending'` no banco mesmo após resposta do lead. Quanto mais followups, mais rows buscadas para filtrar.
+
+**Localização:** `getPendingFollowupsByUserId` em `src/repositories/followupRepository.ts`, `getNextFollowups` em `src/features/dashboard/repositories/dashboardRepository.ts`
+
+**Solução esperada:** Quando o cron de sync de replies detectar resposta inbound, marcar automaticamente como `completed` todos os followups `no_reply` do mesmo lead com `created_at < reply.sent_at`. Alternativa: Supabase trigger no insert de `email_messages`.
+
+---
+
+### DT-NOREPLY2 — "Esquecer lead" sobrescreve status sem verificar estado atual
+
+**Problema:** `dismissNoReplyFollowupAction` sempre seta `sem_resposta` no lead, mesmo que o status atual seja `interessado` ou `negociacao` — possível regressão de status não intencional.
+
+**Localização:** `src/features/followups/actions.ts` (dismissNoReplyFollowupAction)
+
+**Solução esperada:** Buscar status atual do lead antes de atualizar; só mudar para `sem_resposta` se o status for `contatado` ou `novo`.

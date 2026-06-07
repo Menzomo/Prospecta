@@ -2,6 +2,40 @@
 
 ---
 
+## Junho 2026 — Acompanhamento pós-envio de email (no_reply)
+
+Após enviar um email para um lead, o usuário pode criar um acompanhamento de "sem resposta" em 2 cliques. Se o lead responder antes do prazo, o acompanhamento some automaticamente do dashboard.
+
+### Banco de dados
+- **Migration `20260606000000_followups_add_type`**: adicionado `type text not null default 'manual'` e `email_message_id uuid references email_messages(id) on delete set null` à tabela `followups`
+
+### Fluxo pós-envio
+- **`sendEmailService`**: retorna `emailMessageId` (UUID do banco) além de `gmailMessageId`
+- **`sendEmailAction`**: em vez de redirecionar para o lead no sucesso, retorna `{ success: true, emailMessageId }` — o redirect agora acontece após a decisão do usuário sobre o acompanhamento
+- **`SendEmailForm`**: ao receber `state.success`, substitui o formulário pelo `PostSendFollowupPrompt`
+- **`PostSendFollowupPrompt`** (novo): componente client com 4 opções — "Lembrar em 2 dias", "Lembrar em 5 dias", "Escolher data", "Não criar"; ao confirmar, chama `createNoReplyFollowupAction` e navega para o lead
+
+### Actions de acompanhamento
+- **`createNoReplyFollowupAction`**: cria followup com `type='no_reply'`, `email_message_id`, `title='Verificar resposta ao email enviado'`
+- **`dismissNoReplyFollowupAction`**: cancela o followup (`status='cancelled'`) e atualiza status do lead para `sem_resposta` — acionado pelo botão "Esquecer lead" no dashboard
+
+### Filtragem inteligente
+- **`getPendingFollowupsByUserId`** e **`getNextFollowups`**: acompanhamentos `no_reply` são filtrados app-side quando `leads.last_reply_at > followup.created_at` — o lead respondeu, então não é mais relevante alertar
+
+### Dashboard
+- **`NextFollowup` type**: inclui campo `type`
+- **`getNextFollowups`**: busca até 10, filtra no_reply com resposta recente, retorna os 3 mais próximos
+- **`NextFollowups` component**: acompanhamentos `no_reply` exibem badge "Sem resposta", label descritivo e ações "Enviar novo email" / "Esquecer lead"
+
+### Lead detail
+- **`FollowupItem`**: badge "Sem resposta" (âmbar) para `no_reply`, badge "Manual" (cinza) para `manual`
+- **`/followups` page**: mesmos badges na listagem global de acompanhamentos pendentes
+
+### Repositórios
+- **`leadRepository.updateLeadStatus`** (novo): atualiza `leads.status` com validação de `user_id`
+
+---
+
 ## Junho 2026 — Terminologia "Followups" → "Acompanhamentos" (V1)
 
 Terminologia Followups substituída por Acompanhamentos na interface da V1.

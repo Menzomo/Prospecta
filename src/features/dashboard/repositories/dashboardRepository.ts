@@ -14,6 +14,7 @@ export type NextFollowup = {
   company_name: string
   title: string
   due_at: string
+  type: string
 }
 
 export async function getTotalLeads(
@@ -135,13 +136,14 @@ export async function getNextFollowups(
   supabase: SupabaseClient<Database>,
   userId: string
 ): Promise<NextFollowup[]> {
+  // Busca mais do que o necessário para absorver a filtragem de no_reply com resposta recente
   const { data, error } = await supabase
     .from('followups')
-    .select('id, lead_id, title, due_at, leads(company_name)')
+    .select('id, lead_id, title, due_at, type, created_at, leads(company_name, last_reply_at)')
     .eq('user_id', userId)
     .eq('status', 'pending')
     .order('due_at', { ascending: true })
-    .limit(3)
+    .limit(10)
 
   if (error || !data) return []
 
@@ -151,14 +153,26 @@ export async function getNextFollowups(
     lead_id: string
     title: string
     due_at: string
-    leads: { company_name: string } | null
+    type: string
+    created_at: string
+    leads: { company_name: string; last_reply_at: string | null } | null
   }>
 
-  return rows.map((r) => ({
-    id: r.id,
-    lead_id: r.lead_id,
-    title: r.title,
-    due_at: r.due_at,
-    company_name: r.leads?.company_name ?? '',
-  }))
+  return rows
+    .filter((r) => {
+      if (r.type !== 'no_reply') return true
+      const lastReplyAt = r.leads?.last_reply_at
+      if (!lastReplyAt) return true
+      // Ocultar se o lead respondeu após a criação do acompanhamento
+      return new Date(lastReplyAt) <= new Date(r.created_at)
+    })
+    .slice(0, 3)
+    .map((r) => ({
+      id: r.id,
+      lead_id: r.lead_id,
+      title: r.title,
+      due_at: r.due_at,
+      type: r.type,
+      company_name: r.leads?.company_name ?? '',
+    }))
 }

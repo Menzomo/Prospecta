@@ -144,6 +144,25 @@ export async function updateLeadLastReplyAt(
   return true
 }
 
+export async function updateLeadStatus(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  leadId: string,
+  status: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('leads')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', leadId)
+    .eq('user_id', userId)
+
+  if (error) {
+    console.error('[leadRepository.updateLeadStatus]', { code: error.code, message: error.message })
+    return false
+  }
+  return true
+}
+
 export async function hideLead(
   supabase: SupabaseClient<Database>,
   id: string

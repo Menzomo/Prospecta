@@ -12,11 +12,16 @@ export const FOLLOWUP_STATUS_LABELS: Record<FollowupStatus, string> = {
   cancelled: 'Cancelado',
 }
 
+export const FOLLOWUP_TYPES = ['manual', 'no_reply'] as const
+export type FollowupType = (typeof FOLLOWUP_TYPES)[number]
+
 export type CreateFollowupDto = {
   lead_id: string
   title: string
   notes: string | null
   due_at: string
+  type?: string
+  email_message_id?: string | null
 }
 
 export type UpdateFollowupDto = {
@@ -26,5 +31,5 @@ export type UpdateFollowupDto = {
 }
 
 export type FollowupWithLead = Followup & {
-  leads: { company_name: string } | null
+  leads: { company_name: string; last_reply_at: string | null } | null
 }

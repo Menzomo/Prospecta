@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { dismissNoReplyFollowupAction } from '@/features/followups/actions'
 import type { NextFollowup } from '../services/dashboardService'
 
 type Props = {
@@ -27,18 +28,49 @@ export function NextFollowups({ followups }: Props) {
         <div className="flex flex-col divide-y divide-gray-100">
           {followups.map((f) => {
             const overdue = new Date(f.due_at) < new Date()
+            const isNoReply = f.type === 'no_reply'
+
             return (
-              <Link
-                key={f.id}
-                href={`/leads/${f.lead_id}`}
-                className="flex flex-col gap-0.5 py-3 first:pt-0 last:pb-0 hover:opacity-70"
-              >
-                <span className="text-sm font-medium text-gray-800">{f.company_name}</span>
-                <span className="text-xs text-gray-500">{f.title}</span>
+              <div key={f.id} className="flex flex-col gap-0.5 py-3 first:pt-0 last:pb-0">
+                <div className="flex items-center justify-between gap-2">
+                  <Link
+                    href={`/leads/${f.lead_id}`}
+                    className="text-sm font-medium text-gray-800 hover:opacity-70"
+                  >
+                    {f.company_name}
+                  </Link>
+                  {isNoReply && (
+                    <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                      Sem resposta
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs text-gray-500">
+                  {isNoReply ? 'Verificar resposta ao último email' : f.title}
+                </span>
                 <span className={`text-xs ${overdue ? 'font-medium text-red-500' : 'text-gray-400'}`}>
                   {overdue ? 'Atrasado · ' : ''}{formatDateTime(f.due_at)}
                 </span>
-              </Link>
+                {isNoReply && (
+                  <div className="mt-1 flex items-center gap-2">
+                    <Link
+                      href={`/leads/${f.lead_id}/send`}
+                      className="text-xs font-medium text-blue-600 hover:underline"
+                    >
+                      Enviar novo email
+                    </Link>
+                    <span className="text-xs text-gray-300">·</span>
+                    <form action={dismissNoReplyFollowupAction.bind(null, f.id, f.lead_id)}>
+                      <button
+                        type="submit"
+                        className="text-xs text-gray-500 transition-colors hover:text-gray-700"
+                      >
+                        Esquecer lead
+                      </button>
+                    </form>
+                  </div>
+                )}
+              </div>
             )
           })}
         </div>

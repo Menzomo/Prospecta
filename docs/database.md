@@ -369,18 +369,28 @@ Mensagens individuais da thread, tanto enviadas quanto recebidas.
 ---
 
 ### followups
-Tarefa pendente de controle comercial. Representa follow-ups agendados para leads.
+Tarefa pendente de controle comercial. Representa acompanhamentos agendados para leads.
 
-| Campo       | Tipo        |
-|-------------|-------------|
-| id          | uuid PK     |
-| user_id     | uuid        |
-| lead_id     | uuid        | FK → leads |
-| due_at      | timestamptz |
-| status      | text        | pending / completed / ignored / cancelled |
-| notes       | text        |
-| created_at  | timestamptz |
-| updated_at  | timestamptz |
+| Campo             | Tipo        | Obs                                                          |
+|-------------------|-------------|--------------------------------------------------------------|
+| id                | uuid PK     |                                                              |
+| user_id           | uuid        |                                                              |
+| lead_id           | uuid        | FK → leads                                                   |
+| title             | text        |                                                              |
+| notes             | text        | opcional                                                     |
+| due_at            | timestamptz |                                                              |
+| status            | text        | `pending` \| `completed` \| `ignored` \| `cancelled`        |
+| type              | text        | `manual` (default) \| `no_reply`                            |
+| email_message_id  | uuid        | FK → email_messages (nullable) — email que originou o no_reply |
+| completed_at      | timestamptz | nullable                                                     |
+| created_at        | timestamptz |                                                              |
+| updated_at        | timestamptz |                                                              |
+
+**type — valores oficiais:**
+- `manual` — criado manualmente pelo usuário na seção de acompanhamentos do lead
+- `no_reply` — criado após envio de email; desaparece automaticamente se o lead responder após `created_at`
+
+**Filtragem de no_reply:** app-side — ao buscar pending, acompanhamentos `no_reply` onde `leads.last_reply_at > followup.created_at` são excluídos do resultado sem alterar o status no banco.
 
 ---
 

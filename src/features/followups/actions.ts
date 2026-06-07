@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createFollowupSchema, updateFollowupSchema } from '@/validations/followupSchema'
 import { createFollowup, updateFollowup, updateFollowupStatus } from '@/repositories/followupRepository'
+import { updateLeadStatus } from '@/repositories/leadRepository'
 
 // --- Create ---
 
@@ -104,6 +105,61 @@ export async function updateFollowupAction(
   revalidatePath(`/leads/${leadId}`)
   revalidatePath('/followups')
   return { success: true }
+}
+
+// --- Create no-reply (post-send) ---
+
+type CreateNoReplyResult = { success?: boolean; error?: string }
+
+export async function createNoReplyFollowupAction(
+  leadId: string,
+  emailMessageId: string,
+  dueAt: string
+): Promise<CreateNoReplyResult> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { error: 'Sessão expirada.' }
+
+  const followup = await createFollowup(supabase, user.id, {
+    lead_id: leadId,
+    title: 'Verificar resposta ao email enviado',
+    notes: null,
+    due_at: dueAt,
+    type: 'no_reply',
+    email_message_id: emailMessageId,
+  })
+
+  if (!followup) return { error: 'Erro ao criar acompanhamento. Tente novamente.' }
+
+  revalidatePath(`/leads/${leadId}`)
+  revalidatePath('/followups')
+  revalidatePath('/dashboard')
+  return { success: true }
+}
+
+// --- Dismiss no-reply ("Esquecer lead") ---
+
+export async function dismissNoReplyFollowupAction(
+  followupId: string,
+  leadId: string,
+  _formData: FormData
+): Promise<void> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) redirect('/login')
+
+  await updateFollowupStatus(supabase, user.id, followupId, 'cancelled')
+  await updateLeadStatus(supabase, user.id, leadId, 'sem_resposta')
+
+  revalidatePath('/dashboard')
+  revalidatePath(`/leads/${leadId}`)
+  revalidatePath('/followups')
 }
 
 // --- Complete ---

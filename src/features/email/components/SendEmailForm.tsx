@@ -2,6 +2,7 @@
 
 import { useState, useActionState } from 'react'
 import { sendEmailAction } from '@/features/email/actions'
+import { PostSendFollowupPrompt } from '@/features/email/components/PostSendFollowupPrompt'
 import { renderTemplate } from '@/utils/renderTemplate'
 import type { Template } from '@/types/templates'
 import type { TemplateAttachment } from '@/repositories/templateAttachmentRepository'
@@ -35,6 +36,15 @@ export function SendEmailForm({ leadId, templates, variables, attachmentsByTempl
       setSubject('')
       setBody('')
     }
+  }
+
+  if (state?.success && state.emailMessageId) {
+    return (
+      <PostSendFollowupPrompt
+        leadId={leadId}
+        emailMessageId={state.emailMessageId}
+      />
+    )
   }
 
   return (

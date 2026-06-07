@@ -196,14 +196,50 @@ Comportamento:
 
 ---
 
-## Follow-ups — /followups
+## Acompanhamentos — /followups
 
-- Listar follow-ups pendentes do usuário
-- Follow-up tem: lead, prazo (due_at), status e notas
+- Listar acompanhamentos pendentes do usuário
+- Acompanhamento tem: lead, prazo (due_at), status, notas, **tipo** e (opcional) referência ao email
 - Status: pending / completed / ignored / cancelled
-- Sistema NÃO envia follow-up automático
-- Sistema alerta quando follow-up está pendente ou atrasado
-- Usuário marca follow-up como completed ou ignored
+- **Tipos:**
+  - `manual` — criado manualmente na seção de acompanhamentos do lead
+  - `no_reply` — criado automaticamente após envio de email; sinaliza que o lead não respondeu
+- Sistema NÃO envia acompanhamento automático
+- Sistema alerta quando acompanhamento está pendente ou atrasado
+
+### Fluxo pós-envio de email
+
+1. Usuário envia email → sistema salva o email e retorna tela de confirmação
+2. Sistema exibe prompt: "Criar acompanhamento caso o lead não responda?"
+   - **Lembrar em 2 dias** — cria acompanhamento `no_reply` com prazo em 2 dias às 9h
+   - **Lembrar em 5 dias** — cria acompanhamento `no_reply` com prazo em 5 dias às 9h
+   - **Escolher data** — exibe seletor de data/hora e cria após confirmação
+   - **Não criar** — navega direto para o lead sem criar acompanhamento
+3. Acompanhamento `no_reply` criado com:
+   - `title: "Verificar resposta ao email enviado"`
+   - `email_message_id` referenciando o email enviado
+   - `status: pending`
+
+### Filtragem inteligente de no_reply
+
+Acompanhamentos `no_reply` são automaticamente ocultados (sem marcar como concluído) quando o lead já respondeu após a criação do acompanhamento. A regra é aplicada app-side nos repositórios:
+
+- `leads.last_reply_at > followup.created_at` → ocultar o acompanhamento
+- Impacta: `/followups` page e dashboard "Próximos acompanhamentos"
+
+### Dashboard — Próximos acompanhamentos
+
+Para acompanhamentos `no_reply`, o card exibe:
+- Badge "Sem resposta" (âmbar)
+- Label "Verificar resposta ao último email"
+- Ação **Enviar novo email** → `/leads/[id]/send`
+- Ação **Esquecer lead** → cancela o acompanhamento e atualiza status do lead para `sem_resposta`
+
+### Exibição no detalhe do lead
+
+Seção Acompanhamentos diferencia o tipo com badge:
+- "Sem resposta" (âmbar) para `no_reply`
+- "Manual" (cinza) para `manual`
 
 ---
 

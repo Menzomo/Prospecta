@@ -69,7 +69,18 @@ export function FollowupItem({ followup, leadId }: Props) {
       {/* Info row */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-gray-800">{followup.title}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-sm font-medium text-gray-800">{followup.title}</p>
+            {followup.type === 'no_reply' ? (
+              <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                Sem resposta
+              </span>
+            ) : (
+              <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+                Manual
+              </span>
+            )}
+          </div>
           <p className={`mt-0.5 text-xs ${overdue ? 'font-medium text-red-500' : 'text-gray-500'}`}>
             {overdue ? 'Atrasado · ' : ''}{formatDueAt(followup.due_at)}
           </p>

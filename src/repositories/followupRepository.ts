@@ -46,14 +46,21 @@ export async function getPendingFollowupsByUserId(
 ): Promise<FollowupWithLead[]> {
   const { data, error } = await supabase
     .from('followups')
-    .select('*, leads(company_name)')
+    .select('*, leads(company_name, last_reply_at)')
     .eq('user_id', userId)
     .eq('status', 'pending')
     .order('due_at', { ascending: true })
 
   if (error) return []
   // Cast necessário: Relationships vazio em types.ts impede inferência do join
-  return data as unknown as FollowupWithLead[]
+  const all = data as unknown as FollowupWithLead[]
+  // Ocultar acompanhamentos no_reply quando o lead já respondeu após a criação do acompanhamento
+  return all.filter((f) => {
+    if (f.type !== 'no_reply') return true
+    const lastReplyAt = f.leads?.last_reply_at
+    if (!lastReplyAt) return true
+    return new Date(lastReplyAt) <= new Date(f.created_at)
+  })
 }
 
 export async function updateFollowup(

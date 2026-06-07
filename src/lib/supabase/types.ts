@@ -286,6 +286,8 @@ export interface Database {
           notes: string | null
           due_at: string
           status: string
+          type: string
+          email_message_id: string | null
           completed_at: string | null
           created_at: string
           updated_at: string
@@ -298,6 +300,8 @@ export interface Database {
           notes?: string | null
           due_at: string
           status?: string
+          type?: string
+          email_message_id?: string | null
           completed_at?: string | null
           created_at?: string
           updated_at?: string
@@ -307,6 +311,8 @@ export interface Database {
           notes?: string | null
           due_at?: string
           status?: string
+          type?: string
+          email_message_id?: string | null
           completed_at?: string | null
           updated_at?: string
         }

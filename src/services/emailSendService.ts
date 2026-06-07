@@ -24,7 +24,7 @@ type SendEmailInput = {
 }
 
 export type SendEmailResult =
-  | { success: true; gmailMessageId: string }
+  | { success: true; gmailMessageId: string; emailMessageId: string }
   | { error: 'token_expired' | 'gmail_send_failed' | 'db_save_failed' }
 
 type GmailSendResponse = {
@@ -191,5 +191,5 @@ export async function sendEmailService(
 
   await markLeadContacted(supabase, input.leadId)
 
-  return { success: true, gmailMessageId: gmailData.id }
+  return { success: true, gmailMessageId: gmailData.id, emailMessageId: message.id }
 }

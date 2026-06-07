@@ -17,6 +17,8 @@ export type SendEmailActionState = {
     body?: string[]
   }
   error?: string
+  success?: boolean
+  emailMessageId?: string
 } | null
 
 export async function sendEmailAction(
@@ -109,5 +111,6 @@ export async function sendEmailAction(
   }
 
   revalidatePath(`/leads/${leadId}`)
-  redirect(`/leads/${leadId}`)
+  revalidatePath('/dashboard')
+  return { success: true, emailMessageId: result.emailMessageId }
 }
