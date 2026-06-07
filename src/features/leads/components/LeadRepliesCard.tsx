@@ -7,12 +7,12 @@ type Props = {
   threads: EmailThread[]
 }
 
-function buildGmailUrl(message: EmailMessage, threads: EmailThread[]): string {
+function buildGmailUrl(message: EmailMessage, threads: EmailThread[]): string | null {
   const thread = threads.find((t) => t.id === message.thread_id)
   if (thread?.gmail_thread_id) {
     return `https://mail.google.com/mail/#all/${thread.gmail_thread_id}`
   }
-  return '/inbox'
+  return null
 }
 
 function formatDateTime(ts: string): string {
@@ -59,7 +59,6 @@ export function LeadRepliesCard({ messages, threads }: Props) {
       <div className="border-t border-blue-100 px-6 pb-4 pt-3 space-y-3">
         {replies.map((reply) => {
           const gmailUrl = buildGmailUrl(reply, threads)
-          const isExternal = gmailUrl.startsWith('http')
           return (
             <div key={reply.id} className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
@@ -69,14 +68,18 @@ export function LeadRepliesCard({ messages, threads }: Props) {
                   <p className="mt-0.5 truncate text-xs text-gray-400">Assunto: {reply.subject}</p>
                 )}
               </div>
-              <a
-                href={gmailUrl}
-                target={isExternal ? '_blank' : undefined}
-                rel={isExternal ? 'noopener noreferrer' : undefined}
-                className="shrink-0 rounded-md border border-blue-300 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100"
-              >
-                Abrir no Gmail
-              </a>
+              {gmailUrl ? (
+                <a
+                  href={gmailUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 rounded-md border border-blue-300 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100"
+                >
+                  Abrir no Gmail
+                </a>
+              ) : (
+                <span className="shrink-0 text-xs text-gray-400">Link do Gmail indisponível</span>
+              )}
             </div>
           )
         })}

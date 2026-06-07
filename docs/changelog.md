@@ -2,6 +2,16 @@
 
 ---
 
+## Junho 2026 — Inbox removido da navegação (V1)
+
+Aba **Inbox** removida do menu principal. Respostas de leads são tratadas exclusivamente no detalhe do lead via botão "Respostas recebidas".
+
+- **AppNav**: item `/inbox` removido de `NAV_ITEMS` — rota e código mantidos, apenas ocultos da navegação
+- **Dashboard**: link "Ver inbox" removido dos atalhos rápidos
+- **LeadRepliesCard, LeadRepliesButton, LeadTimeline**: fallback `/inbox` substituído — quando `gmail_thread_id` não está disponível, exibe "Link do Gmail indisponível" em vez de redirecionar para a rota interna
+
+---
+
 ## Junho 2026 — UX Lead Timeline e Respostas
 
 ### Marcar resposta como lida — Lead detail

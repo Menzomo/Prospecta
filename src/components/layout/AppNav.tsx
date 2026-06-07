@@ -14,7 +14,6 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/leads', label: 'Leads', match: (p) => p.startsWith('/leads') },
   { href: '/search', label: 'Buscar leads', match: (p) => p.startsWith('/search') },
   { href: '/templates', label: 'Templates', match: (p) => p.startsWith('/templates') },
-  { href: '/inbox', label: 'Inbox', match: (p) => p.startsWith('/inbox') },
   { href: '/followups', label: 'Followups', match: (p) => p.startsWith('/followups') },
   {
     href: '/settings',

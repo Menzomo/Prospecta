@@ -9,12 +9,12 @@ type Props = {
   threads: EmailThread[]
 }
 
-function buildGmailUrl(message: EmailMessage, threads: EmailThread[]): string {
+function buildGmailUrl(message: EmailMessage, threads: EmailThread[]): string | null {
   const thread = threads.find((t) => t.id === message.thread_id)
   if (thread?.gmail_thread_id) {
     return `https://mail.google.com/mail/#all/${thread.gmail_thread_id}`
   }
-  return '/inbox'
+  return null
 }
 
 function formatDateTime(ts: string): string {
@@ -148,7 +148,6 @@ export function LeadRepliesButton({ messages, threads }: Props) {
               <div className="space-y-4">
                 {unread.map((reply) => {
                   const gmailUrl = buildGmailUrl(reply, threads)
-                  const isExternal = gmailUrl.startsWith('http')
                   return (
                     <div key={reply.id} className="rounded-lg border border-gray-100 p-3">
                       <div className="mb-2">
@@ -161,14 +160,18 @@ export function LeadRepliesButton({ messages, threads }: Props) {
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <a
-                          href={gmailUrl}
-                          target={isExternal ? '_blank' : undefined}
-                          rel={isExternal ? 'noopener noreferrer' : undefined}
-                          className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100"
-                        >
-                          Abrir no Gmail
-                        </a>
+                        {gmailUrl ? (
+                          <a
+                            href={gmailUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100"
+                          >
+                            Abrir no Gmail
+                          </a>
+                        ) : (
+                          <span className="text-xs text-gray-400">Link do Gmail indisponível</span>
+                        )}
                         <button
                           type="button"
                           disabled={isPending}

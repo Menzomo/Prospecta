@@ -9,7 +9,7 @@ type LeadCreatedEvent = { id: string; type: 'lead_created'; timestamp: string }
 type EmailSentEvent = { id: string; type: 'email_sent'; timestamp: string; subject: string }
 type FollowupCreatedEvent = { id: string; type: 'followup_created'; timestamp: string; title: string; due_at: string }
 type FollowupCompletedEvent = { id: string; type: 'followup_completed'; timestamp: string; title: string }
-type ReplyReceivedEvent = { id: string; type: 'reply_received'; timestamp: string; subject: string; gmail_url: string }
+type ReplyReceivedEvent = { id: string; type: 'reply_received'; timestamp: string; subject: string; gmail_url: string | null }
 
 type TimelineEvent =
   | LeadCreatedEvent
@@ -42,7 +42,7 @@ function buildTimeline(
           subject: m.subject,
           gmail_url: gmailThreadId
             ? `https://mail.google.com/mail/#all/${gmailThreadId}`
-            : '/inbox',
+            : null,
         }
       }),
     ...followups.map((f): FollowupCreatedEvent => ({
@@ -189,14 +189,18 @@ export function LeadTimeline({ lead, messages, followups, threads }: Props) {
                           {event.subject && (
                             <p className="mt-0.5 truncate text-xs text-gray-500">Assunto: {event.subject}</p>
                           )}
-                          <a
-                            href={event.gmail_url}
-                            target={event.gmail_url.startsWith('http') ? '_blank' : undefined}
-                            rel="noopener noreferrer"
-                            className="mt-1 inline-block rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100"
-                          >
-                            Abrir no Gmail →
-                          </a>
+                          {event.gmail_url ? (
+                            <a
+                              href={event.gmail_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-1 inline-block rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                            >
+                              Abrir no Gmail →
+                            </a>
+                          ) : (
+                            <span className="mt-1 inline-block text-xs text-gray-400">Link do Gmail indisponível</span>
+                          )}
                         </>
                       )}
                     </div>
