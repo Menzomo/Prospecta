@@ -18,7 +18,7 @@ export async function markLeadInboxReadAction(leadId: string): Promise<void> {
   revalidatePath('/inbox')
 }
 
-export async function markSingleReplyAsReadAction(messageId: string): Promise<void> {
+export async function markSingleReplyAsReadAction(messageId: string, leadId: string): Promise<void> {
   const supabase = await createClient()
   const {
     data: { user },
@@ -29,5 +29,6 @@ export async function markSingleReplyAsReadAction(messageId: string): Promise<vo
   await markEmailMessageAsRead(supabase, user.id, messageId)
 
   revalidatePath('/dashboard')
+  revalidatePath(`/leads/${leadId}`)
   revalidatePath('/inbox')
 }

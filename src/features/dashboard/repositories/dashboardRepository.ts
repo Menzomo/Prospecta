@@ -93,22 +93,20 @@ export async function getRecentReplies(
 ): Promise<RecentReply[]> {
   const { data: messages, error } = await supabase
     .from('email_messages')
-    .select('lead_id, sent_at, is_read')
+    .select('lead_id, sent_at')
     .eq('user_id', userId)
     .eq('direction', 'inbound')
+    .eq('is_read', false)
     .order('sent_at', { ascending: false })
     .limit(20)
 
   if (error || !messages || messages.length === 0) return []
 
-  // Group by lead: most recent reply per lead + has_unread if any message is unread
-  const byLead = new Map<string, { last_reply_at: string; has_unread: boolean }>()
+  // Deduplicate by lead: most recent unread message per lead
+  const byLead = new Map<string, string>()
   for (const m of messages) {
-    const existing = byLead.get(m.lead_id)
-    if (!existing) {
-      byLead.set(m.lead_id, { last_reply_at: m.sent_at, has_unread: !m.is_read })
-    } else if (!m.is_read) {
-      byLead.set(m.lead_id, { ...existing, has_unread: true })
+    if (!byLead.has(m.lead_id)) {
+      byLead.set(m.lead_id, m.sent_at)
     }
   }
 
@@ -123,16 +121,13 @@ export async function getRecentReplies(
   const companyMap = new Map((leads ?? []).map((l) => [l.id, l.company_name]))
 
   return Array.from(byLead.entries())
-    .map(([lead_id, { last_reply_at, has_unread }]) => ({
+    .map(([lead_id, last_reply_at]) => ({
       lead_id,
       lead_company_name: companyMap.get(lead_id) ?? '',
       last_reply_at,
-      has_unread,
+      has_unread: true,
     }))
-    .sort((a, b) => {
-      if (a.has_unread !== b.has_unread) return a.has_unread ? -1 : 1
-      return new Date(b.last_reply_at).getTime() - new Date(a.last_reply_at).getTime()
-    })
+    .sort((a, b) => new Date(b.last_reply_at).getTime() - new Date(a.last_reply_at).getTime())
     .slice(0, 5)
 }
 

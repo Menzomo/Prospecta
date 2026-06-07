@@ -7,6 +7,7 @@ import { markSingleReplyAsReadAction } from '@/features/inbox/actions'
 type Props = {
   messages: EmailMessage[]
   threads: EmailThread[]
+  leadId: string
 }
 
 function buildGmailUrl(message: EmailMessage, threads: EmailThread[]): string | null {
@@ -66,7 +67,7 @@ function XIcon() {
   )
 }
 
-export function LeadRepliesButton({ messages, threads }: Props) {
+export function LeadRepliesButton({ messages, threads, leadId }: Props) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
@@ -90,7 +91,7 @@ export function LeadRepliesButton({ messages, threads }: Props) {
   function handleMarkRead(messageId: string) {
     setReadIds((prev) => new Set([...prev, messageId]))
     startTransition(async () => {
-      await markSingleReplyAsReadAction(messageId)
+      await markSingleReplyAsReadAction(messageId, leadId)
     })
   }
 
@@ -165,6 +166,7 @@ export function LeadRepliesButton({ messages, threads }: Props) {
                             href={gmailUrl}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={() => handleMarkRead(reply.id)}
                             className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100"
                           >
                             Abrir no Gmail
