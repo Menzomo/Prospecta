@@ -20,18 +20,44 @@ function formatDateTime(timestamp: string): string {
   })
 }
 
-function ChevronLeft() {
+function ChevronLeft({ faded }: { faded: boolean }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 18 18"
+      fill="none"
+      aria-hidden="true"
+      className={faded ? 'text-gray-300' : 'text-gray-400'}
+    >
+      <path
+        d="M11 14L7 9l4-5"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   )
 }
 
-function ChevronRight() {
+function ChevronRight({ faded }: { faded: boolean }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 18 18"
+      fill="none"
+      aria-hidden="true"
+      className={faded ? 'text-gray-300' : 'text-gray-400'}
+    >
+      <path
+        d="M7 4l4 5-4 5"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   )
 }
@@ -60,85 +86,95 @@ export function NextFollowups({ followups }: Props) {
       : f.title
     : ''
 
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-900">Acompanhamentos</h2>
+  const atFirst = index === 0
+  const atLast = index === total - 1
 
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3.5">
+        <h2 className="text-sm font-semibold text-gray-900">Acompanhamentos</h2>
         {total > 1 && (
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setIndex((i) => Math.max(0, i - 1))}
-              disabled={index === 0}
-              className="flex h-6 w-6 items-center justify-center rounded-md border border-gray-200 text-gray-500 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30"
-              aria-label="Anterior"
-            >
-              <ChevronLeft />
-            </button>
-            <span className="min-w-12 text-center text-xs text-gray-400">
-              {index + 1} de {total}
-            </span>
-            <button
-              type="button"
-              onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}
-              disabled={index === total - 1}
-              className="flex h-6 w-6 items-center justify-center rounded-md border border-gray-200 text-gray-500 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30"
-              aria-label="Próximo"
-            >
-              <ChevronRight />
-            </button>
-          </div>
+          <span className="text-xs text-gray-400">{index + 1} de {total}</span>
         )}
       </div>
 
+      {/* Body */}
       {!f ? (
-        <p className="text-sm text-gray-400">Nenhum acompanhamento pendente.</p>
+        <div className="flex flex-col items-center gap-1 px-5 py-6 text-center">
+          <p className="text-sm font-medium text-gray-500">Nenhum acompanhamento pendente</p>
+          <p className="text-xs text-gray-400">Crie acompanhamentos a partir da página de um lead.</p>
+        </div>
       ) : (
-        <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
-          <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${badgeClass}`}>
-            {badgeLabel}
-          </span>
-
-          <Link
-            href={`/leads/${f.lead_id}`}
-            className="mt-2 block truncate text-sm font-semibold text-gray-900 hover:underline"
+        <div className="flex min-h-[9rem] items-stretch">
+          {/* Left arrow area */}
+          <button
+            type="button"
+            onClick={() => setIndex((i) => Math.max(0, i - 1))}
+            disabled={atFirst || total <= 1}
+            aria-label="Anterior"
+            className="flex w-10 shrink-0 items-center justify-center rounded-bl-xl border-r border-gray-100 transition-colors hover:bg-gray-50 disabled:cursor-default disabled:hover:bg-transparent"
           >
-            {f.company_name}
-          </Link>
+            {total > 1 && <ChevronLeft faded={atFirst} />}
+          </button>
 
-          <p className="mt-1 text-xs text-gray-500">{description}</p>
+          {/* Card content */}
+          <div className="flex min-w-0 flex-1 flex-col justify-center px-4 py-4">
+            <span className={`self-start rounded-full px-2 py-0.5 text-xs font-medium ${badgeClass}`}>
+              {badgeLabel}
+            </span>
 
-          {!isNoReply && (
-            <p className={`mt-0.5 text-xs ${overdue ? 'font-medium text-red-500' : 'text-gray-400'}`}>
-              {overdue ? 'Atrasado · ' : ''}{formatDateTime(f.due_at)}
-            </p>
-          )}
+            <Link
+              href={`/leads/${f.lead_id}`}
+              className="mt-2 block truncate text-sm font-semibold text-gray-900 hover:underline"
+            >
+              {f.company_name}
+            </Link>
 
-          {isNoReplyOverdue && (
-            <>
-              <p className="mt-0.5 text-xs font-medium text-red-500">
-                Atrasado · {formatDateTime(f.due_at)}
+            <p className="mt-1 text-xs text-gray-500">{description}</p>
+
+            {!isNoReply && (
+              <p className={`mt-0.5 text-xs ${overdue ? 'font-medium text-red-500' : 'text-gray-400'}`}>
+                {overdue ? 'Atrasado · ' : ''}{formatDateTime(f.due_at)}
               </p>
-              <div className="mt-3 flex items-center gap-3 border-t border-gray-200 pt-3">
-                <Link
-                  href={`/leads/${f.lead_id}/send`}
-                  className="text-xs font-medium text-blue-600 hover:underline"
-                >
-                  Enviar novo email
-                </Link>
-                <span className="text-xs text-gray-300">·</span>
-                <form action={dismissNoReplyFollowupAction.bind(null, f.id, f.lead_id)}>
-                  <button
-                    type="submit"
-                    className="text-xs text-gray-500 transition-colors hover:text-gray-700"
+            )}
+
+            {isNoReplyOverdue && (
+              <>
+                <p className="mt-0.5 text-xs font-medium text-red-500">
+                  Atrasado · {formatDateTime(f.due_at)}
+                </p>
+                <div className="mt-3 flex items-center gap-3 border-t border-gray-100 pt-3">
+                  <Link
+                    href={`/leads/${f.lead_id}/send`}
+                    className="text-xs font-medium text-blue-600 hover:underline"
                   >
-                    Esquecer lead
-                  </button>
-                </form>
-              </div>
-            </>
-          )}
+                    Enviar novo email
+                  </Link>
+                  <span className="text-xs text-gray-300">·</span>
+                  <form action={dismissNoReplyFollowupAction.bind(null, f.id, f.lead_id)}>
+                    <button
+                      type="submit"
+                      className="text-xs text-gray-500 transition-colors hover:text-gray-700"
+                    >
+                      Esquecer lead
+                    </button>
+                  </form>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Right arrow area */}
+          <button
+            type="button"
+            onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}
+            disabled={atLast || total <= 1}
+            aria-label="Próximo"
+            className="flex w-10 shrink-0 items-center justify-center rounded-br-xl border-l border-gray-100 transition-colors hover:bg-gray-50 disabled:cursor-default disabled:hover:bg-transparent"
+          >
+            {total > 1 && <ChevronRight faded={atLast} />}
+          </button>
         </div>
       )}
     </div>

@@ -50,9 +50,10 @@ export default async function DashboardPage() {
 
         <DashboardKpis kpis={dashboard.kpis} />
 
-        <RecentReplies replies={dashboard.recentReplies} />
-
-        <NextFollowups followups={dashboard.nextFollowups} />
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <RecentReplies replies={dashboard.recentReplies} />
+          <NextFollowups followups={dashboard.nextFollowups} />
+        </div>
 
         <div className="flex flex-wrap gap-3">
           <Link
