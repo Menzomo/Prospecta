@@ -2,6 +2,47 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/types'
 import type { LeadCategory } from '@/types/globalLeads'
 
+export async function listCategoriesWithAvailableLeadsForUser(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<LeadCategory[]> {
+  const { data: ownedLinks } = await supabase
+    .from('user_leads')
+    .select('global_lead_id')
+    .eq('user_id', userId)
+
+  const ownedIds = (ownedLinks ?? []).map((l) => l.global_lead_id)
+
+  let availableQuery = supabase
+    .from('global_leads')
+    .select('category_id')
+    .eq('status', 'active')
+    .eq('lead_quality_status', 'email_found')
+
+  if (ownedIds.length > 0) {
+    availableQuery = availableQuery.not('id', 'in', `(${ownedIds.join(',')})`)
+  }
+
+  const { data: availableLeads } = await availableQuery
+
+  const categoryIds = [
+    ...new Set(
+      (availableLeads ?? []).map((l) => l.category_id).filter((id): id is string => id !== null)
+    ),
+  ]
+
+  if (categoryIds.length === 0) return []
+
+  const { data: categories, error } = await supabase
+    .from('lead_categories')
+    .select('*')
+    .in('id', categoryIds)
+    .order('name', { ascending: true })
+
+  if (error) return []
+  return categories
+}
+
 export async function listLeadCategories(
   supabase: SupabaseClient<Database>
 ): Promise<LeadCategory[]> {

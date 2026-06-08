@@ -1,6 +1,9 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { listLeadCategories } from '@/repositories/leadCategoryRepository'
+import {
+  listLeadCategories,
+  listCategoriesWithAvailableLeadsForUser,
+} from '@/repositories/leadCategoryRepository'
 import { SearchForm } from '@/features/search/components/SearchForm'
 
 export default async function SearchPage() {
@@ -11,7 +14,17 @@ export default async function SearchPage() {
 
   if (!user) redirect('/login')
 
-  const categories = await listLeadCategories(supabase)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  const isAdmin = profile?.role === 'admin'
+
+  const categories = isAdmin
+    ? await listLeadCategories(supabase)
+    : await listCategoriesWithAvailableLeadsForUser(supabase, user.id)
 
   return (
     <>

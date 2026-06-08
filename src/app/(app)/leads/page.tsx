@@ -41,6 +41,10 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
   const categoryById = new Map<string, LeadCategory>(categories.map((c) => [c.id, c]))
   const categoryBySlug = new Map<string, LeadCategory>(categories.map((c) => [c.slug, c]))
 
+  // Only show categories the user actually has leads in (avoids empty filter options)
+  const usedCategoryIds = new Set(searchLeads.map((l) => l.category_id).filter(Boolean))
+  const categoriesInUse = categories.filter((c) => usedCategoryIds.has(c.id))
+
   // Resolve active category filter
   const activeCategoryId =
     categoryFilter === 'all' ? null : (categoryBySlug.get(categoryFilter)?.id ?? null)
@@ -91,7 +95,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
             className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           >
             <option value="all">Todos os nichos</option>
-            {categories.map((cat) => (
+            {categoriesInUse.map((cat) => (
               <option key={cat.id} value={cat.slug}>
                 {cat.name}
               </option>
