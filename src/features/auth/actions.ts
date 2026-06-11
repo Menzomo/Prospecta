@@ -58,7 +58,7 @@ export async function signupAction(
   }
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email: validation.data.email,
     password: validation.data.password,
     options: {
@@ -68,6 +68,10 @@ export async function signupAction(
 
   if (error) {
     return { error: error.message }
+  }
+
+  if (data.user) {
+    await checkAndSendBetaNotification(data.user.id)
   }
 
   redirect('/onboarding')

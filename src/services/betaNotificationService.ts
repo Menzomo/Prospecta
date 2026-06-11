@@ -50,39 +50,47 @@ export async function checkAndSendBetaNotification(userId: string): Promise<void
   try {
     console.log(`[betaNotification] Novo usuário detectado: userId=${userId}`)
     const admin = createAdminClient()
+
+    // Busca o usuário em auth.users — funciona para qualquer provedor/domínio de email
+    const { data: { user }, error: userError } = await admin.auth.admin.getUserById(userId)
+    if (userError || !user?.email) {
+      console.error(`[betaNotification] Erro ao buscar usuário auth (userId=${userId}):`, userError?.message ?? 'email ausente')
+      return
+    }
+
+    // Verifica flag de deduplicação em profiles (código PGRST116 = sem rows = perfil ainda não existe)
     const { data: profile, error: profileError } = await admin
       .from('profiles')
-      .select('oauth_notification_sent, full_name, email, created_at')
+      .select('oauth_notification_sent')
       .eq('id', userId)
       .single()
 
-    if (profileError) {
+    if (profileError && profileError.code !== 'PGRST116') {
       console.error(`[betaNotification] Erro ao buscar perfil (userId=${userId}): ${profileError.message} [code: ${profileError.code}]`)
+    }
+
+    if (profile?.oauth_notification_sent) {
+      console.log(`[betaNotification] Notificação já enviada anteriormente para: ${user.email}`)
       return
     }
 
     if (!profile) {
-      console.warn(`[betaNotification] Perfil não encontrado para userId=${userId}`)
-      return
+      console.warn(`[betaNotification] Perfil ainda não existe para userId=${userId} — usando dados do auth.users`)
     }
 
-    if (profile.oauth_notification_sent) {
-      console.log(`[betaNotification] Notificação já enviada anteriormente para: ${profile.email}`)
-      return
-    }
+    const userName = (user.user_metadata?.full_name as string | undefined) ?? null
+    console.log(`[betaNotification] Preparando envio de email para Bruno (usuário: ${user.email})`)
+    await sendNotificationEmail(userName, user.email, user.created_at)
 
-    console.log(`[betaNotification] Preparando envio de email para Bruno (usuário: ${profile.email})`)
-    await sendNotificationEmail(profile.full_name, profile.email, profile.created_at)
+    // Persiste o flag: atualiza se perfil existe, faz upsert caso contrário
+    const { error: flagError } = profile
+      ? await admin.from('profiles').update({ oauth_notification_sent: true }).eq('id', userId)
+      : await admin.from('profiles').upsert({ id: userId, email: user.email, full_name: userName, oauth_notification_sent: true })
 
-    const { error: updateError } = await admin
-      .from('profiles')
-      .update({ oauth_notification_sent: true })
-      .eq('id', userId)
-
-    if (updateError) {
-      console.error(`[betaNotification] Email enviado mas erro ao atualizar flag (userId=${userId}): ${updateError.message}`)
+    if (flagError) {
+      console.error(`[betaNotification] Email enviado mas erro ao persistir flag (userId=${userId}): ${flagError.message}`)
     } else {
-      console.log(`[betaNotification] Notificação enviada para novo usuário beta: ${profile.email}`)
+      console.log(`[betaNotification] Notificação enviada para novo usuário beta: ${user.email}`)
     }
   } catch (err) {
     console.error('[betaNotification] Erro ao processar notificação beta:', err)
