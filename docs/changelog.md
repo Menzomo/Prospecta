@@ -2,6 +2,21 @@
 
 ---
 
+## Junho 2026 — Fix: erro "Dados inválidos" ao confirmar leads da busca
+
+**Bug:** O endpoint `/api/user-leads/confirm` tinha `.max(10)` no schema Zod. Admins selecionando 50 leads (e usuários em edge cases com mais de 10) recebiam "Dados inválidos" e nenhum lead era adicionado.
+
+**Causa raiz:** Limite arbitrário de `max(10)` na validação da rota, incompatível com o limite real de busca para admins (50 leads).
+
+### Correções
+
+- **`/api/user-leads/confirm`**: `.max(10)` → `.max(200)` (alinhado ao limite mensal real); o cap operacional para usuários comuns continua sendo o `monthly_remaining` calculado no servidor
+- **`skipped_invalid`**: Leads que existem no banco mas não passam no filtro `status=active` + `lead_quality_status=email_found` agora são contados e logados no servidor (com `userId` e IDs dos leads problemáticos para revisão admin) em vez de serem descartados silenciosamente
+- **`ConfirmLeadsResponse`**: Adicionado campo `skipped_invalid: number`
+- **UI de sucesso** (`SearchForm`): Agora exibe breakdown completo — "X leads adicionados. Y já estavam em Leads. Z não puderam ser adicionados por dados incompletos."
+
+---
+
 ## Junho 2026 — Ações diretas na listagem de Leads
 
 Botões "Enviar email" e "Detalhes" adicionados diretamente na tabela de `/leads`, eliminando a necessidade de entrar no detalhe do lead para iniciar um envio.

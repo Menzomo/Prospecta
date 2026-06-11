@@ -15,5 +15,6 @@ export type SearchPreviewResponse = {
 export type ConfirmLeadsResponse = {
   added: number
   already_owned: number
+  skipped_invalid: number
   monthly_remaining: number // -1 means unlimited (admin)
 }

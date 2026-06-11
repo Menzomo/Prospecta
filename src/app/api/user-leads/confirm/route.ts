@@ -6,11 +6,12 @@ import { createUserLead } from '@/repositories/userLeadRepository'
 
 const MONTHLY_LIMIT = 200
 
+// Max 200 — the monthly limit is the real cap for regular users; admins have no effective limit
 const confirmSchema = z.object({
   global_lead_ids: z
     .array(z.string().uuid('ID de lead inválido'))
     .min(1, 'Selecione ao menos 1 lead')
-    .max(10, 'Máximo de 10 leads por vez'),
+    .max(200, 'Máximo de 200 leads por vez'),
 })
 
 export const dynamic = 'force-dynamic'
@@ -78,6 +79,7 @@ export async function POST(request: NextRequest) {
     .eq('lead_quality_status', 'email_found')
 
   if (leadsError) {
+    console.error('[confirm] Failed to validate global_leads:', leadsError.message)
     return Response.json({ error: 'Erro ao validar leads.' }, { status: 500 })
   }
 
@@ -97,6 +99,21 @@ export async function POST(request: NextRequest) {
   )
 
   const already_owned = idsToProcess.filter((id) => alreadyOwnedSet.has(id)).length
+  const skipped_invalid = idsToProcess.filter(
+    (id) => !validIds.has(id) && !alreadyOwnedSet.has(id)
+  ).length
+
+  // Log skipped leads for admin review
+  if (skipped_invalid > 0) {
+    const skippedIds = idsToProcess.filter(
+      (id) => !validIds.has(id) && !alreadyOwnedSet.has(id)
+    )
+    console.warn('[confirm] Leads skipped (not active/email_found):', {
+      userId: user.id,
+      count: skipped_invalid,
+      ids: skippedIds,
+    })
+  }
 
   let added = 0
   for (const globalLeadId of eligibleIds) {
@@ -109,5 +126,5 @@ export async function POST(request: NextRequest) {
 
   const finalRemaining = isAdmin ? -1 : monthly_remaining - added
 
-  return Response.json({ added, already_owned, monthly_remaining: finalRemaining })
+  return Response.json({ added, already_owned, skipped_invalid, monthly_remaining: finalRemaining })
 }

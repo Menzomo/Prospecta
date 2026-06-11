@@ -190,9 +190,14 @@ export function SearchForm({ categories }: SearchFormProps) {
                 ? `${confirmResult.already_owned} ${confirmResult.already_owned === 1 ? 'lead selecionado já estava' : 'leads selecionados já estavam'} em Leads.`
                 : 'Nenhum lead foi adicionado.'}
           </p>
-          {confirmResult.added > 0 && confirmResult.already_owned > 0 && (
+          {confirmResult.already_owned > 0 && (
             <p className="mt-0.5 text-xs text-green-700">
-              {confirmResult.already_owned} {confirmResult.already_owned === 1 ? 'lead já estava' : 'leads já estavam'} em Leads e foram ignorados.
+              {confirmResult.already_owned} {confirmResult.already_owned === 1 ? 'lead já estava' : 'leads já estavam'} em Leads e {confirmResult.already_owned === 1 ? 'foi ignorado' : 'foram ignorados'}.
+            </p>
+          )}
+          {confirmResult.skipped_invalid > 0 && (
+            <p className="mt-0.5 text-xs text-yellow-700">
+              {confirmResult.skipped_invalid} {confirmResult.skipped_invalid === 1 ? 'lead não pôde ser adicionado' : 'leads não puderam ser adicionados'} por dados incompletos.
             </p>
           )}
           {confirmResult.monthly_remaining >= 0 && (
