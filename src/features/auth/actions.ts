@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { loginSchema, signupSchema } from '@/validations/authSchema'
+import { checkAndSendBetaNotification } from '@/services/betaNotificationService'
 
 export type AuthActionState = {
   errors?: {
@@ -35,6 +36,9 @@ export async function loginAction(
     }
     return { error: 'Email ou senha inválidos.' }
   }
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) await checkAndSendBetaNotification(user.id)
 
   redirect('/dashboard')
 }
