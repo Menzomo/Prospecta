@@ -149,3 +149,23 @@ export async function hideUserLead(
 
   return !error
 }
+
+export async function markUserLeadContacted(
+  supabase: SupabaseClient<Database>,
+  id: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('user_leads')
+    .update({ status: 'contatado', updated_at: new Date().toISOString() })
+    .eq('id', id)
+
+  if (error) {
+    console.error('[userLeadRepository.markUserLeadContacted] Supabase error:', {
+      code: error.code,
+      message: error.message,
+    })
+    return false
+  }
+
+  return true
+}

@@ -1,10 +1,28 @@
 # Débitos Técnicos — Prospecta
 
-Última atualização: 27 Mai 2026
+Última atualização: 10 Jun 2026
 
 ---
 
 ## HIGH — Impacto direto em segurança, dados ou experiência principal
+
+### DT-H5 — Limite de leads não considera status de assinatura
+
+**Problema:** O fluxo de busca de leads aplica o limite mensal de 200 leads a qualquer usuário autenticado, independente de ter ou não uma assinatura ativa. Não há distinção entre usuário free (sem plano) e usuário assinante. Os 20 leads de teste gratuitos (pré-assinatura) nunca foram implementados.
+
+**Comportamento atual:** `isAdmin → ilimitado`, qualquer outro usuário → 200 leads/mês direto, sem checar plano.
+
+**Comportamento esperado:**
+- Usuário sem assinatura → limite de 20 leads totais (teste gratuito)
+- Usuário com assinatura ativa → limite mensal de 200 leads
+
+**Dependência:** Requer implementação completa do fluxo de pagamentos (Stripe ou equivalente) e tabela/lógica de `user_subscriptions` antes de ser resolvido.
+
+**Localização:** `src/app/api/search/leads/route.ts`, `src/app/api/user-leads/confirm/route.ts`, `src/features/search/services/searchService.ts`
+
+**Solução esperada:** Após o fluxo de pagamentos estar em pé — verificar assinatura ativa na checagem de limite; aplicar 20 (total) para free e 200 (mensal) para assinantes.
+
+---
 
 ### DT-H1 — Sem middleware de proteção de rota
 

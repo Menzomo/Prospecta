@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/types'
 import { createEmailThread, createEmailMessage } from '@/repositories/emailRepository'
 import { markLeadContacted } from '@/repositories/leadRepository'
+import { markUserLeadContacted } from '@/repositories/userLeadRepository'
 import { tryRefreshGmailToken } from '@/services/gmailService'
 
 export type EmailAttachment = {
@@ -12,7 +13,8 @@ export type EmailAttachment = {
 
 type SendEmailInput = {
   userId: string
-  leadId: string
+  leadId?: string
+  userLeadId?: string
   templateId: string | null
   leadEmail: string
   gmailEmail: string
@@ -164,7 +166,8 @@ export async function sendEmailService(
   const gmailData = (await gmailResponse.json()) as GmailSendResponse
 
   const thread = await createEmailThread(supabase, input.userId, {
-    lead_id: input.leadId,
+    lead_id: input.leadId ?? null,
+    user_lead_id: input.userLeadId ?? null,
     gmail_thread_id: gmailData.threadId,
     subject: input.subject,
   })
@@ -175,7 +178,8 @@ export async function sendEmailService(
   }
 
   const message = await createEmailMessage(supabase, input.userId, {
-    lead_id: input.leadId,
+    lead_id: input.leadId ?? null,
+    user_lead_id: input.userLeadId ?? null,
     thread_id: thread.id,
     template_id: input.templateId,
     subject: input.subject,
@@ -189,7 +193,12 @@ export async function sendEmailService(
     return { error: 'db_save_failed' }
   }
 
-  await markLeadContacted(supabase, input.leadId)
+  const { leadId, userLeadId } = input
+  if (leadId) {
+    await markLeadContacted(supabase, leadId)
+  } else if (userLeadId) {
+    await markUserLeadContacted(supabase, userLeadId)
+  }
 
   return { success: true, gmailMessageId: gmailData.id, emailMessageId: message.id }
 }

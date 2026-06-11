@@ -110,7 +110,7 @@ export async function getInboundMessagesWithLeads(
 
   if (error || !messages || messages.length === 0) return []
 
-  const leadIds = [...new Set(messages.map((m) => m.lead_id))]
+  const leadIds = [...new Set(messages.map((m) => m.lead_id).filter((id): id is string => id !== null))]
 
   const { data: leads } = await supabase
     .from('leads')
@@ -121,7 +121,7 @@ export async function getInboundMessagesWithLeads(
   const leadMap = new Map((leads ?? []).map((l) => [l.id, l]))
 
   return messages.map((m) => {
-    const lead = leadMap.get(m.lead_id)
+    const lead = m.lead_id ? leadMap.get(m.lead_id) : undefined
     return {
       ...m,
       lead_company_name: lead?.company_name ?? '',
@@ -196,7 +196,7 @@ export async function getLeadIdsWithThreads(
     .eq('user_id', userId)
 
   if (error) return []
-  return [...new Set(data.map((row) => row.lead_id))]
+  return [...new Set(data.map((row) => row.lead_id).filter((id): id is string => id !== null))]
 }
 
 export async function updateEmailThreadLastReply(

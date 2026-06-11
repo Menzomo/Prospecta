@@ -128,7 +128,8 @@ export interface Database {
         Row: {
           id: string
           user_id: string
-          lead_id: string
+          lead_id: string | null
+          user_lead_id: string | null
           gmail_thread_id: string
           subject: string
           last_reply_at: string | null
@@ -138,7 +139,8 @@ export interface Database {
         Insert: {
           id?: string
           user_id: string
-          lead_id: string
+          lead_id?: string | null
+          user_lead_id?: string | null
           gmail_thread_id: string
           subject: string
           last_reply_at?: string | null
@@ -157,7 +159,8 @@ export interface Database {
         Row: {
           id: string
           user_id: string
-          lead_id: string
+          lead_id: string | null
+          user_lead_id: string | null
           thread_id: string
           template_id: string | null
           subject: string
@@ -173,7 +176,8 @@ export interface Database {
         Insert: {
           id?: string
           user_id: string
-          lead_id: string
+          lead_id?: string | null
+          user_lead_id?: string | null
           thread_id: string
           template_id?: string | null
           subject: string

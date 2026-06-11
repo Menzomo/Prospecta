@@ -1,23 +1,35 @@
 'use client'
 
 import { useState, useActionState } from 'react'
-import { sendEmailAction } from '@/features/email/actions'
+import { useRouter } from 'next/navigation'
 import { PostSendFollowupPrompt } from '@/features/email/components/PostSendFollowupPrompt'
 import { renderTemplate } from '@/utils/renderTemplate'
+import type { SendEmailActionState } from '@/features/email/actions'
 import type { Template } from '@/types/templates'
 import type { TemplateAttachment } from '@/repositories/templateAttachmentRepository'
 import type { TemplateVariables } from '@/utils/renderTemplate'
 
 type Props = {
-  leadId: string
+  boundAction: (state: SendEmailActionState, formData: FormData) => Promise<SendEmailActionState>
   templates: Template[]
   variables: TemplateVariables
   attachmentsByTemplate?: Record<string, TemplateAttachment[]>
+  // For manual leads: show the followup prompt after send
+  followup?: { leadId: string }
+  // For global leads: redirect straight to this path after send
+  returnPath?: string
 }
 
-export function SendEmailForm({ leadId, templates, variables, attachmentsByTemplate = {} }: Props) {
-  const boundAction = sendEmailAction.bind(null, leadId)
+export function SendEmailForm({
+  boundAction,
+  templates,
+  variables,
+  attachmentsByTemplate = {},
+  followup,
+  returnPath,
+}: Props) {
   const [state, formAction, pending] = useActionState(boundAction, null)
+  const router = useRouter()
 
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('')
   const [subject, setSubject] = useState<string>('')
@@ -39,12 +51,21 @@ export function SendEmailForm({ leadId, templates, variables, attachmentsByTempl
   }
 
   if (state?.success && state.emailMessageId) {
-    return (
-      <PostSendFollowupPrompt
-        leadId={leadId}
-        emailMessageId={state.emailMessageId}
-      />
-    )
+    if (followup) {
+      return (
+        <PostSendFollowupPrompt
+          leadId={followup.leadId}
+          emailMessageId={state.emailMessageId}
+        />
+      )
+    }
+
+    if (returnPath) {
+      router.push(returnPath)
+      return (
+        <p className="text-sm text-green-700 font-medium">Email enviado com sucesso!</p>
+      )
+    }
   }
 
   return (

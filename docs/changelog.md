@@ -2,6 +2,33 @@
 
 ---
 
+## Junho 2026 — Ações diretas na listagem de Leads
+
+Botões "Enviar email" e "Detalhes" adicionados diretamente na tabela de `/leads`, eliminando a necessidade de entrar no detalhe do lead para iniciar um envio.
+
+### Banco de dados
+- **Migration `20260611000000_email_support_global_leads`**: `lead_id` tornou-se nullable em `email_threads` e `email_messages`; adicionado `user_lead_id uuid references user_leads(id)` em ambas as tabelas para suportar envio de email a leads vindos da busca
+
+### Leads da busca (global leads)
+- **`sendEmailFromUserLeadAction`** (novo em `email/actions.ts`): action server para envio de email a global leads, espelhando `sendEmailAction` mas usando `user_lead_id` em vez de `lead_id`
+- **`markUserLeadContacted`** (novo em `userLeadRepository`): atualiza status do `user_lead` para `contatado` após envio
+- **`/leads/global/[id]/send`** (nova página): página de envio de email para leads da busca; após envio bem-sucedido redireciona para `/leads/global/[id]` sem prompt de acompanhamento (followup disponível apenas para leads manuais por ora)
+
+### Componente SendEmailForm
+- Refatorado para aceitar `boundAction` (action pré-vinculada) em vez de `leadId` — desacoplado do tipo de lead
+- Novo prop `followup?: { leadId }` para exibir `PostSendFollowupPrompt` após envio (leads manuais)
+- Novo prop `returnPath?: string` para redirecionar diretamente após envio (leads da busca)
+
+### emailSendService
+- `SendEmailInput` agora aceita `leadId?` ou `userLeadId?` — escolhe automaticamente qual repositório marcar como contatado
+
+### Listagem `/leads`
+- Coluna de ações substituída por três controles por linha: **Enviar email** (azul), **Detalhes** (cinza), **Ocultar** (texto)
+- Nome da empresa deixou de ser link de navegação; navegação agora é feita pelo botão "Detalhes"
+- Funciona para leads manuais e leads da busca
+
+---
+
 ## Junho 2026 — Acompanhamento pós-envio de email (no_reply)
 
 Após enviar um email para um lead, o usuário pode criar um acompanhamento de "sem resposta" em 2 cliques. Se o lead responder antes do prazo, o acompanhamento some automaticamente do dashboard.

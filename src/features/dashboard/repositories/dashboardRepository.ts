@@ -103,9 +103,10 @@ export async function getRecentReplies(
 
   if (error || !messages || messages.length === 0) return []
 
-  // Deduplicate by lead: most recent unread message per lead
+  // Deduplicate by lead: most recent unread message per lead (skip messages without a lead_id)
   const byLead = new Map<string, string>()
   for (const m of messages) {
+    if (!m.lead_id) continue
     if (!byLead.has(m.lead_id)) {
       byLead.set(m.lead_id, m.sent_at)
     }

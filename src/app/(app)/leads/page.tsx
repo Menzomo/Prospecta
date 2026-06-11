@@ -162,13 +162,8 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
                   const status = lead.status as LeadStatus
                   return (
                     <tr key={`search-${lead.id}`} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <Link
-                          href={`/leads/global/${lead.id}`}
-                          className="font-medium text-gray-900 hover:text-blue-600"
-                        >
-                          {lead.company_name}
-                        </Link>
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        {lead.company_name}
                       </td>
                       <td className="px-4 py-3 text-gray-500">
                         {lead.category_name ?? (
@@ -184,12 +179,29 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
                           {LEAD_STATUS_LABELS[status] ?? lead.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <form action={hideUserLeadAction.bind(null, lead.id)}>
-                          <button type="submit" className="text-xs text-gray-400 hover:text-red-500">
-                            Ocultar
-                          </button>
-                        </form>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link
+                            href={`/leads/global/${lead.id}/send`}
+                            className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                          >
+                            Enviar email
+                          </Link>
+                          <Link
+                            href={`/leads/global/${lead.id}`}
+                            className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-200"
+                          >
+                            Detalhes
+                          </Link>
+                          <form action={hideUserLeadAction.bind(null, lead.id)}>
+                            <button
+                              type="submit"
+                              className="text-xs text-gray-400 hover:text-red-500"
+                            >
+                              Ocultar
+                            </button>
+                          </form>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -198,16 +210,11 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
                   const status = lead.status as LeadStatus
                   return (
                     <tr key={`manual-${lead.id}`} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <Link
-                          href={`/leads/${lead.id}`}
-                          className="font-medium text-gray-900 hover:text-blue-600"
-                        >
-                          {lead.company_name}
-                        </Link>
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        {lead.company_name}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-gray-300 text-sm">Sem categoria</span>
+                        <span className="text-sm text-gray-300">Sem categoria</span>
                       </td>
                       <td className="px-4 py-3 text-gray-600">{lead.email ?? '—'}</td>
                       <td className="px-4 py-3 text-gray-600">{lead.city ?? '—'}</td>
@@ -218,12 +225,29 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
                           {LEAD_STATUS_LABELS[status] ?? lead.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <form action={hideLeadAction.bind(null, lead.id)}>
-                          <button type="submit" className="text-xs text-gray-400 hover:text-red-500">
-                            Ocultar
-                          </button>
-                        </form>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link
+                            href={`/leads/${lead.id}/send`}
+                            className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                          >
+                            Enviar email
+                          </Link>
+                          <Link
+                            href={`/leads/${lead.id}`}
+                            className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-200"
+                          >
+                            Detalhes
+                          </Link>
+                          <form action={hideLeadAction.bind(null, lead.id)}>
+                            <button
+                              type="submit"
+                              className="text-xs text-gray-400 hover:text-red-500"
+                            >
+                              Ocultar
+                            </button>
+                          </form>
+                        </div>
                       </td>
                     </tr>
                   )
