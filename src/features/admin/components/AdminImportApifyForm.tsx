@@ -133,7 +133,7 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
             <button
               onClick={handleClickImport}
               disabled={!canProceed}
-              className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="cursor-pointer rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Importar Leads
             </button>
@@ -154,13 +154,13 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
             <div className="mt-3 flex gap-2">
               <button
                 onClick={handleConfirm}
-                className="rounded-md bg-yellow-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-yellow-700"
+                className="cursor-pointer rounded-md bg-yellow-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-yellow-700"
               >
                 Confirmar Importação
               </button>
               <button
                 onClick={handleCancel}
-                className="rounded-md border border-gray-300 bg-white px-4 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                className="cursor-pointer rounded-md border border-gray-300 bg-white px-4 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50"
               >
                 Cancelar
               </button>
@@ -187,7 +187,7 @@ export function AdminImportApifyForm({ categories, initialCategoryId = '' }: Pro
           </p>
           <button
             onClick={() => setStatus('idle')}
-            className="mt-3 text-xs text-blue-600 underline hover:text-blue-800"
+            className="mt-3 cursor-pointer text-xs text-blue-600 underline hover:text-blue-800"
           >
             Nova importação
           </button>

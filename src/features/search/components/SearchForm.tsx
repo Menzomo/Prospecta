@@ -167,7 +167,7 @@ export function SearchForm({ categories }: SearchFormProps) {
         <button
           type="submit"
           disabled={!canSearch}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+          className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? 'Buscando...' : 'Buscar leads'}
         </button>
@@ -208,7 +208,7 @@ export function SearchForm({ categories }: SearchFormProps) {
           <button
             type="button"
             onClick={() => setConfirmResult(null)}
-            className="mt-3 text-xs font-medium text-green-700 underline hover:text-green-900"
+            className="mt-3 cursor-pointer text-xs font-medium text-green-700 underline hover:text-green-900"
           >
             Fazer nova busca
           </button>
@@ -252,7 +252,7 @@ export function SearchForm({ categories }: SearchFormProps) {
               <button
                 type="button"
                 onClick={selectAll}
-                className="text-blue-600 hover:underline"
+                className="cursor-pointer text-blue-600 hover:underline"
               >
                 Selecionar todos
               </button>
@@ -260,7 +260,7 @@ export function SearchForm({ categories }: SearchFormProps) {
               <button
                 type="button"
                 onClick={clearSelection}
-                className="text-gray-400 hover:underline"
+                className="cursor-pointer text-gray-400 hover:underline"
               >
                 Limpar
               </button>
@@ -284,7 +284,7 @@ export function SearchForm({ categories }: SearchFormProps) {
               type="button"
               onClick={handleConfirm}
               disabled={!canConfirm}
-              className="w-full rounded-lg bg-green-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:opacity-60"
+              className="w-full cursor-pointer rounded-lg bg-green-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {confirming
                 ? 'Adicionando...'

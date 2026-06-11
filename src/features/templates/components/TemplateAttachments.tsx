@@ -110,7 +110,7 @@ export function TemplateAttachments({ templateId, initialAttachments }: Props) {
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={uploading || attachments.length >= MAX_COUNT}
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="cursor-pointer rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {uploading ? 'Enviando...' : '+ Adicionar arquivo'}
         </button>
@@ -142,7 +142,7 @@ export function TemplateAttachments({ templateId, initialAttachments }: Props) {
                 type="button"
                 onClick={() => handleRemove(att.id)}
                 disabled={removing === att.id}
-                className="ml-4 shrink-0 text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
+                className="ml-4 cursor-pointer shrink-0 text-xs text-red-500 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {removing === att.id ? 'Removendo...' : 'Remover'}
               </button>

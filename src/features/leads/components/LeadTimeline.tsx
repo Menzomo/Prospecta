@@ -110,7 +110,7 @@ export function LeadTimeline({ lead, messages, followups, threads }: Props) {
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors"
+        className="flex w-full cursor-pointer items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors"
       >
         <div className="flex flex-col gap-0.5">
           <span className="text-sm font-semibold text-gray-900">

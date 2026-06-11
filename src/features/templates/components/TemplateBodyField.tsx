@@ -46,7 +46,7 @@ export function TemplateBodyField({ name, defaultValue = '', rows = 10, error }:
               type="button"
               title={`${v.description}: ${v.value}`}
               onClick={() => insertVariable(v.value)}
-              className="rounded-md border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 active:bg-blue-200"
+              className="cursor-pointer rounded-md border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 active:bg-blue-200"
             >
               {v.label}
             </button>

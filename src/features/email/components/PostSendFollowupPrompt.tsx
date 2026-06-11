@@ -69,7 +69,7 @@ export function PostSendFollowupPrompt({ leadId, emailMessageId }: Props) {
           type="button"
           onClick={() => handleQuickCreate(2)}
           disabled={isPending}
-          className="rounded-lg border border-green-600 bg-white px-3 py-1.5 text-sm font-medium text-green-700 transition-colors hover:bg-green-100 disabled:opacity-60"
+          className="cursor-pointer rounded-lg border border-green-600 bg-white px-3 py-1.5 text-sm font-medium text-green-700 transition-colors hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
           Lembrar em 2 dias
         </button>
@@ -77,7 +77,7 @@ export function PostSendFollowupPrompt({ leadId, emailMessageId }: Props) {
           type="button"
           onClick={() => handleQuickCreate(5)}
           disabled={isPending}
-          className="rounded-lg border border-green-600 bg-white px-3 py-1.5 text-sm font-medium text-green-700 transition-colors hover:bg-green-100 disabled:opacity-60"
+          className="cursor-pointer rounded-lg border border-green-600 bg-white px-3 py-1.5 text-sm font-medium text-green-700 transition-colors hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
           Lembrar em 5 dias
         </button>
@@ -85,7 +85,7 @@ export function PostSendFollowupPrompt({ leadId, emailMessageId }: Props) {
           type="button"
           onClick={() => setShowDatePicker(true)}
           disabled={isPending}
-          className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-60"
+          className="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
           Escolher data
         </button>
@@ -93,7 +93,7 @@ export function PostSendFollowupPrompt({ leadId, emailMessageId }: Props) {
           type="button"
           onClick={handleSkip}
           disabled={isPending}
-          className="px-3 py-1.5 text-sm text-gray-500 transition-colors hover:text-gray-700 disabled:opacity-60"
+          className="cursor-pointer px-3 py-1.5 text-sm text-gray-500 transition-colors hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           Não criar
         </button>
@@ -111,7 +111,7 @@ export function PostSendFollowupPrompt({ leadId, emailMessageId }: Props) {
             type="button"
             onClick={handleCustomCreate}
             disabled={isPending || !customDate}
-            className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+            className="cursor-pointer rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isPending ? 'Criando...' : 'Criar'}
           </button>

@@ -114,7 +114,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
 
           <button
             type="submit"
-            className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
+            className="cursor-pointer rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
           >
             Filtrar
           </button>
@@ -199,7 +199,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
                             <form action={hideUserLeadAction.bind(null, lead.id)}>
                               <button
                                 type="submit"
-                                className="rounded px-2 py-1.5 text-xs text-gray-400 hover:bg-red-50 hover:text-red-500"
+                                className="cursor-pointer rounded px-2 py-1.5 text-xs text-gray-400 hover:bg-red-50 hover:text-red-500"
                               >
                                 Ocultar
                               </button>
@@ -245,7 +245,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
                             <form action={hideLeadAction.bind(null, lead.id)}>
                               <button
                                 type="submit"
-                                className="rounded px-2 py-1.5 text-xs text-gray-400 hover:bg-red-50 hover:text-red-500"
+                                className="cursor-pointer rounded px-2 py-1.5 text-xs text-gray-400 hover:bg-red-50 hover:text-red-500"
                               >
                                 Ocultar
                               </button>

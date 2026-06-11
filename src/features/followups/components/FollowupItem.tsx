@@ -99,7 +99,7 @@ export function FollowupItem({ followup, leadId }: Props) {
           <button
             type="button"
             onClick={() => setEditing((v) => !v)}
-            className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100"
+            className="cursor-pointer rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100"
           >
             {editing ? 'Cancelar' : 'Editar'}
           </button>
@@ -107,7 +107,7 @@ export function FollowupItem({ followup, leadId }: Props) {
           <form action={completeFollowupAction.bind(null, followup.id, leadId)}>
             <button
               type="submit"
-              className="rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-600 transition-colors hover:border-green-500 hover:bg-green-50 hover:text-green-700"
+              className="cursor-pointer rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-600 transition-colors hover:border-green-500 hover:bg-green-50 hover:text-green-700"
             >
               Concluir
             </button>
@@ -168,7 +168,7 @@ export function FollowupItem({ followup, leadId }: Props) {
           <button
             type="submit"
             disabled={updatePending}
-            className="self-start rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+            className="cursor-pointer self-start rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {updatePending ? 'Salvando...' : 'Salvar alterações'}
           </button>

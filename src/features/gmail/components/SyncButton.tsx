@@ -14,7 +14,7 @@ export function SyncButton({ leadId }: Props) {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-60"
+        className="cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? 'Verificando...' : 'Verificar respostas'}
       </button>

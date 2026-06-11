@@ -113,7 +113,7 @@ export function NextFollowups({ followups }: Props) {
             onClick={() => setIndex((i) => Math.max(0, i - 1))}
             disabled={atFirst || total <= 1}
             aria-label="Anterior"
-            className="flex w-10 shrink-0 items-center justify-center rounded-bl-xl border-r border-gray-100 transition-colors hover:bg-gray-50 disabled:cursor-default disabled:hover:bg-transparent"
+            className="flex w-10 shrink-0 cursor-pointer items-center justify-center rounded-bl-xl border-r border-gray-100 transition-colors hover:bg-gray-50 disabled:cursor-default disabled:hover:bg-transparent"
           >
             {total > 1 && <ChevronLeft faded={atFirst} />}
           </button>
@@ -155,7 +155,7 @@ export function NextFollowups({ followups }: Props) {
                   <form action={dismissNoReplyFollowupAction.bind(null, f.id, f.lead_id)}>
                     <button
                       type="submit"
-                      className="text-xs text-gray-500 transition-colors hover:text-gray-700"
+                      className="cursor-pointer text-xs text-gray-500 transition-colors hover:text-gray-700"
                     >
                       Esquecer lead
                     </button>
@@ -171,7 +171,7 @@ export function NextFollowups({ followups }: Props) {
             onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}
             disabled={atLast || total <= 1}
             aria-label="Próximo"
-            className="flex w-10 shrink-0 items-center justify-center rounded-br-xl border-l border-gray-100 transition-colors hover:bg-gray-50 disabled:cursor-default disabled:hover:bg-transparent"
+            className="flex w-10 shrink-0 cursor-pointer items-center justify-center rounded-br-xl border-l border-gray-100 transition-colors hover:bg-gray-50 disabled:cursor-default disabled:hover:bg-transparent"
           >
             {total > 1 && <ChevronRight faded={atLast} />}
           </button>

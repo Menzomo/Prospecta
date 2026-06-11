@@ -66,7 +66,7 @@ export default async function UserLeadDetailPage({ params }: Props) {
           <form action={hideUserLeadAction.bind(null, id)}>
             <button
               type="submit"
-              className="rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-50"
+              className="cursor-pointer rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-50"
             >
               Ocultar lead
             </button>
@@ -152,7 +152,7 @@ export default async function UserLeadDetailPage({ params }: Props) {
               </select>
               <button
                 type="submit"
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
               >
                 Salvar
               </button>

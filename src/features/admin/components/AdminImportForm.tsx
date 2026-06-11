@@ -161,7 +161,7 @@ export function AdminImportForm({ categories }: Props) {
                 type="button"
                 onClick={handleReset}
                 disabled={status === 'importing'}
-                className="text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                className="cursor-pointer text-sm text-gray-500 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancelar
               </button>
@@ -169,7 +169,7 @@ export function AdminImportForm({ categories }: Props) {
                 type="button"
                 onClick={handleImport}
                 disabled={!canImport}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
+                className="cursor-pointer rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {status === 'importing'
                   ? 'Importando...'
@@ -235,7 +235,7 @@ export function AdminImportForm({ categories }: Props) {
           <button
             type="button"
             onClick={handleReset}
-            className="mt-6 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="mt-6 cursor-pointer rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
             Importar outro arquivo
           </button>

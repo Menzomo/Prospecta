@@ -109,7 +109,7 @@ export function LeadRepliesButton({ messages, threads, leadId }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100"
+        className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100"
       >
         <BellIcon className="text-blue-600" />
         Respostas recebidas
@@ -138,7 +138,7 @@ export function LeadRepliesButton({ messages, threads, leadId }: Props) {
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                className="cursor-pointer rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                 aria-label="Fechar"
               >
                 <XIcon />
@@ -178,7 +178,7 @@ export function LeadRepliesButton({ messages, threads, leadId }: Props) {
                           type="button"
                           disabled={isPending}
                           onClick={() => handleMarkRead(reply.id)}
-                          className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-50 disabled:opacity-50"
+                          className="cursor-pointer rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           Marcar como lida
                         </button>

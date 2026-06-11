@@ -103,7 +103,7 @@ export function AdminImportJobsList({ jobs: initial }: Props) {
                         <button
                           onClick={() => handleSync(job.id)}
                           disabled={isSyncing}
-                          className="rounded bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                          className="cursor-pointer rounded bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {isSyncing ? 'Atualizando...' : 'Atualizar status'}
                         </button>
