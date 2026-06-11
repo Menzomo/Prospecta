@@ -90,6 +90,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
         {/* Filters */}
         <form method="GET" action="/leads" className="flex flex-wrap items-center gap-3">
           <select
+            key={categoryFilter}
             name="category"
             defaultValue={categoryFilter}
             className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -103,6 +104,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
           </select>
 
           <input
+            key={cityFilter}
             type="text"
             name="city"
             defaultValue={cityFilter}
