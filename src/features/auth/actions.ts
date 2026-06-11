@@ -1,9 +1,17 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { loginSchema, signupSchema } from '@/validations/authSchema'
 import { checkAndSendBetaNotification } from '@/services/betaNotificationService'
+
+async function getRequestOrigin(): Promise<string> {
+  const h = await headers()
+  const host = h.get('host') ?? 'localhost:3000'
+  const protocol = host.includes('localhost') ? 'http' : 'https'
+  return `${protocol}://${host}`
+}
 
 export type AuthActionState = {
   errors?: {
@@ -57,12 +65,14 @@ export async function signupAction(
     return { errors: validation.error.flatten().fieldErrors }
   }
 
+  const origin = await getRequestOrigin()
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signUp({
     email: validation.data.email,
     password: validation.data.password,
     options: {
       data: { full_name: validation.data.full_name },
+      emailRedirectTo: `${origin}/auth/callback`,
     },
   })
 

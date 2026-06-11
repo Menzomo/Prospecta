@@ -78,10 +78,52 @@ A Vercel detecta o push na `main` e faz o deploy de produção automaticamente.
 
 - **Production Branch:** `main`
 - **Preview Deployments:** todas as outras branches, incluindo `develop`
-- **URL de homologação:** gerada automaticamente pela Vercel no formato  
-  `prospecta-git-develop-<team>.vercel.app` (verificar no dashboard da Vercel)
+- **URL de homologação:** `https://prospecta-git-develop-bruno-menzomo-s-projects.vercel.app`
 
 Para confirmar ou ajustar: Vercel Dashboard → Project → Settings → Git.
+
+---
+
+## Preview Deploy — configuração do Supabase (passo manual obrigatório)
+
+O Supabase só redireciona para URLs explicitamente autorizadas. Sem isso, o login OAuth no Preview redireciona para produção.
+
+### O que configurar
+
+**Supabase Dashboard → Authentication → URL Configuration**
+
+1. **Site URL** — manter como produção:
+   ```
+   https://prospecta-ten.vercel.app
+   ```
+
+2. **Redirect URLs** — adicionar as entradas abaixo (se não existirem):
+   ```
+   https://prospecta-ten.vercel.app/**
+   https://prospecta-git-develop-bruno-menzomo-s-projects.vercel.app/**
+   https://*.vercel.app/**
+   http://localhost:3000/**
+   ```
+   
+   O padrão `https://*.vercel.app/**` cobre todos os deploys de preview futuros automaticamente.
+
+### Por que isso é necessário
+
+Quando o usuário faz login com Google no Preview Deploy, o botão envia:
+```
+redirectTo: https://prospecta-git-develop-bruno-menzomo-s-projects.vercel.app/auth/callback
+```
+
+Se essa URL não está na whitelist do Supabase, ele ignora o parâmetro e redireciona para o **Site URL** (produção). O código em si já está correto — o `redirectTo` é gerado dinamicamente a partir de `window.location.origin`.
+
+### Gmail OAuth no preview (GOOGLE_REDIRECT_URI)
+
+Para conectar Gmail no preview deploy, é necessário:
+1. Adicionar `https://prospecta-git-develop-bruno-menzomo-s-projects.vercel.app/api/gmail/callback` como URI autorizada no [Google Cloud Console](https://console.cloud.google.com) → Credenciais → OAuth 2.0
+2. Adicionar a variável de ambiente no Vercel para o preview:
+   - Vercel Dashboard → Project → Settings → Environment Variables
+   - `GOOGLE_REDIRECT_URI` = `https://prospecta-git-develop-bruno-menzomo-s-projects.vercel.app/api/gmail/callback`
+   - Marcar apenas o ambiente **Preview**
 
 ---
 
