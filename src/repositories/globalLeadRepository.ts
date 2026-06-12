@@ -198,3 +198,27 @@ export async function updateGlobalLeadStatus(
 
   return true
 }
+
+export async function markGlobalLeadInvalid(
+  supabase: SupabaseClient<Database>,
+  id: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('global_leads')
+    .update({
+      lead_quality_status: 'invalid',
+      status: 'invalid',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+
+  if (error) {
+    console.error('[globalLeadRepository.markGlobalLeadInvalid] Supabase error:', {
+      code: error.code,
+      message: error.message,
+    })
+    return false
+  }
+
+  return true
+}

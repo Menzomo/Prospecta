@@ -4,10 +4,14 @@ import { z } from 'zod'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { getGlobalLeadById, updateGlobalLeadEmailAndPromote } from '@/repositories/globalLeadRepository'
+import {
+  getGlobalLeadById,
+  updateGlobalLeadEmailAndPromote,
+  markGlobalLeadInvalid,
+} from '@/repositories/globalLeadRepository'
 
 const addEmailSchema = z.object({
-  email: z.string().email('Email inválido. Verifique o formato.'),
+  email: z.string().trim().email('Email inválido. Verifique o formato.'),
 })
 
 export type AddEmailActionState = {
@@ -55,4 +59,28 @@ export async function addEmailToGlobalLeadAction(
   revalidatePath('/admin')
 
   return { success: true }
+}
+
+export async function dismissGlobalLeadAction(leadId: string, _formData: FormData): Promise<void> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) redirect('/login')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'admin') redirect('/dashboard')
+
+  const ok = await markGlobalLeadInvalid(supabase, leadId)
+  if (ok) {
+    console.log(`[dismissGlobalLeadAction] Admin ${user.email} dismissed lead ${leadId}`)
+  }
+
+  revalidatePath('/admin')
 }

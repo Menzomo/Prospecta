@@ -6,8 +6,10 @@ export type ManualReviewLead = {
   company_name: string
   city: string | null
   website: string | null
+  phone: string | null
   email: string | null
   lead_quality_status: string
+  category_id: string | null
   created_at: string
 }
 
@@ -19,14 +21,21 @@ export type LeadQualityOverview = {
 }
 
 export async function getManualReviewQueue(
-  supabase: SupabaseClient<Database>
+  supabase: SupabaseClient<Database>,
+  categoryId?: string
 ): Promise<ManualReviewLead[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .from('global_leads')
-    .select('id, company_name, city, website, email, lead_quality_status, created_at')
+    .select('id, company_name, city, website, phone, email, lead_quality_status, category_id, created_at')
     .in('lead_quality_status', ['manual_review', 'website_only'])
     .order('created_at', { ascending: false })
-    .limit(50)
+    .limit(200)
+
+  if (categoryId) {
+    query = query.eq('category_id', categoryId)
+  }
+
+  const { data, error } = await query
 
   if (error) return []
   return data ?? []

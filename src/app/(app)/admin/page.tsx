@@ -19,10 +19,10 @@ import { AdminLeadQualityOverview } from '@/features/admin/components/AdminLeadQ
 import { AdminStockOverview } from '@/features/admin/components/AdminStockOverview'
 import { AdminUserStockOverview } from '@/features/admin/components/AdminUserStockOverview'
 
-type SearchParams = Promise<{ category?: string; city?: string }>
+type SearchParams = Promise<{ category?: string; city?: string; reviewNiche?: string }>
 
 export default async function AdminPage({ searchParams }: { searchParams: SearchParams }) {
-  const { category: categoryFilter = '', city: cityFilter = '' } = await searchParams
+  const { category: categoryFilter = '', city: cityFilter = '', reviewNiche = '' } = await searchParams
 
   const supabase = await createClient()
   const {
@@ -45,6 +45,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
   const activeCategoryId = categoryFilter
     ? (categoryBySlug.get(categoryFilter)?.id ?? undefined)
     : undefined
+  const reviewNicheCategoryId = reviewNiche
+    ? (categoryBySlug.get(reviewNiche)?.id ?? undefined)
+    : undefined
 
   const [leads, users, reviewQueue, overview, nichoStats, stock, userStock] = await Promise.all([
     getGlobalLeadsForAdmin(supabase, {
@@ -52,7 +55,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
       city: cityFilter || undefined,
     }),
     getUsersForAdmin(supabase),
-    getManualReviewQueue(supabase),
+    getManualReviewQueue(supabase, reviewNicheCategoryId),
     getLeadQualityOverview(supabase),
     getLeadStatsByCategory(supabase),
     getStockByCategory(supabase),
@@ -96,7 +99,13 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
           <AdminNichoOverview stats={nichoStats} categories={categories} />
 
           {/* Leads sem Email */}
-          <AdminManualReviewQueue leads={reviewQueue} />
+          <AdminManualReviewQueue
+            leads={reviewQueue}
+            categories={categories}
+            activeNiche={reviewNiche}
+            categoryFilter={categoryFilter}
+            cityFilter={cityFilter}
+          />
 
           {/* Global Leads com filtros */}
           <AdminGlobalLeads
