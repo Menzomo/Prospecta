@@ -130,7 +130,7 @@ export function SearchForm({ categories }: SearchFormProps) {
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             required
           >
             <option value="">Selecione uma categoria</option>
@@ -156,7 +156,7 @@ export function SearchForm({ categories }: SearchFormProps) {
               setSelectedState('')
             }}
             placeholder="Digite para buscar a cidade..."
-            inputClassName="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            inputClassName="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           />
         </div>
 

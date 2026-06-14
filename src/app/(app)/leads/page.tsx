@@ -93,7 +93,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
             key={categoryFilter}
             name="category"
             defaultValue={categoryFilter}
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:w-auto"
+            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:w-auto"
           >
             <option value="all">Todos os nichos</option>
             {categoriesInUse.map((cat) => (
@@ -109,7 +109,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
             name="city"
             defaultValue={cityFilter}
             placeholder="Filtrar por cidade..."
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:w-auto"
+            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:w-auto"
           />
 
           <button
