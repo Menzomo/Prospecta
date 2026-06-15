@@ -50,6 +50,12 @@ export async function createTemplateAction(
   }
 
   revalidatePath('/templates')
+
+  const returnTo = formData.get('returnTo')
+  if (typeof returnTo === 'string' && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
+    redirect(returnTo)
+  }
+
   redirect(`/templates/${result.template.id}`)
 }
 

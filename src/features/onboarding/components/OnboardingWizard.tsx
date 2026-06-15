@@ -9,8 +9,8 @@ const TOTAL_STEPS = 8
 const INPUT_CLASS =
   'w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
 
-export function OnboardingWizard() {
-  const [step, setStep] = useState(1)
+export function OnboardingWizard({ initialStep = 1 }: { initialStep?: number }) {
+  const [step, setStep] = useState(initialStep)
   const [state, formAction, pending] = useActionState(onboardingAction, null)
 
   useEffect(() => {
@@ -204,19 +204,27 @@ export function OnboardingWizard() {
         {/* ── Etapa 5 — Templates ── */}
         {step === 5 && (
           <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-            <div className="mb-8 text-center">
+            <div className="mb-6 text-center">
               <p className="mb-3 text-4xl">✉️</p>
               <h1 className="text-xl font-bold text-gray-900">Templates de Email</h1>
               <p className="mt-3 text-sm text-gray-500">
-                Os templates ajudam você a criar mensagens reutilizáveis para enviar emails mais rápido. Você poderá criar seus templates depois, na área de Templates.
+                Os templates ajudam você a criar mensagens reutilizáveis para enviar emails mais rápido. Crie seu primeiro template agora ou faça isso depois.
               </p>
             </div>
-            <button
-              onClick={next}
-              className="w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-            >
-              Continuar
-            </button>
+            <div className="flex flex-col gap-3">
+              <Link
+                href="/templates/new?returnTo=/onboarding&step=6"
+                className="block w-full rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              >
+                Criar primeiro template
+              </Link>
+              <button
+                onClick={next}
+                className="w-full cursor-pointer rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
+              >
+                Fazer depois
+              </button>
+            </div>
           </div>
         )}
 

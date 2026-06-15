@@ -4,11 +4,12 @@ import { useActionState } from 'react'
 import { createTemplateAction } from '@/features/templates/actions'
 import { TemplateBodyField } from './TemplateBodyField'
 
-export function TemplateCreateForm() {
+export function TemplateCreateForm({ returnTo }: { returnTo?: string }) {
   const [state, formAction, pending] = useActionState(createTemplateAction, null)
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
       <div className="flex flex-col gap-1">
         <label htmlFor="name" className="text-sm font-medium text-gray-700">
           Nome do template <span className="text-red-500">*</span>
