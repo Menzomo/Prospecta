@@ -62,10 +62,21 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
     setStep((s) => Math.min(s + 1, TOTAL_STEPS))
   }
 
+  function prev() {
+    setStep((s) => Math.max(s - 1, 1))
+  }
+
   const progressPct = Math.round(((step - 1) / (TOTAL_STEPS - 1)) * 100)
 
   // Step 6 uses wider max-width to accommodate the search form
   const containerWidth = step === 6 ? 'max-w-2xl' : 'max-w-md'
+
+  // Forward arrow disabled on step 2 (must use form to advance) and on last step
+  const canGoPrev = step > 1
+  const canGoNext = step !== 2 && step < TOTAL_STEPS
+
+  const NAV_BTN =
+    'flex h-6 w-6 items-center justify-center rounded text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-30'
 
   return (
     <div className="flex min-h-screen items-start justify-center bg-gray-50 px-4 py-10">
@@ -73,9 +84,28 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
 
         {/* Progress bar */}
         <div className="mb-6">
-          <div className="mb-1.5 flex items-center justify-between text-xs text-gray-400">
+          <div className="mb-1.5 flex items-center gap-1.5 text-xs text-gray-400">
+            <button
+              type="button"
+              onClick={prev}
+              disabled={!canGoPrev}
+              aria-label="Etapa anterior"
+              className={NAV_BTN}
+            >
+              ←
+            </button>
             <span>Etapa {step} de {TOTAL_STEPS}</span>
+            <div className="flex-1" />
             <span>{progressPct}%</span>
+            <button
+              type="button"
+              onClick={next}
+              disabled={!canGoNext}
+              aria-label="Próxima etapa"
+              className={NAV_BTN}
+            >
+              →
+            </button>
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
             <div
