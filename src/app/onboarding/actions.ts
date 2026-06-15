@@ -15,6 +15,7 @@ export type OnboardingActionState = {
     website?: string[]
   }
   error?: string
+  success?: boolean
 } | null
 
 export async function onboardingAction(
@@ -47,5 +48,5 @@ export async function onboardingAction(
     return { error: 'Erro ao salvar dados da empresa. Tente novamente.' }
   }
 
-  redirect('/dashboard')
+  return { success: true }
 }
