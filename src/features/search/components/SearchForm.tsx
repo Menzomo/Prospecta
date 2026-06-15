@@ -9,9 +9,10 @@ type Category = { id: string; name: string }
 
 interface SearchFormProps {
   categories: Category[]
+  onConfirmed?: () => void
 }
 
-export function SearchForm({ categories }: SearchFormProps) {
+export function SearchForm({ categories, onConfirmed }: SearchFormProps) {
   const [category, setCategory] = useState('')
   const [selectedCity, setSelectedCity] = useState('')
   const [selectedState, setSelectedState] = useState('')
@@ -105,6 +106,7 @@ export function SearchForm({ categories }: SearchFormProps) {
       setConfirmResult(data)
       setLeads([])
       setSelectedIds(new Set())
+      if (data.added > 0) onConfirmed?.()
     } catch {
       setError('Erro de conexão. Tente novamente.')
     } finally {

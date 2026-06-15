@@ -3,19 +3,60 @@
 import { useState, useEffect, useActionState } from 'react'
 import Link from 'next/link'
 import { onboardingAction } from '@/app/onboarding/actions'
+import { SearchForm } from '@/features/search/components/SearchForm'
 
-const TOTAL_STEPS = 8
+type Category = { id: string; name: string }
+
+type RecentLead = {
+  id: string
+  company_name: string
+  email: string | null
+  city: string | null
+  category_id: string | null
+  status: string
+}
+
+const TOTAL_STEPS = 9
 
 const INPUT_CLASS =
   'w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
 
-export function OnboardingWizard({ initialStep = 1 }: { initialStep?: number }) {
+const BTN_PRIMARY =
+  'w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700'
+
+const BTN_SECONDARY =
+  'w-full cursor-pointer rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50'
+
+interface Props {
+  initialStep?: number
+  categories: Category[]
+}
+
+export function OnboardingWizard({ initialStep = 1, categories }: Props) {
   const [step, setStep] = useState(initialStep)
   const [state, formAction, pending] = useActionState(onboardingAction, null)
+
+  // Step 6 state
+  const [leadsConfirmed, setLeadsConfirmed] = useState(false)
+
+  // Step 7 state
+  const [recentLeads, setRecentLeads] = useState<RecentLead[]>([])
+  const [loadingLeads, setLoadingLeads] = useState(false)
 
   useEffect(() => {
     if (state?.success) setStep(3)
   }, [state])
+
+  useEffect(() => {
+    if (step === 7) {
+      setLoadingLeads(true)
+      fetch('/api/user-leads')
+        .then((r) => r.json())
+        .then((data) => setRecentLeads((data as { leads: RecentLead[] }).leads ?? []))
+        .catch(() => {})
+        .finally(() => setLoadingLeads(false))
+    }
+  }, [step])
 
   function next() {
     setStep((s) => Math.min(s + 1, TOTAL_STEPS))
@@ -23,9 +64,12 @@ export function OnboardingWizard({ initialStep = 1 }: { initialStep?: number }) 
 
   const progressPct = Math.round(((step - 1) / (TOTAL_STEPS - 1)) * 100)
 
+  // Step 6 uses wider max-width to accommodate the search form
+  const containerWidth = step === 6 ? 'max-w-2xl' : 'max-w-md'
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
-      <div className="w-full max-w-md">
+    <div className="flex min-h-screen items-start justify-center bg-gray-50 px-4 py-10">
+      <div className={`w-full ${containerWidth}`}>
 
         {/* Progress bar */}
         <div className="mb-6">
@@ -51,12 +95,7 @@ export function OnboardingWizard({ initialStep = 1 }: { initialStep?: number }) 
                 Encontre empresas, envie emails e acompanhe suas prospecções em um único lugar.
               </p>
             </div>
-            <button
-              onClick={next}
-              className="w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-            >
-              Continuar
-            </button>
+            <button onClick={next} className={BTN_PRIMARY}>Continuar</button>
           </div>
         )}
 
@@ -158,12 +197,7 @@ export function OnboardingWizard({ initialStep = 1 }: { initialStep?: number }) 
                 No Prospecta, você encontra leads escolhendo um nicho e uma cidade. Assim você consegue prospectar empresas dentro do segmento e região que fazem sentido para o seu negócio.
               </p>
             </div>
-            <button
-              onClick={next}
-              className="w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-            >
-              Continuar
-            </button>
+            <button onClick={next} className={BTN_PRIMARY}>Continuar</button>
           </div>
         )}
 
@@ -192,12 +226,7 @@ export function OnboardingWizard({ initialStep = 1 }: { initialStep?: number }) 
               </p>
               <p className="text-xs text-gray-500">200 leads por mês</p>
             </div>
-            <button
-              onClick={next}
-              className="w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-            >
-              Continuar
-            </button>
+            <button onClick={next} className={BTN_PRIMARY}>Continuar</button>
           </div>
         )}
 
@@ -218,43 +247,82 @@ export function OnboardingWizard({ initialStep = 1 }: { initialStep?: number }) 
               >
                 Criar primeiro template
               </Link>
-              <button
-                onClick={next}
-                className="w-full cursor-pointer rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
-              >
-                Fazer depois
-              </button>
+              <button onClick={next} className={BTN_SECONDARY}>Fazer depois</button>
             </div>
           </div>
         )}
 
         {/* ── Etapa 6 — Buscar Leads ── */}
         {step === 6 && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-            <div className="mb-6 text-center">
-              <p className="mb-3 text-4xl">🔍</p>
-              <h1 className="text-xl font-bold text-gray-900">Buscar Leads</h1>
-              <p className="mt-2 text-sm text-gray-500">
-                Escolha um nicho e uma cidade para encontrar empresas para prospectar.
+          <div>
+            <div className="mb-5 rounded-2xl border border-gray-200 bg-white px-6 py-5 shadow-sm">
+              <p className="text-xl font-bold text-gray-900">Buscar Leads</p>
+              <p className="mt-1 text-sm text-gray-500">
+                Selecione um nicho e uma cidade para encontrar empresas e adicionar seus primeiros leads.
               </p>
             </div>
-            <ol className="mb-6 space-y-2 rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-600">
-              <li>① Selecione um nicho — ex: Restaurantes</li>
-              <li>② Escolha uma cidade — ex: São Paulo</li>
-              <li>③ Clique em <strong className="text-gray-800">Buscar leads</strong></li>
-              <li>④ Selecione os leads e adicione à sua lista</li>
-            </ol>
-            <button
-              onClick={next}
-              className="w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-            >
-              Entendido
-            </button>
+
+            <SearchForm
+              categories={categories}
+              onConfirmed={() => setLeadsConfirmed(true)}
+            />
+
+            <div className="mt-4 flex flex-col gap-2">
+              {leadsConfirmed && (
+                <button onClick={next} className={BTN_PRIMARY}>
+                  Ver leads adicionados →
+                </button>
+              )}
+              <button onClick={next} className={BTN_SECONDARY}>
+                {leadsConfirmed ? 'Pular' : 'Fazer depois'}
+              </button>
+            </div>
           </div>
         )}
 
-        {/* ── Etapa 7 — Gmail ── */}
+        {/* ── Etapa 7 — Leads Adicionados ── */}
         {step === 7 && (
+          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+            <div className="mb-5">
+              <p className="text-xl font-bold text-gray-900">Seus Leads</p>
+              <p className="mt-1 text-sm text-gray-500">
+                Esses são os leads que você acabou de adicionar. Eles estarão disponíveis na área de Leads.
+              </p>
+            </div>
+
+            {loadingLeads ? (
+              <p className="py-6 text-center text-sm text-gray-400">Carregando leads...</p>
+            ) : recentLeads.length === 0 ? (
+              <div className="mb-6 rounded-xl border border-gray-100 bg-gray-50 p-6 text-center">
+                <p className="text-sm text-gray-500">
+                  Nenhum lead adicionado ainda. Você pode buscar leads a qualquer momento na área de Busca.
+                </p>
+              </div>
+            ) : (
+              <div className="mb-6 max-h-[50vh] overflow-y-auto">
+                <div className="grid grid-cols-1 gap-3">
+                  {recentLeads.map((lead) => (
+                    <div
+                      key={lead.id}
+                      className="rounded-xl border border-gray-200 bg-gray-50 p-4"
+                    >
+                      <p className="font-semibold text-gray-900">{lead.company_name}</p>
+                      <div className="mt-1 space-y-0.5 text-sm text-gray-500">
+                        <p className="break-all">{lead.email ?? '—'}</p>
+                        <p>{lead.city ?? '—'}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <button onClick={next} className={BTN_PRIMARY}>Continuar</button>
+          </div>
+        )}
+
+        {/* ── Etapa 8 — Gmail ── */}
+        {step === 8 && (
           <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
             <div className="mb-6 text-center">
               <p className="mb-3 text-4xl">📧</p>
@@ -270,18 +338,13 @@ export function OnboardingWizard({ initialStep = 1 }: { initialStep?: number }) 
               >
                 Conectar Gmail
               </a>
-              <button
-                onClick={next}
-                className="w-full cursor-pointer rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
-              >
-                Fazer depois
-              </button>
+              <button onClick={next} className={BTN_SECONDARY}>Fazer depois</button>
             </div>
           </div>
         )}
 
-        {/* ── Etapa 8 — Finalização ── */}
-        {step === 8 && (
+        {/* ── Etapa 9 — Finalização ── */}
+        {step === 9 && (
           <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm text-center">
             <p className="mb-3 text-5xl">🚀</p>
             <h1 className="text-2xl font-bold text-gray-900">Tudo pronto!</h1>
