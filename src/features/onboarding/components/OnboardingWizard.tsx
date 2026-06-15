@@ -151,22 +151,12 @@ export function OnboardingWizard() {
         {/* ── Etapa 3 — Nicho e Cidade ── */}
         {step === 3 && (
           <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-            <div className="mb-6 text-center">
+            <div className="mb-8 text-center">
               <p className="mb-3 text-4xl">🎯</p>
-              <h1 className="text-xl font-bold text-gray-900">Onde você deseja prospectar?</h1>
-              <p className="mt-2 text-sm text-gray-500">
-                Esses dados direcionam suas primeiras buscas. Você poderá alterar isso a qualquer momento na busca.
+              <h1 className="text-xl font-bold text-gray-900">Nicho e Cidade</h1>
+              <p className="mt-3 text-sm text-gray-500">
+                No Prospecta, você encontra leads escolhendo um nicho e uma cidade. Assim você consegue prospectar empresas dentro do segmento e região que fazem sentido para o seu negócio.
               </p>
-            </div>
-            <div className="mb-6 space-y-3">
-              <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">Exemplos de nicho</p>
-                <p className="text-sm text-gray-700">Restaurantes · Dentistas · Academias · Advogados · Construção Civil</p>
-              </div>
-              <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">Exemplos de cidade</p>
-                <p className="text-sm text-gray-700">São Paulo · Campinas · Curitiba · Belo Horizonte · Porto Alegre</p>
-              </div>
             </div>
             <button
               onClick={next}
@@ -214,27 +204,19 @@ export function OnboardingWizard() {
         {/* ── Etapa 5 — Templates ── */}
         {step === 5 && (
           <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-            <div className="mb-6 text-center">
+            <div className="mb-8 text-center">
               <p className="mb-3 text-4xl">✉️</p>
               <h1 className="text-xl font-bold text-gray-900">Templates de Email</h1>
-              <p className="mt-2 text-sm text-gray-500">
-                Os templates permitem enviar emails profissionais rapidamente. Crie mensagens reutilizáveis para acelerar sua prospecção.
+              <p className="mt-3 text-sm text-gray-500">
+                Os templates ajudam você a criar mensagens reutilizáveis para enviar emails mais rápido. Você poderá criar seus templates depois, na área de Templates.
               </p>
             </div>
-            <div className="flex flex-col gap-3">
-              <Link
-                href="/templates/new"
-                className="block w-full rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700"
-              >
-                Criar primeiro template
-              </Link>
-              <button
-                onClick={next}
-                className="w-full cursor-pointer rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
-              >
-                Fazer depois
-              </button>
-            </div>
+            <button
+              onClick={next}
+              className="w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            >
+              Continuar
+            </button>
           </div>
         )}
 
