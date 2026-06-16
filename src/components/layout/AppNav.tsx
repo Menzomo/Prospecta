@@ -18,12 +18,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     href: '/settings',
     label: 'Configurações',
-    match: (p) => p === '/settings' || p.startsWith('/settings/company'),
-  },
-  {
-    href: '/settings/gmail',
-    label: 'Conectar Gmail',
-    match: (p) => p.startsWith('/settings/gmail'),
+    match: (p) => p === '/settings' || p.startsWith('/settings/'),
   },
 ]
 
