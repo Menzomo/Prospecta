@@ -303,6 +303,8 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
             <SearchForm
               categories={categories}
               onConfirmed={(added) => setTotalLeadsAdded((n) => n + added)}
+              lockedCity={{ name: 'Caxias do Sul', state: 'RS' }}
+              betaLimit={20}
             />
 
             <div className="mt-4 flex flex-col gap-2">

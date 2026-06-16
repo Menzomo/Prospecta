@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCompanyProfileByUserId } from '@/repositories/companyProfileRepository'
-import { listLeadCategories } from '@/repositories/leadCategoryRepository'
+import { listCategoriesWithAvailableLeadsForUser } from '@/repositories/leadCategoryRepository'
 import { OnboardingWizard } from '@/features/onboarding/components/OnboardingWizard'
 
 type Props = { searchParams: Promise<{ step?: string }> }
@@ -17,7 +17,7 @@ export default async function OnboardingPage({ searchParams }: Props) {
 
   const [company, categories] = await Promise.all([
     getCompanyProfileByUserId(supabase, user.id),
-    listLeadCategories(supabase),
+    listCategoriesWithAvailableLeadsForUser(supabase, user.id),
   ])
 
   // Skip dashboard redirect when returning mid-wizard (e.g. after template creation)

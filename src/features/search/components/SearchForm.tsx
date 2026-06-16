@@ -10,12 +10,16 @@ type Category = { id: string; name: string }
 interface SearchFormProps {
   categories: Category[]
   onConfirmed?: (added: number) => void
+  /** When set, city is pre-filled and locked (onboarding use-case) */
+  lockedCity?: { name: string; state: string }
+  /** When set, cap and relabel the remaining-credits display */
+  betaLimit?: number
 }
 
-export function SearchForm({ categories, onConfirmed }: SearchFormProps) {
+export function SearchForm({ categories, onConfirmed, lockedCity, betaLimit }: SearchFormProps) {
   const [category, setCategory] = useState('')
-  const [selectedCity, setSelectedCity] = useState('')
-  const [selectedState, setSelectedState] = useState('')
+  const [selectedCity, setSelectedCity] = useState(lockedCity?.name ?? '')
+  const [selectedState, setSelectedState] = useState(lockedCity?.state ?? '')
 
   const [loading, setLoading] = useState(false)
   const [confirming, setConfirming] = useState(false)
@@ -148,18 +152,32 @@ export function SearchForm({ categories, onConfirmed }: SearchFormProps) {
           <label className="text-sm font-medium text-gray-700">
             Cidade <span className="text-red-500">*</span>
           </label>
-          <CityAutocomplete
-            onSelect={(name, stateCode) => {
-              setSelectedCity(name)
-              setSelectedState(stateCode)
-            }}
-            onClear={() => {
-              setSelectedCity('')
-              setSelectedState('')
-            }}
-            placeholder="Digite para buscar a cidade..."
-            inputClassName="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          />
+          {lockedCity ? (
+            <>
+              <input
+                type="text"
+                value={lockedCity.name}
+                readOnly
+                className="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500 [-webkit-text-fill-color:#6b7280]"
+              />
+              <p className="text-xs text-gray-400">
+                Nesta versão beta, começamos com leads disponíveis em Caxias do Sul.
+              </p>
+            </>
+          ) : (
+            <CityAutocomplete
+              onSelect={(name, stateCode) => {
+                setSelectedCity(name)
+                setSelectedState(stateCode)
+              }}
+              onClear={() => {
+                setSelectedCity('')
+                setSelectedState('')
+              }}
+              placeholder="Digite para buscar a cidade..."
+              inputClassName="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            />
+          )}
         </div>
 
         {error && (
@@ -204,7 +222,9 @@ export function SearchForm({ categories, onConfirmed }: SearchFormProps) {
           )}
           {confirmResult.monthly_remaining >= 0 && (
             <p className="mt-1 text-xs text-green-700">
-              Créditos restantes este mês: {confirmResult.monthly_remaining}
+              {betaLimit
+                ? `Leads restantes no beta: ${Math.min(confirmResult.monthly_remaining, betaLimit)}`
+                : `Créditos restantes este mês: ${confirmResult.monthly_remaining}`}
             </p>
           )}
           <button
@@ -242,6 +262,13 @@ export function SearchForm({ categories, onConfirmed }: SearchFormProps) {
                 <div>
                   <p className="text-xl font-bold text-purple-600">∞</p>
                   <p className="text-xs text-gray-500">sem limite</p>
+                </div>
+              ) : betaLimit ? (
+                <div>
+                  <p className="text-xl font-bold text-gray-900">
+                    {Math.min(monthlyRemaining, betaLimit)}
+                  </p>
+                  <p className="text-xs text-gray-500">leads no beta</p>
                 </div>
               ) : (
                 <div>
