@@ -22,10 +22,10 @@ const INPUT_CLASS =
   'w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
 
 const BTN_PRIMARY =
-  'w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700'
+  'w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-2.5 sm:py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700'
 
 const BTN_SECONDARY =
-  'w-full cursor-pointer rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50'
+  'w-full cursor-pointer rounded-lg border border-gray-200 px-4 py-2.5 sm:py-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50'
 
 interface Props {
   initialStep?: number
@@ -83,11 +83,11 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
     'flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-30 disabled:shadow-none'
 
   return (
-    <div className="flex min-h-screen items-start justify-center bg-gray-50 px-4 py-10">
+    <div className="flex min-h-screen items-start justify-center bg-gray-50 px-4 py-5 sm:py-10">
       <div className={`w-full ${containerWidth}`}>
 
         {/* Progress bar */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <div className="mb-2 flex items-center gap-2">
             <button
               type="button"
@@ -125,10 +125,10 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
 
         {/* ── Etapa 1 — Boas-vindas ── */}
         {step === 1 && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-            <div className="mb-8 text-center">
-              <p className="mb-3 text-5xl">🚀</p>
-              <h1 className="text-2xl font-bold text-gray-900">Bem-vindo ao Prospecta</h1>
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-8">
+            <div className="mb-5 text-center sm:mb-8">
+              <p className="mb-2 text-4xl sm:mb-3 sm:text-5xl">🚀</p>
+              <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">Bem-vindo ao Prospecta</h1>
               <p className="mt-2 text-sm text-gray-500">
                 Encontre empresas, envie emails e acompanhe suas prospecções em um único lugar.
               </p>
@@ -139,14 +139,14 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
 
         {/* ── Etapa 2 — Empresa ── */}
         {step === 2 && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-            <div className="mb-6">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-8">
+            <div className="mb-4 sm:mb-6">
               <h1 className="text-xl font-bold text-gray-900">Configure sua empresa</h1>
               <p className="mt-1 text-sm text-gray-500">
                 Essas informações serão usadas nos seus emails de prospecção.
               </p>
             </div>
-            <form action={formAction} className="flex flex-col gap-4">
+            <form action={formAction} className="flex flex-col gap-3 sm:gap-4">
               <div className="flex flex-col gap-1">
                 <label htmlFor="company_name" className="text-sm font-medium text-gray-700">
                   Nome da empresa <span className="text-red-500">*</span>
@@ -217,7 +217,7 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
               <button
                 type="submit"
                 disabled={pending}
-                className="cursor-pointer rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2.5 sm:py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {pending ? 'Salvando...' : 'Continuar'}
               </button>
@@ -227,12 +227,12 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
 
         {/* ── Etapa 3 — Nicho e Cidade ── */}
         {step === 3 && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-            <div className="mb-8 text-center">
-              <p className="mb-3 text-4xl">🎯</p>
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-8">
+            <div className="mb-5 text-center sm:mb-8">
+              <p className="mb-2 text-3xl sm:mb-3 sm:text-4xl">🎯</p>
               <h1 className="text-xl font-bold text-gray-900">Nicho e Cidade</h1>
-              <p className="mt-3 text-sm text-gray-500">
-                No Prospecta, você encontra leads escolhendo um nicho e uma cidade. Assim você consegue prospectar empresas dentro do segmento e região que fazem sentido para o seu negócio.
+              <p className="mt-2 text-sm leading-snug text-gray-500 sm:mt-3 sm:leading-relaxed">
+                No Prospecta, você encontra leads escolhendo um nicho e uma cidade. Assim você prospecta empresas do segmento e região certos para o seu negócio.
               </p>
             </div>
             <button onClick={next} className={BTN_PRIMARY}>Continuar</button>
@@ -241,22 +241,22 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
 
         {/* ── Etapa 4 — Plano Beta ── */}
         {step === 4 && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-            <div className="mb-6 text-center">
-              <p className="mb-3 text-4xl">🎁</p>
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-8">
+            <div className="mb-4 text-center sm:mb-6">
+              <p className="mb-2 text-3xl sm:mb-3 sm:text-4xl">🎁</p>
               <h1 className="text-xl font-bold text-gray-900">Seu acesso Beta</h1>
               <p className="mt-1 text-sm text-gray-500">Você recebeu acesso ao Prospecta Beta.</p>
             </div>
-            <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 p-4">
+            <div className="mb-3 rounded-xl border border-blue-100 bg-blue-50 p-3 sm:mb-4 sm:p-4">
               <p className="mb-2 text-sm font-semibold text-blue-800">Durante o período de testes você possui:</p>
-              <ul className="space-y-1.5 text-sm text-blue-700">
+              <ul className="space-y-1 text-sm text-blue-700 sm:space-y-1.5">
                 <li>✓ 20 leads gratuitos</li>
                 <li>✓ Templates de email</li>
                 <li>✓ Gestão de leads</li>
                 <li>✓ Acompanhamentos</li>
               </ul>
             </div>
-            <div className="mb-6 rounded-xl border border-gray-200 p-4">
+            <div className="mb-4 rounded-xl border border-gray-200 p-3 sm:mb-6 sm:p-4">
               <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-400">Plano futuro</p>
               <p className="text-sm font-semibold text-gray-900">Prospecta Starter</p>
               <p className="mt-0.5 text-lg font-bold text-gray-900">
@@ -270,18 +270,18 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
 
         {/* ── Etapa 5 — Templates ── */}
         {step === 5 && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-            <div className="mb-6 text-center">
-              <p className="mb-3 text-4xl">✉️</p>
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-8">
+            <div className="mb-4 text-center sm:mb-6">
+              <p className="mb-2 text-3xl sm:mb-3 sm:text-4xl">✉️</p>
               <h1 className="text-xl font-bold text-gray-900">Templates de Email</h1>
-              <p className="mt-3 text-sm text-gray-500">
-                Os templates ajudam você a criar mensagens reutilizáveis para enviar emails mais rápido. Crie seu primeiro template agora ou faça isso depois.
+              <p className="mt-2 text-sm leading-snug text-gray-500 sm:leading-relaxed">
+                Crie modelos reutilizáveis para enviar emails mais rápido. Crie seu primeiro template agora ou faça isso depois.
               </p>
             </div>
             <div className="flex flex-col gap-3">
               <Link
                 href="/templates/new?returnTo=/onboarding&step=6"
-                className="block w-full rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                className="block w-full rounded-lg bg-blue-600 px-4 py-2.5 sm:py-3 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700"
               >
                 Criar primeiro template
               </Link>
@@ -293,7 +293,7 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
         {/* ── Etapa 6 — Buscar Leads ── */}
         {step === 6 && (
           <div>
-            <div className="mb-5 rounded-2xl border border-gray-200 bg-white px-6 py-5 shadow-sm">
+            <div className="mb-4 rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-sm sm:mb-5 sm:px-6 sm:py-5">
               <p className="text-xl font-bold text-gray-900">Buscar Leads</p>
               <p className="mt-1 text-sm text-gray-500">
                 Selecione um nicho e uma cidade, busque empresas e adicione pelo menos {MIN_LEADS} leads para continuar.
@@ -316,7 +316,7 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
               <button
                 onClick={next}
                 disabled={totalLeadsAdded < MIN_LEADS}
-                className="w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-2.5 sm:py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Continuar
               </button>
@@ -326,8 +326,8 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
 
         {/* ── Etapa 7 — Leads Adicionados ── */}
         {step === 7 && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-            <div className="mb-5">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-8">
+            <div className="mb-4">
               <p className="text-xl font-bold text-gray-900">Seus Leads</p>
               <p className="mt-1 text-sm text-gray-500">
                 Esses são os leads que você acabou de adicionar. Eles estarão disponíveis na área de Leads.
@@ -335,20 +335,20 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
             </div>
 
             {loadingLeads ? (
-              <p className="py-6 text-center text-sm text-gray-400">Carregando leads...</p>
+              <p className="py-4 text-center text-sm text-gray-400 sm:py-6">Carregando leads...</p>
             ) : recentLeads.length === 0 ? (
-              <div className="mb-6 rounded-xl border border-gray-100 bg-gray-50 p-6 text-center">
+              <div className="mb-4 rounded-xl border border-gray-100 bg-gray-50 p-4 text-center sm:mb-6 sm:p-6">
                 <p className="text-sm text-gray-500">
                   Nenhum lead adicionado ainda. Você pode buscar leads a qualquer momento na área de Busca.
                 </p>
               </div>
             ) : (
-              <div className="mb-6 max-h-[50vh] overflow-y-auto">
-                <div className="grid grid-cols-1 gap-3">
+              <div className="mb-4 max-h-[40vh] overflow-y-auto sm:mb-6 sm:max-h-[50vh]">
+                <div className="grid grid-cols-1 gap-2 sm:gap-3">
                   {recentLeads.map((lead) => (
                     <div
                       key={lead.id}
-                      className="rounded-xl border border-gray-200 bg-gray-50 p-4"
+                      className="rounded-xl border border-gray-200 bg-gray-50 p-3 sm:p-4"
                     >
                       <p className="font-semibold text-gray-900">{lead.company_name}</p>
                       <div className="mt-1 space-y-0.5 text-sm text-gray-500">
@@ -367,9 +367,9 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
 
         {/* ── Etapa 8 — Gmail ── */}
         {step === 8 && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-            <div className="mb-6 text-center">
-              <p className="mb-3 text-4xl">📧</p>
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-8">
+            <div className="mb-4 text-center sm:mb-6">
+              <p className="mb-2 text-3xl sm:mb-3 sm:text-4xl">📧</p>
               <h1 className="text-xl font-bold text-gray-900">Conecte seu Gmail</h1>
               <p className="mt-2 text-sm text-gray-500">
                 Conecte sua conta Gmail para enviar emails diretamente pelo Prospecta.
@@ -378,7 +378,7 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
             <div className="flex flex-col gap-3">
               <a
                 href="/api/gmail/connect"
-                className="block w-full rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                className="block w-full rounded-lg bg-blue-600 px-4 py-2.5 sm:py-3 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700"
               >
                 Conectar Gmail
               </a>
@@ -389,15 +389,15 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
 
         {/* ── Etapa 9 — Finalização ── */}
         {step === 9 && (
-          <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm text-center">
-            <p className="mb-3 text-5xl">🚀</p>
-            <h1 className="text-2xl font-bold text-gray-900">Tudo pronto!</h1>
-            <p className="mt-2 mb-8 text-sm text-gray-500">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-8 text-center">
+            <p className="mb-2 text-4xl sm:mb-3 sm:text-5xl">🚀</p>
+            <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">Tudo pronto!</h1>
+            <p className="mt-2 mb-5 text-sm text-gray-500 sm:mb-8">
               Seu Prospecta está configurado e pronto para uso.
             </p>
             <Link
               href="/dashboard"
-              className="block w-full rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              className="block w-full rounded-lg bg-blue-600 px-4 py-2.5 sm:py-3 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700"
             >
               Ir para Dashboard
             </Link>
