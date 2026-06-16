@@ -9,7 +9,7 @@ type Category = { id: string; name: string }
 
 interface SearchFormProps {
   categories: Category[]
-  onConfirmed?: () => void
+  onConfirmed?: (added: number) => void
 }
 
 export function SearchForm({ categories, onConfirmed }: SearchFormProps) {
@@ -106,7 +106,7 @@ export function SearchForm({ categories, onConfirmed }: SearchFormProps) {
       setConfirmResult(data)
       setLeads([])
       setSelectedIds(new Set())
-      if (data.added > 0) onConfirmed?.()
+      if (data.added > 0) onConfirmed?.(data.added)
     } catch {
       setError('Erro de conexão. Tente novamente.')
     } finally {

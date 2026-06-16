@@ -36,8 +36,9 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
   const [step, setStep] = useState(initialStep)
   const [state, formAction, pending] = useActionState(onboardingAction, null)
 
-  // Step 6 state
-  const [leadsConfirmed, setLeadsConfirmed] = useState(false)
+  // Step 6 state — accumulates across multiple confirm actions
+  const [totalLeadsAdded, setTotalLeadsAdded] = useState(0)
+  const MIN_LEADS = 5
 
   // Step 7 state
   const [recentLeads, setRecentLeads] = useState<RecentLead[]>([])
@@ -71,12 +72,15 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
   // Step 6 uses wider max-width to accommodate the search form
   const containerWidth = step === 6 ? 'max-w-2xl' : 'max-w-md'
 
-  // Forward arrow disabled on step 2 (must use form to advance) and on last step
+  // Forward arrow: blocked on step 2 (form required), step 6 (< 5 leads), and last step
   const canGoPrev = step > 1
-  const canGoNext = step !== 2 && step < TOTAL_STEPS
+  const canGoNext =
+    step !== 2 &&
+    step < TOTAL_STEPS &&
+    !(step === 6 && totalLeadsAdded < MIN_LEADS)
 
   const NAV_BTN =
-    'flex h-6 w-6 items-center justify-center rounded text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-30'
+    'flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-30 disabled:shadow-none'
 
   return (
     <div className="flex min-h-screen items-start justify-center bg-gray-50 px-4 py-10">
@@ -84,7 +88,7 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
 
         {/* Progress bar */}
         <div className="mb-6">
-          <div className="mb-1.5 flex items-center gap-1.5 text-xs text-gray-400">
+          <div className="mb-2 flex items-center gap-2">
             <button
               type="button"
               onClick={prev}
@@ -92,11 +96,13 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
               aria-label="Etapa anterior"
               className={NAV_BTN}
             >
-              ←
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
             </button>
-            <span>Etapa {step} de {TOTAL_STEPS}</span>
+            <span className="text-xs text-gray-500">Etapa {step} de {TOTAL_STEPS}</span>
             <div className="flex-1" />
-            <span>{progressPct}%</span>
+            <span className="text-xs text-gray-500">{progressPct}%</span>
             <button
               type="button"
               onClick={next}
@@ -104,7 +110,9 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
               aria-label="Próxima etapa"
               className={NAV_BTN}
             >
-              →
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
             </button>
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
@@ -288,23 +296,27 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
             <div className="mb-5 rounded-2xl border border-gray-200 bg-white px-6 py-5 shadow-sm">
               <p className="text-xl font-bold text-gray-900">Buscar Leads</p>
               <p className="mt-1 text-sm text-gray-500">
-                Selecione um nicho e uma cidade para encontrar empresas e adicionar seus primeiros leads.
+                Selecione um nicho e uma cidade, busque empresas e adicione pelo menos {MIN_LEADS} leads para continuar.
               </p>
             </div>
 
             <SearchForm
               categories={categories}
-              onConfirmed={() => setLeadsConfirmed(true)}
+              onConfirmed={(added) => setTotalLeadsAdded((n) => n + added)}
             />
 
             <div className="mt-4 flex flex-col gap-2">
-              {leadsConfirmed && (
-                <button onClick={next} className={BTN_PRIMARY}>
-                  Ver leads adicionados →
-                </button>
+              {totalLeadsAdded > 0 && totalLeadsAdded < MIN_LEADS && (
+                <p className="text-center text-sm text-amber-600">
+                  {totalLeadsAdded}/{MIN_LEADS} leads adicionados — adicione mais para continuar.
+                </p>
               )}
-              <button onClick={next} className={BTN_SECONDARY}>
-                {leadsConfirmed ? 'Pular' : 'Fazer depois'}
+              <button
+                onClick={next}
+                disabled={totalLeadsAdded < MIN_LEADS}
+                className="w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Continuar
               </button>
             </div>
           </div>
