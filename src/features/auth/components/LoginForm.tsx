@@ -22,7 +22,7 @@ export function LoginForm() {
               type="text"
               placeholder="Seu nome"
               autoComplete="name"
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             {signupState?.errors?.full_name && (
               <p className="text-xs text-red-500">{signupState.errors.full_name[0]}</p>
@@ -39,7 +39,7 @@ export function LoginForm() {
               type="email"
               placeholder="seu@email.com"
               autoComplete="email"
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             {signupState?.errors?.email && (
               <p className="text-xs text-red-500">{signupState.errors.email[0]}</p>
@@ -56,7 +56,7 @@ export function LoginForm() {
               type="password"
               placeholder="Mínimo 6 caracteres"
               autoComplete="new-password"
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             {signupState?.errors?.password && (
               <p className="text-xs text-red-500">{signupState.errors.password[0]}</p>
@@ -105,7 +105,7 @@ export function LoginForm() {
             type="email"
             placeholder="seu@email.com"
             autoComplete="email"
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           />
           {loginState?.errors?.email && (
             <p className="text-xs text-red-500">{loginState.errors.email[0]}</p>
@@ -122,7 +122,7 @@ export function LoginForm() {
             type="password"
             placeholder="Sua senha"
             autoComplete="current-password"
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           />
           {loginState?.errors?.password && (
             <p className="text-xs text-red-500">{loginState.errors.password[0]}</p>

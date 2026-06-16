@@ -2,6 +2,22 @@
 
 ---
 
+## Junho 2026 — DT-H1: Middleware de proteção de rotas
+
+Criado `src/middleware.ts` resolvendo o débito técnico DT-H1. O middleware intercepta todas as requisições antes de chegarem ao server component.
+
+### Comportamento
+- **Sem sessão → rota privada**: redireciona para `/login` imediatamente, sem processar o componente
+- **Sessão ativa → `/login`**: redireciona para `/dashboard`
+- **Rotas públicas** (`/login`, `/auth/callback`, `/api/gmail/callback`): sempre passam sem verificação
+- **Rotas com auth própria** (`/api/cron/*`): bypass completo (usam `Authorization` header)
+- Sessão Supabase é **sempre renovada** via `updateSession()` em cada requisição, garantindo que cookies não expirem silenciosamente
+
+### Histórico
+A primeira implementação usou `src/proxy.ts` (convenção do Next.js 16), mas o deploy na Vercel falhou com ENOENT em `.next/server/middleware.js.nft.json`. Causa: Turbopack (bundler padrão no Next.js 16) não executa o rename `proxy.js.nft.json → middleware.js.nft.json` que o adaptador da Vercel espera. Solução: `middleware.ts` contorna o problema pois `isProxyFile()` retorna false, `hasNodeMiddleware` fica false e o adaptador não tenta abrir o arquivo ausente.
+
+---
+
 ## Junho 2026 — Fix: erro "Dados inválidos" ao confirmar leads da busca
 
 **Bug:** O endpoint `/api/user-leads/confirm` tinha `.max(10)` no schema Zod. Admins selecionando 50 leads (e usuários em edge cases com mais de 10) recebiam "Dados inválidos" e nenhum lead era adicionado.

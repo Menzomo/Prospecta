@@ -24,15 +24,11 @@
 
 ---
 
-### DT-H1 — Sem middleware de proteção de rota
+### ~~DT-H1~~ — ✅ Resolvido
 
-**Problema:** Rotas protegidas (`/admin`, `/leads`, `/search`, `/dashboard`, etc.) verificam autenticação dentro do server component via `redirect()`. Sem middleware Next.js, um requisição para `/admin` sem cookie válido passa pelo runtime do servidor antes de ser redirecionada.
+`src/middleware.ts` criado. Todas as rotas privadas são interceptadas antes de chegar ao server component: sem sessão → redirect para `/login`; sessão ativa acessando `/login` → redirect para `/dashboard`. Rotas públicas (`/login`, `/auth/callback`, `/api/gmail/callback`) e rotas com autenticação própria (`/api/cron/*`) são excluídas da verificação.
 
-**Risco:** Exposição de tempo de processamento. Em teoria, um servidor lento poderia parcialmente renderizar antes do redirect. Middleware protegeria antes de chegar ao componente.
-
-**Localização:** todas as páginas em `src/app/(app)/`
-
-**Solução esperada:** `src/middleware.ts` com `matcher` cobrindo `/(app)(.*)` — redireciona para `/login` se sem sessão.
+**Nota sobre `proxy.ts`:** Next.js 16 introduziu `proxy.ts` como substituto de `middleware.ts`, mas a convenção `proxy` + Turbopack (bundler padrão no Next.js 16) não gera o arquivo `.next/server/middleware.js.nft.json` esperado pelo adaptador da Vercel — causando ENOENT no deploy. `middleware.ts` (depreciada, mas ainda suportada) contorna o problema porque `isProxyFile()` retorna false, `hasNodeMiddleware` permanece false e o adaptador não tenta ler o arquivo ausente.
 
 ---
 
