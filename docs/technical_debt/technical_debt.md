@@ -26,7 +26,9 @@
 
 ### ~~DT-H1~~ — ✅ Resolvido
 
-`src/proxy.ts` criado (Next.js 16 renomeou `middleware.ts` → `proxy.ts`). Todas as rotas privadas agora são interceptadas antes de chegar ao server component: sem sessão → redirect para `/login`; sessão ativa acessando `/login` → redirect para `/dashboard`. Rotas públicas (`/login`, `/auth/callback`, `/api/gmail/callback`) e rotas com autenticação própria (`/api/cron/*`) são excluídas da verificação.
+`src/middleware.ts` criado. Todas as rotas privadas são interceptadas antes de chegar ao server component: sem sessão → redirect para `/login`; sessão ativa acessando `/login` → redirect para `/dashboard`. Rotas públicas (`/login`, `/auth/callback`, `/api/gmail/callback`) e rotas com autenticação própria (`/api/cron/*`) são excluídas da verificação.
+
+**Nota sobre `proxy.ts`:** Next.js 16 introduziu `proxy.ts` como substituto de `middleware.ts`, mas a convenção `proxy` + Turbopack (bundler padrão no Next.js 16) não gera o arquivo `.next/server/middleware.js.nft.json` esperado pelo adaptador da Vercel — causando ENOENT no deploy. `middleware.ts` (depreciada, mas ainda suportada) contorna o problema porque `isProxyFile()` retorna false, `hasNodeMiddleware` permanece false e o adaptador não tenta ler o arquivo ausente.
 
 ---
 

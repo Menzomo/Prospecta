@@ -2,9 +2,9 @@
 
 ---
 
-## Junho 2026 — DT-H1: Proxy de proteção de rotas (Next.js 16)
+## Junho 2026 — DT-H1: Middleware de proteção de rotas
 
-Criado `src/proxy.ts` resolvendo o débito técnico DT-H1. O proxy intercepta todas as requisições antes de chegarem ao server component.
+Criado `src/middleware.ts` resolvendo o débito técnico DT-H1. O middleware intercepta todas as requisições antes de chegarem ao server component.
 
 ### Comportamento
 - **Sem sessão → rota privada**: redireciona para `/login` imediatamente, sem processar o componente
@@ -13,8 +13,8 @@ Criado `src/proxy.ts` resolvendo o débito técnico DT-H1. O proxy intercepta to
 - **Rotas com auth própria** (`/api/cron/*`): bypass completo (usam `Authorization` header)
 - Sessão Supabase é **sempre renovada** via `updateSession()` em cada requisição, garantindo que cookies não expirem silenciosamente
 
-### Contexto técnico
-Next.js 16 renomeou `middleware.ts` → `proxy.ts` e `export function middleware` → `export function proxy`. A lógica subjacente é idêntica. O helper `src/lib/supabase/middleware.ts` (`updateSession`) já existia e foi reaproveitado.
+### Histórico
+A primeira implementação usou `src/proxy.ts` (convenção do Next.js 16), mas o deploy na Vercel falhou com ENOENT em `.next/server/middleware.js.nft.json`. Causa: Turbopack (bundler padrão no Next.js 16) não executa o rename `proxy.js.nft.json → middleware.js.nft.json` que o adaptador da Vercel espera. Solução: `middleware.ts` contorna o problema pois `isProxyFile()` retorna false, `hasNodeMiddleware` fica false e o adaptador não tenta abrir o arquivo ausente.
 
 ---
 

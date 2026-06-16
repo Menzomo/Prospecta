@@ -15,7 +15,7 @@ function isBypassPath(pathname: string): boolean {
   return BYPASS_PREFIXES.some((p) => pathname.startsWith(p))
 }
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Cron routes authenticate via Authorization header — skip session handling
