@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { countLeadsAddedThisMonth } from '@/features/search/repositories/searchRepository'
 import { createUserLead } from '@/repositories/userLeadRepository'
 
-const MONTHLY_LIMIT = 200
+const MONTHLY_LIMIT = 20
 
 // Max 200 — the monthly limit is the real cap for regular users; admins have no effective limit
 const confirmSchema = z.object({
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     if (monthly_remaining <= 0) {
       return Response.json(
-        { error: 'Limite mensal de leads atingido. Seu limite renova no próximo mês.' },
+        { error: 'Você atingiu o limite de 20 leads do beta.' },
         { status: 400 }
       )
     }
