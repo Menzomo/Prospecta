@@ -24,15 +24,9 @@
 
 ---
 
-### DT-H1 — Sem middleware de proteção de rota
+### ~~DT-H1~~ — ✅ Resolvido
 
-**Problema:** Rotas protegidas (`/admin`, `/leads`, `/search`, `/dashboard`, etc.) verificam autenticação dentro do server component via `redirect()`. Sem middleware Next.js, um requisição para `/admin` sem cookie válido passa pelo runtime do servidor antes de ser redirecionada.
-
-**Risco:** Exposição de tempo de processamento. Em teoria, um servidor lento poderia parcialmente renderizar antes do redirect. Middleware protegeria antes de chegar ao componente.
-
-**Localização:** todas as páginas em `src/app/(app)/`
-
-**Solução esperada:** `src/middleware.ts` com `matcher` cobrindo `/(app)(.*)` — redireciona para `/login` se sem sessão.
+`src/proxy.ts` criado (Next.js 16 renomeou `middleware.ts` → `proxy.ts`). Todas as rotas privadas agora são interceptadas antes de chegar ao server component: sem sessão → redirect para `/login`; sessão ativa acessando `/login` → redirect para `/dashboard`. Rotas públicas (`/login`, `/auth/callback`, `/api/gmail/callback`) e rotas com autenticação própria (`/api/cron/*`) são excluídas da verificação.
 
 ---
 

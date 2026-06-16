@@ -2,6 +2,22 @@
 
 ---
 
+## Junho 2026 — DT-H1: Proxy de proteção de rotas (Next.js 16)
+
+Criado `src/proxy.ts` resolvendo o débito técnico DT-H1. O proxy intercepta todas as requisições antes de chegarem ao server component.
+
+### Comportamento
+- **Sem sessão → rota privada**: redireciona para `/login` imediatamente, sem processar o componente
+- **Sessão ativa → `/login`**: redireciona para `/dashboard`
+- **Rotas públicas** (`/login`, `/auth/callback`, `/api/gmail/callback`): sempre passam sem verificação
+- **Rotas com auth própria** (`/api/cron/*`): bypass completo (usam `Authorization` header)
+- Sessão Supabase é **sempre renovada** via `updateSession()` em cada requisição, garantindo que cookies não expirem silenciosamente
+
+### Contexto técnico
+Next.js 16 renomeou `middleware.ts` → `proxy.ts` e `export function middleware` → `export function proxy`. A lógica subjacente é idêntica. O helper `src/lib/supabase/middleware.ts` (`updateSession`) já existia e foi reaproveitado.
+
+---
+
 ## Junho 2026 — Fix: erro "Dados inválidos" ao confirmar leads da busca
 
 **Bug:** O endpoint `/api/user-leads/confirm` tinha `.max(10)` no schema Zod. Admins selecionando 50 leads (e usuários em edge cases com mais de 10) recebiam "Dados inválidos" e nenhum lead era adicionado.
