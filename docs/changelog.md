@@ -2,6 +2,71 @@
 
 ---
 
+## Junho 2026 — Fix: regra de dismiss no-reply revisada (DT-NOREPLY2)
+
+Ajustada a regra de quais status podem ser sobrescritos por `sem_resposta` ao clicar em "Esquecer lead".
+
+**Regra anterior:** só sobrescrevia `novo` e `contatado`.
+
+**Regra atual:**
+- Sobrescreve para `sem_resposta`: `novo`, `contatado`, `interessado` — mesmo que o lead tenha demonstrado interesse antes, se não respondeu ao acompanhamento e o usuário decidiu esquecer, `sem_resposta` reflete melhor o estado final
+- Preserva: `negociacao`, `responder_depois`, `sem_interesse` — status com intenção ativa ou já finalizados
+
+**Arquivo:** `src/features/followups/actions.ts` (`dismissNoReplyFollowupAction`)
+
+---
+
+## Junho 2026 — Navegação mobile com drawer lateral
+
+Menu de navegação no mobile substituído por hamburger + drawer lateral esquerdo.
+
+### Problema anterior
+No mobile, os itens do menu ficavam em barra horizontal com scroll lateral — difícil acessar "Configurações" e outros itens à direita.
+
+### Novo comportamento
+- **Mobile**: header com logo + botão hambúrguer no topo; ao clicar, abre drawer lateral esquerdo com lista vertical de todos os itens
+- **Drawer**: fecha ao clicar no overlay, no botão X ou ao navegar; scroll do body bloqueado enquanto aberto; item ativo destacado em azul
+- **Desktop**: nav horizontal inalterado (`sm:block`)
+- Gmail não aparece no menu — continua em Configurações
+
+### Arquivos
+- `src/components/layout/AppNav.tsx`: adicionados header mobile, overlay e drawer; desktop nav envolvido em `hidden sm:block`
+
+---
+
+## Junho 2026 — Fix: compactação mobile do onboarding (2 rodadas)
+
+Reduzido footprint vertical do `OnboardingWizard` em dispositivos móveis após feedback de teste real em iPhone.
+
+### Ajustes aplicados
+- Container: `py-3 sm:py-10`, `px-3 sm:px-4`
+- Cards: `p-4 sm:p-8`
+- Botões: `py-2 sm:py-3`
+- Setas de navegação: `h-8 w-8 sm:h-9 sm:w-9`
+- Emojis: `text-3xl sm:text-5xl` (grandes), `text-2xl sm:text-4xl` (médios), menos margem abaixo
+- Títulos: `text-base sm:text-2xl` (hero), `text-base sm:text-xl` (seções)
+- Descrições: `text-xs sm:text-sm`, `leading-snug`
+- Labels do formulário (Etapa 2): `text-xs sm:text-sm`, gaps reduzidos
+- Step 7 leads: `max-h-[35vh]`, cards `p-2.5 sm:p-4`
+- Progress bar: `mb-3 sm:mb-6`
+
+### Arquivos
+- `src/features/onboarding/components/OnboardingWizard.tsx`
+
+---
+
+## Junho 2026 — Fix: visibilidade de texto no login em iOS/Safari
+
+Campos de texto no formulário de login/cadastro ficavam com texto invisível no iOS Safari por causa da injeção de cor do autofill do WebKit.
+
+### Correção
+Aplicado `[-webkit-text-fill-color:#111827]` em todos os 5 inputs do `LoginForm` (nome, email e senha no signup; email e senha no login) — mesmo padrão já usado em `SearchForm`, `OnboardingWizard` e `CityAutocomplete`.
+
+### Arquivos
+- `src/features/auth/components/LoginForm.tsx`
+
+---
+
 ## Junho 2026 — DT-H1: Middleware de proteção de rotas
 
 Criado `src/middleware.ts` resolvendo o débito técnico DT-H1. O middleware intercepta todas as requisições antes de chegarem ao server component.

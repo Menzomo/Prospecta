@@ -208,10 +208,12 @@ Ver DT-H3 para detalhes. A regra `company_name + city` falha quando city é null
 
 ---
 
-### DT-NOREPLY2 — "Esquecer lead" sobrescreve status sem verificar estado atual
+### ~~DT-NOREPLY2~~ — ✅ Reavaliado e resolvido
 
-**Problema:** `dismissNoReplyFollowupAction` sempre seta `sem_resposta` no lead, mesmo que o status atual seja `interessado` ou `negociacao` — possível regressão de status não intencional.
+**Débito original:** `dismissNoReplyFollowupAction` sobrescrevia status sem verificar estado atual.
 
-**Localização:** `src/features/followups/actions.ts` (dismissNoReplyFollowupAction)
+**Conclusão após reavaliação:** Não existe atualização automática de status no sistema — `sem_resposta` só é gravado via ação explícita do usuário. O botão "Esquecer lead" aparece apenas no dashboard para followups `no_reply` vencidos, e representa uma decisão intencional de abandonar o lead.
 
-**Solução esperada:** Buscar status atual do lead antes de atualizar; só mudar para `sem_resposta` se o status for `contatado` ou `novo`.
+**Regra final (V1):** `dismissNoReplyFollowupAction` cancela o followup e seta `sem_resposta` independentemente do status atual. Se o usuário clicou em "Esquecer lead", ele está declarando que não quer mais trabalhar esse lead por falta de resposta — qualquer status anterior é substituído por essa decisão.
+
+**Melhoria futura (não implementada):** Botão "Dispensar lembrete" que cancela apenas o followup sem alterar o status do lead, para casos onde o usuário quer remover o alerta sem desistir do lead.

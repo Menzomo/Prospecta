@@ -155,6 +155,8 @@ export async function dismissNoReplyFollowupAction(
   if (!user) redirect('/login')
 
   await updateFollowupStatus(supabase, user.id, followupId, 'cancelled')
+  // "Esquecer lead" is an explicit user decision to abandon the lead.
+  // Always set sem_resposta regardless of current status.
   await updateLeadStatus(supabase, user.id, leadId, 'sem_resposta')
 
   revalidatePath('/dashboard')
