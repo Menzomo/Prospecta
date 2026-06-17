@@ -210,4 +210,4 @@ Ver DT-H3 para detalhes. A regra `company_name + city` falha quando city é null
 
 ### ~~DT-NOREPLY2~~ — ✅ Resolvido
 
-`dismissNoReplyFollowupAction` busca o status atual do lead antes de atualizar. A atualização para `sem_resposta` ocorre apenas se o status for `'novo'` ou `'contatado'`. Status mais avançados (`interessado`, `negociacao`, `responder_depois`, `sem_interesse`) são preservados.
+`dismissNoReplyFollowupAction` busca o status atual do lead antes de atualizar. A atualização para `sem_resposta` ocorre apenas se o status for `'novo'`, `'contatado'` ou `'interessado'` — se o lead demonstrou interesse mas não respondeu ao acompanhamento, `sem_resposta` reflete melhor o estado final. Status mais avançados ou finais (`negociacao`, `responder_depois`, `sem_interesse`) são preservados.

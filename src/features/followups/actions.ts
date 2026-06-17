@@ -159,7 +159,7 @@ export async function dismissNoReplyFollowupAction(
   // Only downgrade to sem_resposta when the lead hasn't progressed past contatado.
   // Statuses like interessado, negociacao, responder_depois etc. must be preserved.
   const lead = await getLeadById(supabase, leadId)
-  if (lead?.status === 'novo' || lead?.status === 'contatado') {
+  if (lead?.status === 'novo' || lead?.status === 'contatado' || lead?.status === 'interessado') {
     await updateLeadStatus(supabase, user.id, leadId, 'sem_resposta')
   }
 

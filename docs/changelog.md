@@ -2,6 +2,20 @@
 
 ---
 
+## Junho 2026 — Fix: regra de dismiss no-reply revisada (DT-NOREPLY2)
+
+Ajustada a regra de quais status podem ser sobrescritos por `sem_resposta` ao clicar em "Esquecer lead".
+
+**Regra anterior:** só sobrescrevia `novo` e `contatado`.
+
+**Regra atual:**
+- Sobrescreve para `sem_resposta`: `novo`, `contatado`, `interessado` — mesmo que o lead tenha demonstrado interesse antes, se não respondeu ao acompanhamento e o usuário decidiu esquecer, `sem_resposta` reflete melhor o estado final
+- Preserva: `negociacao`, `responder_depois`, `sem_interesse` — status com intenção ativa ou já finalizados
+
+**Arquivo:** `src/features/followups/actions.ts` (`dismissNoReplyFollowupAction`)
+
+---
+
 ## Junho 2026 — Navegação mobile com drawer lateral
 
 Menu de navegação no mobile substituído por hamburger + drawer lateral esquerdo.
