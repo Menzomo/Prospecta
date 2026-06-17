@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createFollowupSchema, updateFollowupSchema } from '@/validations/followupSchema'
 import { createFollowup, updateFollowup, updateFollowupStatus } from '@/repositories/followupRepository'
-import { updateLeadStatus } from '@/repositories/leadRepository'
+import { getLeadById, updateLeadStatus } from '@/repositories/leadRepository'
 
 // --- Create ---
 
@@ -155,7 +155,13 @@ export async function dismissNoReplyFollowupAction(
   if (!user) redirect('/login')
 
   await updateFollowupStatus(supabase, user.id, followupId, 'cancelled')
-  await updateLeadStatus(supabase, user.id, leadId, 'sem_resposta')
+
+  // Only downgrade to sem_resposta when the lead hasn't progressed past contatado.
+  // Statuses like interessado, negociacao, responder_depois etc. must be preserved.
+  const lead = await getLeadById(supabase, leadId)
+  if (lead?.status === 'novo' || lead?.status === 'contatado') {
+    await updateLeadStatus(supabase, user.id, leadId, 'sem_resposta')
+  }
 
   revalidatePath('/dashboard')
   revalidatePath(`/leads/${leadId}`)

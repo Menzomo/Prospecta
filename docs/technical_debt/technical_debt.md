@@ -208,10 +208,6 @@ Ver DT-H3 para detalhes. A regra `company_name + city` falha quando city é null
 
 ---
 
-### DT-NOREPLY2 — "Esquecer lead" sobrescreve status sem verificar estado atual
+### ~~DT-NOREPLY2~~ — ✅ Resolvido
 
-**Problema:** `dismissNoReplyFollowupAction` sempre seta `sem_resposta` no lead, mesmo que o status atual seja `interessado` ou `negociacao` — possível regressão de status não intencional.
-
-**Localização:** `src/features/followups/actions.ts` (dismissNoReplyFollowupAction)
-
-**Solução esperada:** Buscar status atual do lead antes de atualizar; só mudar para `sem_resposta` se o status for `contatado` ou `novo`.
+`dismissNoReplyFollowupAction` busca o status atual do lead antes de atualizar. A atualização para `sem_resposta` ocorre apenas se o status for `'novo'` ou `'contatado'`. Status mais avançados (`interessado`, `negociacao`, `responder_depois`, `sem_interesse`) são preservados.
