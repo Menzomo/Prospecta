@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/types'
-import type { GmailConnection, SaveGmailConnectionDto } from '@/types/gmail'
+import type { GmailConnection, GmailRequest, SaveGmailConnectionDto } from '@/types/gmail'
 
 export async function getGmailConnection(
   supabase: SupabaseClient<Database>,
@@ -108,6 +108,64 @@ export async function getActiveGmailConnections(
   }
 
   return data ?? []
+}
+
+export async function getGmailRequest(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<GmailRequest | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('gmail_request_email, gmail_request_status, gmail_requested_at')
+    .eq('id', userId)
+    .single()
+
+  if (error) {
+    if (error.code === 'PGRST116') return null
+    console.error('[gmailRepository.getGmailRequest]', { code: error.code, message: error.message })
+    return null
+  }
+
+  return data
+}
+
+export async function saveGmailRequest(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  gmailEmail: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      gmail_request_email: gmailEmail,
+      gmail_request_status: 'pending',
+      gmail_requested_at: new Date().toISOString(),
+    })
+    .eq('id', userId)
+
+  if (error) {
+    console.error('[gmailRepository.saveGmailRequest]', { code: error.code, message: error.message })
+    return false
+  }
+
+  return true
+}
+
+export async function approveGmailRequest(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ gmail_request_status: 'approved' })
+    .eq('id', userId)
+
+  if (error) {
+    console.error('[gmailRepository.approveGmailRequest]', { code: error.code, message: error.message })
+    return false
+  }
+
+  return true
 }
 
 export async function updateGmailTokens(

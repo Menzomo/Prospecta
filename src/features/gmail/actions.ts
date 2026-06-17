@@ -3,9 +3,49 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { disconnectGmailConnection } from '@/repositories/gmailRepository'
+import { disconnectGmailConnection, saveGmailRequest } from '@/repositories/gmailRepository'
 import { getGmailConnectionService, tryRefreshGmailToken } from '@/services/gmailService'
 import { syncGmailRepliesForLead } from '@/services/gmailSyncService'
+import { sendGmailRequestNotification } from '@/services/betaNotificationService'
+
+// --- Request Gmail access (beta) ---
+
+type GmailRequestResult = { success?: boolean; error?: string }
+
+export async function requestGmailAccessAction(gmailEmail: string): Promise<GmailRequestResult> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { error: 'Sessão expirada.' }
+
+  if (!gmailEmail.toLowerCase().endsWith('@gmail.com')) {
+    return { error: 'Informe um endereço Gmail válido (deve terminar em @gmail.com).' }
+  }
+
+  const saved = await saveGmailRequest(supabase, user.id, gmailEmail.toLowerCase().trim())
+  if (!saved) return { error: 'Erro ao salvar solicitação. Tente novamente.' }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, email')
+    .eq('id', user.id)
+    .single()
+
+  await sendGmailRequestNotification(
+    user.id,
+    profile?.full_name ?? null,
+    profile?.email ?? user.email ?? '',
+    gmailEmail.toLowerCase().trim()
+  )
+
+  revalidatePath('/onboarding')
+  revalidatePath('/settings/gmail')
+  return { success: true }
+}
+
+// --- Disconnect ---
 
 export async function disconnectGmailAction(_formData: FormData): Promise<void> {
   const supabase = await createClient()

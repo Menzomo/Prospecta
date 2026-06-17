@@ -2,16 +2,27 @@ import nodemailer from 'nodemailer'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 const RECIPIENT = 'bruno.menzomo06@gmail.com'
-const SUBJECT = 'Novo usuário beta aguardando liberação OAuth - Prospecta'
+const SUBJECT_NEW_USER = 'Novo usuário beta aguardando liberação OAuth - Prospecta'
+const SUBJECT_GMAIL_REQUEST = 'Nova solicitação de Gmail - Prospecta Beta'
 
-async function sendNotificationEmail(userName: string | null, userEmail: string, createdAt: string): Promise<void> {
+async function createTransporter() {
   const from = process.env.NOTIFICATION_EMAIL_FROM
   const password = process.env.NOTIFICATION_EMAIL_PASSWORD
 
   if (!from || !password) {
     console.warn('[betaNotification] NOTIFICATION_EMAIL_FROM ou NOTIFICATION_EMAIL_PASSWORD não configurados — notificação ignorada')
-    return
+    return null
   }
+
+  return {
+    from,
+    transporter: nodemailer.createTransport({ service: 'gmail', auth: { user: from, pass: password } }),
+  }
+}
+
+async function sendNotificationEmail(userName: string | null, userEmail: string, createdAt: string): Promise<void> {
+  const t = await createTransporter()
+  if (!t) return
 
   const date = new Date(createdAt).toLocaleString('pt-BR', {
     timeZone: 'America/Sao_Paulo',
@@ -32,14 +43,37 @@ Data: ${date}
 
 Ação: Adicionar este email em Google Cloud > OAuth Consent Screen > Test Users.`
 
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: from, pass: password },
-  })
-
-  console.log(`[betaNotification] Preparando envio de email para Bruno — remetente: ${from}`)
-  await transporter.sendMail({ from, to: RECIPIENT, subject: SUBJECT, text: body })
+  console.log(`[betaNotification] Preparando envio de email para Bruno — remetente: ${t.from}`)
+  await t.transporter.sendMail({ from: t.from, to: RECIPIENT, subject: SUBJECT_NEW_USER, text: body })
   console.log('[betaNotification] Email enviado com sucesso')
+}
+
+export async function sendGmailRequestNotification(
+  userId: string,
+  userName: string | null,
+  userEmail: string,
+  gmailRequested: string
+): Promise<void> {
+  try {
+    const t = await createTransporter()
+    if (!t) return
+
+    const body = `Novo usuário solicitou liberação de Gmail no Prospecta Beta.
+
+Nome: ${userName ?? 'Não informado'}
+Email de cadastro: ${userEmail}
+Gmail solicitado: ${gmailRequested}
+User ID: ${userId}
+
+Ação necessária:
+1. Adicionar "${gmailRequested}" em Google Cloud > OAuth Consent Screen > Test Users
+2. Aprovar a solicitação em https://prospecta-ten.vercel.app/admin (seção "Solicitações Gmail")`
+
+    await t.transporter.sendMail({ from: t.from, to: RECIPIENT, subject: SUBJECT_GMAIL_REQUEST, text: body })
+    console.log(`[betaNotification] Gmail request notification sent for userId=${userId}`)
+  } catch (err) {
+    console.error('[betaNotification] Erro ao enviar notificação de solicitação Gmail:', err)
+  }
 }
 
 export async function sendTestBetaNotificationEmail(): Promise<void> {

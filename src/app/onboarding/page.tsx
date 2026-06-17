@@ -2,7 +2,9 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCompanyProfileByUserId } from '@/repositories/companyProfileRepository'
 import { listCategoriesWithAvailableLeadsForUser } from '@/repositories/leadCategoryRepository'
+import { getGmailConnection, getGmailRequest } from '@/repositories/gmailRepository'
 import { OnboardingWizard } from '@/features/onboarding/components/OnboardingWizard'
+import type { GmailRequestStatus } from '@/types/gmail'
 
 type Props = { searchParams: Promise<{ step?: string }> }
 
@@ -15,13 +17,26 @@ export default async function OnboardingPage({ searchParams }: Props) {
 
   if (!user) redirect('/login')
 
-  const [company, categories] = await Promise.all([
+  const [company, categories, connection, gmailRequest] = await Promise.all([
     getCompanyProfileByUserId(supabase, user.id),
     listCategoriesWithAvailableLeadsForUser(supabase, user.id),
+    getGmailConnection(supabase, user.id),
+    getGmailRequest(supabase, user.id),
   ])
 
   // Skip dashboard redirect when returning mid-wizard (e.g. after template creation)
   if (company && !resumeStep) redirect('/dashboard')
 
-  return <OnboardingWizard initialStep={resumeStep ?? 1} categories={categories} />
+  const gmailRequestStatus: GmailRequestStatus =
+    connection?.is_connected
+      ? 'connected'
+      : (gmailRequest?.gmail_request_status as GmailRequestStatus) ?? 'not_requested'
+
+  return (
+    <OnboardingWizard
+      initialStep={resumeStep ?? 1}
+      categories={categories}
+      gmailRequestStatus={gmailRequestStatus}
+    />
+  )
 }

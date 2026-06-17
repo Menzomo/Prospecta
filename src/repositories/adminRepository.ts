@@ -263,3 +263,24 @@ export async function getUsersForAdmin(
   if (error) return []
   return data ?? []
 }
+
+export type AdminGmailRequest = {
+  id: string
+  email: string
+  full_name: string | null
+  gmail_request_email: string
+  gmail_requested_at: string | null
+}
+
+export async function getGmailRequests(
+  supabase: SupabaseClient<Database>
+): Promise<AdminGmailRequest[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, email, full_name, gmail_request_email, gmail_requested_at')
+    .eq('gmail_request_status', 'pending')
+    .order('gmail_requested_at', { ascending: true })
+
+  if (error) return []
+  return (data ?? []).filter((r) => r.gmail_request_email !== null) as AdminGmailRequest[]
+}
