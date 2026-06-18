@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getGmailConnection } from '@/repositories/gmailRepository'
+import { getGmailConnection, getGmailRequest } from '@/repositories/gmailRepository'
 import { GmailConnectionCard } from '@/features/gmail/components/GmailConnectionCard'
+import type { GmailRequestStatus } from '@/types/gmail'
 
 type Props = {
   searchParams: Promise<{ error?: string }>
@@ -28,8 +29,17 @@ export default async function GmailSettingsPage({ searchParams }: Props) {
 
   if (!user) redirect('/login')
 
-  const connection = await getGmailConnection(supabase, user.id)
+  const [connection, gmailRequest] = await Promise.all([
+    getGmailConnection(supabase, user.id),
+    getGmailRequest(supabase, user.id),
+  ])
+
   const errorMessage = error ? (ERROR_MESSAGES[error] ?? 'Erro desconhecido. Tente novamente.') : null
+
+  const requestStatus: GmailRequestStatus =
+    connection?.is_connected
+      ? 'connected'
+      : (gmailRequest?.gmail_request_status as GmailRequestStatus) ?? 'not_requested'
 
   return (
     <>
@@ -48,7 +58,11 @@ export default async function GmailSettingsPage({ searchParams }: Props) {
           {errorMessage && (
             <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{errorMessage}</p>
           )}
-          <GmailConnectionCard connection={connection} />
+          <GmailConnectionCard
+            connection={connection}
+            requestStatus={requestStatus}
+            requestEmail={gmailRequest?.gmail_request_email ?? null}
+          />
         </div>
       </main>
     </>

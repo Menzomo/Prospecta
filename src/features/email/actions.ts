@@ -49,6 +49,14 @@ export async function sendEmailAction(
 
   const connection = await getGmailConnection(supabase, user.id)
   if (!connection || !connection.is_connected) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('gmail_request_status')
+      .eq('id', user.id)
+      .single()
+    if (profile?.gmail_request_status === 'pending') {
+      return { error: 'Seu Gmail está aguardando liberação. Você receberá acesso em breve.' }
+    }
     return { error: 'Conta Gmail não conectada. Acesse Configurações > Gmail para conectar.' }
   }
 
@@ -154,6 +162,14 @@ export async function sendEmailFromUserLeadAction(
 
   const connection = await getGmailConnection(supabase, user.id)
   if (!connection || !connection.is_connected) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('gmail_request_status')
+      .eq('id', user.id)
+      .single()
+    if (profile?.gmail_request_status === 'pending') {
+      return { error: 'Seu Gmail está aguardando liberação. Você receberá acesso em breve.' }
+    }
     return { error: 'Conta Gmail não conectada. Acesse Configurações > Gmail para conectar.' }
   }
 

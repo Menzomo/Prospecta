@@ -17,6 +17,9 @@ export interface Database {
           avatar_url: string | null
           role: string
           oauth_notification_sent: boolean
+          gmail_request_email: string | null
+          gmail_request_status: string
+          gmail_requested_at: string | null
           created_at: string
           updated_at: string
         }
@@ -27,6 +30,9 @@ export interface Database {
           avatar_url?: string | null
           role?: string
           oauth_notification_sent?: boolean
+          gmail_request_email?: string | null
+          gmail_request_status?: string
+          gmail_requested_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -36,6 +42,9 @@ export interface Database {
           avatar_url?: string | null
           role?: string
           oauth_notification_sent?: boolean
+          gmail_request_email?: string | null
+          gmail_request_status?: string
+          gmail_requested_at?: string | null
           updated_at?: string
         }
         Relationships: []

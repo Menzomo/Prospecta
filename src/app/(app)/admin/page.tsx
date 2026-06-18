@@ -8,6 +8,7 @@ import {
   getLeadStatsByCategory,
   getStockByCategory,
   getStockByUserAndCategory,
+  getGmailRequests,
 } from '@/repositories/adminRepository'
 import { AdminGlobalLeads } from '@/features/admin/components/AdminGlobalLeads'
 import { AdminCategories } from '@/features/admin/components/AdminCategories'
@@ -18,6 +19,7 @@ import { AdminManualReviewQueue } from '@/features/admin/components/AdminManualR
 import { AdminLeadQualityOverview } from '@/features/admin/components/AdminLeadQualityOverview'
 import { AdminStockOverview } from '@/features/admin/components/AdminStockOverview'
 import { AdminUserStockOverview } from '@/features/admin/components/AdminUserStockOverview'
+import { AdminGmailRequests } from '@/features/admin/components/AdminGmailRequests'
 
 type SearchParams = Promise<{ category?: string; city?: string; reviewNiche?: string }>
 
@@ -49,7 +51,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
     ? (categoryBySlug.get(reviewNiche)?.id ?? undefined)
     : undefined
 
-  const [leads, users, reviewQueue, overview, nichoStats, stock, userStock] = await Promise.all([
+  const [leads, users, reviewQueue, overview, nichoStats, stock, userStock, gmailRequests] = await Promise.all([
     getGlobalLeadsForAdmin(supabase, {
       categoryId: activeCategoryId,
       city: cityFilter || undefined,
@@ -60,6 +62,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
     getLeadStatsByCategory(supabase),
     getStockByCategory(supabase),
     getStockByUserAndCategory(supabase),
+    getGmailRequests(supabase),
   ])
 
   return (
@@ -86,6 +89,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
 
       <main className="flex-1 p-6">
         <div className="mx-auto max-w-6xl flex flex-col gap-10">
+          {/* Solicitações Gmail */}
+          <AdminGmailRequests requests={gmailRequests} />
+
           {/* Overview geral */}
           <AdminLeadQualityOverview overview={overview} />
 

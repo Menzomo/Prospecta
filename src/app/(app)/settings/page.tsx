@@ -2,7 +2,8 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCompanyProfileByUserId } from '@/repositories/companyProfileRepository'
-import { getGmailConnection } from '@/repositories/gmailRepository'
+import { getGmailConnection, getGmailRequest } from '@/repositories/gmailRepository'
+import type { GmailRequestStatus } from '@/types/gmail'
 import { CompanyProfileForm } from '@/features/settings/components/CompanyProfileForm'
 import { GmailConnectionCard } from '@/features/gmail/components/GmailConnectionCard'
 import { logoutAction } from '@/features/auth/actions'
@@ -27,10 +28,16 @@ export default async function SettingsPage({ searchParams }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [company, gmailConnection] = await Promise.all([
+  const [company, gmailConnection, gmailRequest] = await Promise.all([
     getCompanyProfileByUserId(supabase, user.id),
     getGmailConnection(supabase, user.id),
+    getGmailRequest(supabase, user.id),
   ])
+
+  const gmailRequestStatus: GmailRequestStatus =
+    gmailConnection?.is_connected
+      ? 'connected'
+      : (gmailRequest?.gmail_request_status as GmailRequestStatus) ?? 'not_requested'
 
   return (
     <>
@@ -104,7 +111,11 @@ export default async function SettingsPage({ searchParams }: Props) {
                   Conecte sua conta Gmail para enviar emails de prospecção diretamente pelo Prospecta.
                 </p>
               </div>
-              <GmailConnectionCard connection={gmailConnection} />
+              <GmailConnectionCard
+                connection={gmailConnection}
+                requestStatus={gmailRequestStatus}
+                requestEmail={gmailRequest?.gmail_request_email ?? null}
+              />
             </div>
           )}
 

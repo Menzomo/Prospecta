@@ -3,7 +3,9 @@
 import { useState, useEffect, useActionState } from 'react'
 import Link from 'next/link'
 import { onboardingAction } from '@/app/onboarding/actions'
+import { requestGmailAccessAction } from '@/features/gmail/actions'
 import { SearchForm } from '@/features/search/components/SearchForm'
+import type { GmailRequestStatus } from '@/types/gmail'
 
 type Category = { id: string; name: string }
 
@@ -30,11 +32,31 @@ const BTN_SECONDARY =
 interface Props {
   initialStep?: number
   categories: Category[]
+  gmailRequestStatus?: GmailRequestStatus
 }
 
-export function OnboardingWizard({ initialStep = 1, categories }: Props) {
+export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStatus = 'not_requested' }: Props) {
   const [step, setStep] = useState(initialStep)
   const [state, formAction, pending] = useActionState(onboardingAction, null)
+
+  // Step 8 Gmail request state
+  const [gmailInput, setGmailInput] = useState('')
+  const [gmailRequesting, setGmailRequesting] = useState(false)
+  const [gmailRequestError, setGmailRequestError] = useState<string | null>(null)
+  const [gmailJustRequested, setGmailJustRequested] = useState(false)
+
+  async function handleGmailRequest() {
+    if (!gmailInput.trim()) return
+    setGmailRequesting(true)
+    setGmailRequestError(null)
+    const result = await requestGmailAccessAction(gmailInput.trim())
+    setGmailRequesting(false)
+    if (result.error) {
+      setGmailRequestError(result.error)
+    } else {
+      setGmailJustRequested(true)
+    }
+  }
 
   // Step 6 state — accumulates across multiple confirm actions
   const [totalLeadsAdded, setTotalLeadsAdded] = useState(0)
@@ -372,18 +394,80 @@ export function OnboardingWizard({ initialStep = 1, categories }: Props) {
               <p className="mb-1 text-2xl sm:mb-3 sm:text-4xl">📧</p>
               <h1 className="text-base font-bold text-gray-900 sm:text-xl">Conecte seu Gmail</h1>
               <p className="mt-1 text-xs leading-snug text-gray-500 sm:mt-2 sm:text-sm sm:leading-relaxed">
-                Conecte sua conta Gmail para enviar emails diretamente pelo Prospecta.
+                O Prospecta utiliza o Gmail para envio e acompanhamento de emails. Como estamos em fase beta, precisamos liberar sua conta antes da conexão.
               </p>
             </div>
-            <div className="flex flex-col gap-2 sm:gap-3">
-              <a
-                href="/api/gmail/connect"
-                className="block w-full rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:py-3"
-              >
-                Conectar Gmail
-              </a>
-              <button onClick={next} className={BTN_SECONDARY}>Fazer depois</button>
-            </div>
+
+            {/* connected */}
+            {gmailRequestStatus === 'connected' && (
+              <div className="flex flex-col gap-2 sm:gap-3">
+                <div className="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2.5 text-sm text-green-700">
+                  <span>✓</span>
+                  <span>Gmail conectado</span>
+                </div>
+                <button onClick={next} className={BTN_PRIMARY}>Continuar</button>
+              </div>
+            )}
+
+            {/* approved — can connect now */}
+            {gmailRequestStatus === 'approved' && (
+              <div className="flex flex-col gap-2 sm:gap-3">
+                <div className="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2.5 text-sm text-green-700">
+                  <span>✓</span>
+                  <span>Gmail liberado — você já pode conectar</span>
+                </div>
+                <a
+                  href="/api/gmail/connect"
+                  className="block w-full rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:py-3"
+                >
+                  Conectar Gmail
+                </a>
+                <button onClick={next} className={BTN_SECONDARY}>Fazer depois</button>
+              </div>
+            )}
+
+            {/* pending — waiting or just submitted */}
+            {(gmailRequestStatus === 'pending' || gmailJustRequested) && (
+              <div className="flex flex-col gap-2 sm:gap-3">
+                <div className="rounded-lg bg-amber-50 px-3 py-3 text-sm text-amber-800">
+                  <p className="font-medium">⏳ Aguardando liberação</p>
+                  <p className="mt-1 text-xs text-amber-700">Recebemos sua solicitação e estamos liberando sua conta para uso do Gmail. Você poderá continuar utilizando o Prospecta enquanto isso.</p>
+                </div>
+                <button onClick={next} className={BTN_PRIMARY}>Continuar</button>
+              </div>
+            )}
+
+            {/* not_requested — show form */}
+            {gmailRequestStatus === 'not_requested' && !gmailJustRequested && (
+              <div className="flex flex-col gap-2 sm:gap-3">
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="gmail_request" className="text-xs font-medium text-gray-700 sm:text-sm">
+                    Gmail que deseja utilizar
+                  </label>
+                  <input
+                    id="gmail_request"
+                    type="email"
+                    placeholder="usuario@gmail.com"
+                    value={gmailInput}
+                    onChange={(e) => setGmailInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleGmailRequest()}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  />
+                  {gmailRequestError && (
+                    <p className="text-xs text-red-500">{gmailRequestError}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleGmailRequest}
+                  disabled={gmailRequesting || !gmailInput.trim()}
+                  className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 sm:py-3"
+                >
+                  {gmailRequesting ? 'Enviando...' : 'Solicitar liberação'}
+                </button>
+                <button onClick={next} className={BTN_SECONDARY}>Fazer depois</button>
+              </div>
+            )}
           </div>
         )}
 
