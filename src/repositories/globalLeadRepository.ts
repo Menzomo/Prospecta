@@ -3,6 +3,49 @@ import type { Database } from '@/lib/supabase/types'
 import type { GlobalLead, CreateGlobalLeadDto } from '@/types/globalLeads'
 import { expandStateCode } from '@/utils/stateUtils'
 
+export type AvailableCity = { city: string; state: string | null }
+
+export async function getAvailableCitiesForUser(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<AvailableCity[]> {
+  const { data: ownedLinks } = await supabase
+    .from('user_leads')
+    .select('global_lead_id')
+    .eq('user_id', userId)
+
+  const excludeIds = (ownedLinks ?? []).map((l) => l.global_lead_id)
+
+  let query = supabase
+    .from('global_leads')
+    .select('city, state')
+    .eq('status', 'active')
+    .eq('lead_quality_status', 'email_found')
+    .not('city', 'is', null)
+
+  if (excludeIds.length > 0) {
+    query = query.not('id', 'in', `(${excludeIds.join(',')})`)
+  }
+
+  const { data, error } = await query
+  if (error) {
+    console.error('[globalLeadRepository.getAvailableCitiesForUser]', error.message)
+    return []
+  }
+
+  const seen = new Set<string>()
+  const cities: AvailableCity[] = []
+  for (const row of data ?? []) {
+    if (!row.city) continue
+    const key = row.city.toLowerCase()
+    if (!seen.has(key)) {
+      seen.add(key)
+      cities.push({ city: row.city, state: row.state })
+    }
+  }
+  return cities.sort((a, b) => a.city.localeCompare(b.city, 'pt-BR'))
+}
+
 export async function getGlobalLeadById(
   supabase: SupabaseClient<Database>,
   id: string

@@ -4,6 +4,7 @@ import {
   listLeadCategories,
   listCategoriesWithAvailableLeadsForUser,
 } from '@/repositories/leadCategoryRepository'
+import { getAvailableCitiesForUser } from '@/repositories/globalLeadRepository'
 import { SearchForm } from '@/features/search/components/SearchForm'
 
 export default async function SearchPage() {
@@ -22,9 +23,12 @@ export default async function SearchPage() {
 
   const isAdmin = profile?.role === 'admin'
 
-  const categories = isAdmin
-    ? await listLeadCategories(supabase)
-    : await listCategoriesWithAvailableLeadsForUser(supabase, user.id)
+  const [categories, availableCities] = await Promise.all([
+    isAdmin
+      ? listLeadCategories(supabase)
+      : listCategoriesWithAvailableLeadsForUser(supabase, user.id),
+    isAdmin ? Promise.resolve(null) : getAvailableCitiesForUser(supabase, user.id),
+  ])
 
   return (
     <>
@@ -41,7 +45,11 @@ export default async function SearchPage() {
             </p>
           </div>
 
-          <SearchForm categories={categories} />
+          <SearchForm
+            categories={categories}
+            availableCities={availableCities ?? undefined}
+            isAdmin={isAdmin}
+          />
         </div>
       </main>
     </>

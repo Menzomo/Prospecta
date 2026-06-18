@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { listLeadCategories } from '@/repositories/leadCategoryRepository'
 import {
   findGlobalLeadByNameAndCity,
+  findGlobalLeadByWebsite,
   createGlobalLead,
 } from '@/repositories/globalLeadRepository'
 import { classifyLeadQuality } from '@/utils/classifyLeadQuality'
@@ -82,17 +83,27 @@ export async function POST(request: Request) {
       continue
     }
 
-    const city = row.city?.trim() ?? null
+    const city = row.city?.trim() || null
     const email = row.email?.trim() || null
     const website = row.website?.trim() || null
 
-    // Dedup: same company name + city → skip
+    // Dedup 1: same website
+    if (website) {
+      const existing = await findGlobalLeadByWebsite(supabase, website)
+      if (existing) { summary.skipped_duplicate++; continue }
+    }
+
+    // Dedup 2: same company name + city
     if (companyName && city) {
       const existing = await findGlobalLeadByNameAndCity(supabase, companyName, city)
-      if (existing) {
-        summary.skipped_duplicate++
-        continue
-      }
+      if (existing) { summary.skipped_duplicate++; continue }
+    }
+
+    // Dedup 3: city is null and no website — cannot deduplicate safely, skip
+    if (!city && !website) {
+      console.warn(`[import] Skipping lead without city or website: "${companyName}"`)
+      summary.invalid++
+      continue
     }
 
     const qualityStatus = classifyLeadQuality({ email, website })

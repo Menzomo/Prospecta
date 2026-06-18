@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getCompanyProfileByUserId } from '@/repositories/companyProfileRepository'
 import { listCategoriesWithAvailableLeadsForUser } from '@/repositories/leadCategoryRepository'
 import { getGmailConnection, getGmailRequest } from '@/repositories/gmailRepository'
+import { getAvailableCitiesForUser } from '@/repositories/globalLeadRepository'
 import { OnboardingWizard } from '@/features/onboarding/components/OnboardingWizard'
 import type { GmailRequestStatus } from '@/types/gmail'
 
@@ -17,12 +18,15 @@ export default async function OnboardingPage({ searchParams }: Props) {
 
   if (!user) redirect('/login')
 
-  const [company, categories, connection, gmailRequest] = await Promise.all([
+  const [company, categories, connection, gmailRequest, availableCities] = await Promise.all([
     getCompanyProfileByUserId(supabase, user.id),
     listCategoriesWithAvailableLeadsForUser(supabase, user.id),
     getGmailConnection(supabase, user.id),
     getGmailRequest(supabase, user.id),
+    getAvailableCitiesForUser(supabase, user.id),
   ])
+
+  const firstAvailableCity = availableCities[0] ?? { city: 'Caxias do Sul', state: 'RS' }
 
   // Skip dashboard redirect when returning mid-wizard (e.g. after template creation)
   if (company && !resumeStep) redirect('/dashboard')
@@ -37,6 +41,7 @@ export default async function OnboardingPage({ searchParams }: Props) {
       initialStep={resumeStep ?? 1}
       categories={categories}
       gmailRequestStatus={gmailRequestStatus}
+      firstAvailableCity={firstAvailableCity}
     />
   )
 }
