@@ -19,22 +19,33 @@ export async function POST() {
     return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
   }
 
+  const envFromSet = !!process.env.NOTIFICATION_EMAIL_FROM
+  const envPassSet = !!process.env.NOTIFICATION_EMAIL_PASSWORD
+
+  if (!envFromSet || !envPassSet) {
+    return NextResponse.json({
+      ok: false,
+      error: 'Notification email not configured — NOTIFICATION_EMAIL_FROM or NOTIFICATION_EMAIL_PASSWORD missing',
+      env_from_set: envFromSet,
+      env_pass_set: envPassSet,
+    }, { status: 500 })
+  }
+
   try {
     await sendTestGmailReleaseNotification()
     return NextResponse.json({
       ok: true,
       message: 'Email de teste enviado para bruno.menzomo06@gmail.com',
-      from: process.env.NOTIFICATION_EMAIL_FROM ?? 'não configurado',
-      env_from_set: !!process.env.NOTIFICATION_EMAIL_FROM,
-      env_pass_set: !!process.env.NOTIFICATION_EMAIL_PASSWORD,
+      from: process.env.NOTIFICATION_EMAIL_FROM,
+      env_from_set: true,
+      env_pass_set: true,
     })
   } catch (err) {
     return NextResponse.json({
       ok: false,
       error: String(err),
-      from: process.env.NOTIFICATION_EMAIL_FROM ?? 'não configurado',
-      env_from_set: !!process.env.NOTIFICATION_EMAIL_FROM,
-      env_pass_set: !!process.env.NOTIFICATION_EMAIL_PASSWORD,
+      env_from_set: true,
+      env_pass_set: true,
     }, { status: 500 })
   }
 }
