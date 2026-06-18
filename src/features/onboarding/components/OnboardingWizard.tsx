@@ -33,9 +33,13 @@ interface Props {
   initialStep?: number
   categories: Category[]
   gmailRequestStatus?: GmailRequestStatus
+  firstAvailableCity?: { city: string; state: string | null }
 }
 
-export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStatus = 'not_requested' }: Props) {
+export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStatus = 'not_requested', firstAvailableCity }: Props) {
+  const lockedCity = firstAvailableCity
+    ? { name: firstAvailableCity.city, state: firstAvailableCity.state ?? '' }
+    : { name: 'Caxias do Sul', state: 'RS' }
   const [step, setStep] = useState(initialStep)
   const [state, formAction, pending] = useActionState(onboardingAction, null)
 
@@ -325,7 +329,7 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
             <SearchForm
               categories={categories}
               onConfirmed={(added) => setTotalLeadsAdded((n) => n + added)}
-              lockedCity={{ name: 'Caxias do Sul', state: 'RS' }}
+              lockedCity={lockedCity}
               betaLimit={20}
             />
 

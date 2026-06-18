@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { SearchResults } from './SearchResults'
 import { CityAutocomplete } from '@/components/CityAutocomplete'
 import type { LeadPreviewItem, SearchPreviewResponse, ConfirmLeadsResponse } from '../types'
+import type { AvailableCity } from '@/repositories/globalLeadRepository'
 
 type Category = { id: string; name: string }
 
@@ -14,9 +15,13 @@ interface SearchFormProps {
   lockedCity?: { name: string; state: string }
   /** When set, cap and relabel the remaining-credits display */
   betaLimit?: number
+  /** Cities with available leads for the user. When provided and not admin, replaces free-text input. */
+  availableCities?: AvailableCity[]
+  /** When true, keep full autocomplete for city */
+  isAdmin?: boolean
 }
 
-export function SearchForm({ categories, onConfirmed, lockedCity, betaLimit }: SearchFormProps) {
+export function SearchForm({ categories, onConfirmed, lockedCity, betaLimit, availableCities, isAdmin }: SearchFormProps) {
   const [category, setCategory] = useState('')
   const [selectedCity, setSelectedCity] = useState(lockedCity?.name ?? '')
   const [selectedState, setSelectedState] = useState(lockedCity?.state ?? '')
@@ -164,6 +169,25 @@ export function SearchForm({ categories, onConfirmed, lockedCity, betaLimit }: S
                 Nesta versão beta, começamos com leads disponíveis em Caxias do Sul.
               </p>
             </>
+          ) : availableCities && !isAdmin ? (
+            <select
+              value={selectedCity}
+              onChange={(e) => {
+                const chosen = availableCities.find((c) => c.city === e.target.value)
+                setSelectedCity(chosen?.city ?? '')
+                const rawState = chosen?.state ?? ''
+                setSelectedState(rawState.length === 2 ? rawState : '')
+              }}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              required
+            >
+              <option value="">Selecione uma cidade</option>
+              {availableCities.map((c) => (
+                <option key={c.city} value={c.city}>
+                  {c.city}{c.state ? `, ${c.state}` : ''}
+                </option>
+              ))}
+            </select>
           ) : (
             <CityAutocomplete
               onSelect={(name, stateCode) => {

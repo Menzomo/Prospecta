@@ -11,6 +11,7 @@ import {
   createGlobalLead,
 } from '@/repositories/globalLeadRepository'
 import { classifyLeadQuality } from '@/utils/classifyLeadQuality'
+import { normalizeCityName } from '@/utils/normalizeCity'
 
 export const maxDuration = 90
 
@@ -190,8 +191,8 @@ export async function POST(_request: Request, { params }: RouteParams) {
 
     const discardContext: Omit<DiscardedItem, 'reason'> = { company_name: companyName, city: itemCity, website, placeId }
 
-    // Intra-batch dedup first (fast, no DB)
-    const nameCityKey = `${companyName.toLowerCase()}|${(itemCity ?? '').toLowerCase()}`
+    // Intra-batch dedup first (fast, no DB) — normalized to handle accents/case
+    const nameCityKey = `${normalizeCityName(companyName)}|${normalizeCityName(itemCity ?? '')}`
     if (placeId && batchPlaceIds.has(placeId)) { batchDuplicates++; continue }
     if (website && batchWebsites.has(website)) { batchDuplicates++; continue }
     if (batchNameCities.has(nameCityKey)) { batchDuplicates++; continue }
@@ -226,6 +227,10 @@ export async function POST(_request: Request, { params }: RouteParams) {
         if (discardedByNameCity.length < 20) discardedByNameCity.push({ ...discardContext, reason: `name+city: ${companyName} / ${itemCity}` })
         continue
       }
+    }
+
+    if (!itemCity && !placeId && !website) {
+      console.warn(`[import-apify/sync] Lead sem city, placeId ou website — dedup incompleta: "${companyName}"`)
     }
 
     const qualityStatus = classifyLeadQuality({ email, website })
