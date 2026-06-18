@@ -1,7 +1,6 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import Link from 'next/link'
 import { loginAction, signupAction } from '@/features/auth/actions'
 
 function EyeIcon({ open }: { open: boolean }) {
@@ -186,9 +185,9 @@ export function LoginForm() {
       </form>
 
       <div className="text-right">
-        <Link href="/forgot-password" className="text-xs text-blue-600 hover:underline">
+        <a href="/forgot-password" className="text-xs text-blue-600 hover:underline">
           Esqueci minha senha
-        </Link>
+        </a>
       </div>
 
       <p className="text-center text-sm text-gray-500">
