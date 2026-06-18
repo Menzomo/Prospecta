@@ -175,7 +175,8 @@ export function SearchForm({ categories, onConfirmed, lockedCity, betaLimit, ava
               onChange={(e) => {
                 const chosen = availableCities.find((c) => c.city === e.target.value)
                 setSelectedCity(chosen?.city ?? '')
-                setSelectedState(chosen?.state ?? '')
+                const rawState = chosen?.state ?? ''
+                setSelectedState(rawState.length === 2 ? rawState : '')
               }}
               className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               required
