@@ -54,11 +54,17 @@ export async function sendGmailRequestNotification(
   userEmail: string,
   gmailRequested: string
 ): Promise<void> {
-  try {
-    const t = await createTransporter()
-    if (!t) return
+  console.log(`[gmailRelease] Preparing notification — userId=${userId} gmail=${gmailRequested} userEmail=${userEmail}`)
 
-    const body = `Novo usuário solicitou liberação de Gmail no Prospecta Beta.
+  const t = await createTransporter()
+  if (!t) {
+    console.warn('[gmailRelease] Transporter not created — NOTIFICATION_EMAIL_FROM or NOTIFICATION_EMAIL_PASSWORD missing')
+    return
+  }
+
+  console.log(`[gmailRelease] Transporter ready — from=${t.from} to=${RECIPIENT}`)
+
+  const body = `Novo usuário solicitou liberação de Gmail no Prospecta Beta.
 
 Nome: ${userName ?? 'Não informado'}
 Email de cadastro: ${userEmail}
@@ -69,11 +75,17 @@ Ação necessária:
 1. Adicionar "${gmailRequested}" em Google Cloud > OAuth Consent Screen > Test Users
 2. Aprovar a solicitação em https://prospecta-ten.vercel.app/admin (seção "Solicitações Gmail")`
 
-    await t.transporter.sendMail({ from: t.from, to: RECIPIENT, subject: SUBJECT_GMAIL_REQUEST, text: body })
-    console.log(`[betaNotification] Gmail request notification sent for userId=${userId}`)
-  } catch (err) {
-    console.error('[betaNotification] Erro ao enviar notificação de solicitação Gmail:', err)
-  }
+  await t.transporter.sendMail({ from: t.from, to: RECIPIENT, subject: SUBJECT_GMAIL_REQUEST, text: body })
+  console.log(`[gmailRelease] Notification sent — userId=${userId} gmail=${gmailRequested}`)
+}
+
+export async function sendTestGmailReleaseNotification(): Promise<void> {
+  await sendGmailRequestNotification(
+    'test-user-id',
+    'Usuário Teste',
+    'teste@example.com',
+    'teste@gmail.com'
+  )
 }
 
 export async function sendTestBetaNotificationEmail(): Promise<void> {

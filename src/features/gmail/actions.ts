@@ -24,8 +24,12 @@ export async function requestGmailAccessAction(gmailEmail: string): Promise<Gmai
     return { error: 'Informe um endereço Gmail válido (deve terminar em @gmail.com).' }
   }
 
-  const saved = await saveGmailRequest(supabase, user.id, gmailEmail.toLowerCase().trim())
+  const normalizedGmail = gmailEmail.toLowerCase().trim()
+
+  const saved = await saveGmailRequest(supabase, user.id, normalizedGmail)
   if (!saved) return { error: 'Erro ao salvar solicitação. Tente novamente.' }
+
+  console.log(`[gmailRelease] Request created — userId=${user.id} gmail=${normalizedGmail} status=pending`)
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -33,12 +37,16 @@ export async function requestGmailAccessAction(gmailEmail: string): Promise<Gmai
     .eq('id', user.id)
     .single()
 
-  await sendGmailRequestNotification(
-    user.id,
-    profile?.full_name ?? null,
-    profile?.email ?? user.email ?? '',
-    gmailEmail.toLowerCase().trim()
-  )
+  try {
+    await sendGmailRequestNotification(
+      user.id,
+      profile?.full_name ?? null,
+      profile?.email ?? user.email ?? '',
+      normalizedGmail
+    )
+  } catch (err) {
+    console.error(`[gmailRelease] Notification failed — userId=${user.id} gmail=${normalizedGmail}`, err)
+  }
 
   revalidatePath('/onboarding')
   revalidatePath('/settings/gmail')
