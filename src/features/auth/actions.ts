@@ -92,3 +92,41 @@ export async function logoutAction() {
   await supabase.auth.signOut()
   redirect('/login')
 }
+
+export type ForgotPasswordActionState = { success?: boolean; error?: string } | null
+
+export async function forgotPasswordAction(
+  _state: ForgotPasswordActionState,
+  formData: FormData
+): Promise<ForgotPasswordActionState> {
+  const email = (formData.get('email') as string | null)?.trim() ?? ''
+  if (!email) return { error: 'Informe o email.' }
+
+  const origin = await getRequestOrigin()
+  const supabase = await createClient()
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/callback?next=/reset-password`,
+  })
+
+  return { success: true }
+}
+
+export type ResetPasswordActionState = { error?: string } | null
+
+export async function resetPasswordAction(
+  _state: ResetPasswordActionState,
+  formData: FormData
+): Promise<ResetPasswordActionState> {
+  const password = (formData.get('password') as string | null) ?? ''
+  const confirm = (formData.get('confirm') as string | null) ?? ''
+
+  if (password.length < 6) return { error: 'A senha deve ter pelo menos 6 caracteres.' }
+  if (password !== confirm) return { error: 'As senhas não coincidem.' }
+
+  const supabase = await createClient()
+  const { error } = await supabase.auth.updateUser({ password })
+
+  if (error) return { error: 'Não foi possível redefinir a senha. Tente novamente.' }
+
+  redirect('/login')
+}
