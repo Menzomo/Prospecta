@@ -26,13 +26,16 @@ export async function middleware(request: NextRequest) {
   // Refresh Supabase session cookies on every request (required for SSR auth)
   const { response, user } = await updateSession(request)
 
+  const isPublic = isPublicPath(pathname)
+  console.log('[middleware]', JSON.stringify({ pathname, isPublic, hasUser: !!user }))
+
   // Authenticated users visiting /login → redirect to dashboard
   if (user && pathname === '/login') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   // Unauthenticated users on any private path → redirect to /login
-  if (!user && !isPublicPath(pathname)) {
+  if (!user && !isPublic) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
