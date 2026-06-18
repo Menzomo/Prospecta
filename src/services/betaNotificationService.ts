@@ -54,15 +54,8 @@ export async function sendGmailRequestNotification(
   userEmail: string,
   gmailRequested: string
 ): Promise<void> {
-  console.log(`[gmailRelease] Preparing notification — userId=${userId} gmail=${gmailRequested} userEmail=${userEmail}`)
-
   const t = await createTransporter()
-  if (!t) {
-    console.warn('[gmailRelease] Transporter not created — NOTIFICATION_EMAIL_FROM or NOTIFICATION_EMAIL_PASSWORD missing')
-    return
-  }
-
-  console.log(`[gmailRelease] Transporter ready — from=${t.from} to=${RECIPIENT}`)
+  if (!t) return
 
   const body = `Novo usuário solicitou liberação de Gmail no Prospecta Beta.
 
@@ -76,7 +69,7 @@ Ação necessária:
 2. Aprovar a solicitação em https://prospecta-ten.vercel.app/admin (seção "Solicitações Gmail")`
 
   await t.transporter.sendMail({ from: t.from, to: RECIPIENT, subject: SUBJECT_GMAIL_REQUEST, text: body })
-  console.log(`[gmailRelease] Notification sent — userId=${userId} gmail=${gmailRequested}`)
+  console.log(`[betaNotification] Gmail release notification sent — userId=${userId} gmail=${gmailRequested}`)
 }
 
 export async function sendTestGmailReleaseNotification(): Promise<void> {

@@ -29,8 +29,6 @@ export async function requestGmailAccessAction(gmailEmail: string): Promise<Gmai
   const saved = await saveGmailRequest(supabase, user.id, normalizedGmail)
   if (!saved) return { error: 'Erro ao salvar solicitação. Tente novamente.' }
 
-  console.log(`[gmailRelease] Request created — userId=${user.id} gmail=${normalizedGmail} status=pending`)
-
   const { data: profile } = await supabase
     .from('profiles')
     .select('full_name, email')
@@ -45,7 +43,7 @@ export async function requestGmailAccessAction(gmailEmail: string): Promise<Gmai
       normalizedGmail
     )
   } catch (err) {
-    console.error(`[gmailRelease] Notification failed — userId=${user.id} gmail=${normalizedGmail}`, err)
+    console.error('[betaNotification] Gmail release notification failed', err)
   }
 
   revalidatePath('/onboarding')
