@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
 // Paths that never require authentication
-const PUBLIC_PATHS = ['/login', '/auth/callback', '/api/gmail/callback']
+const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password', '/auth/callback', '/api/gmail/callback']
 
 // Paths that bypass session check entirely (use their own auth mechanism)
 const BYPASS_PREFIXES = ['/api/cron/']
