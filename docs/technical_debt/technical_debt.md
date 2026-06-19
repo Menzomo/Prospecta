@@ -140,14 +140,15 @@ Campo `category` removido de `ImportRow` e de `normalizeRaw()` em `parseImportFi
 - ✅ A aba `/leads` exibe ambas as fontes unificadas na mesma tabela
 - ✅ Leads da busca têm página própria em `/leads/global/[id]` com alteração de status e ocultar
 - ✅ **Followups** suportam `user_leads`: `followups.user_lead_id` adicionado, `lead_id` tornado nullable; `/leads/global/[id]` exibe seção de acompanhamentos; prompt pós-envio de email ativado para global leads (migration `20260618000000_followups_user_lead_id.sql`)
-- ⚠️ Sync de respostas Gmail ainda não suporta `user_leads` (cron itera apenas `lead_id`)
+- ✅ **Gmail Sync** suporta `user_leads`: cron itera `user_lead_id` separadamente via `getUserLeadIdsWithThreads`; `syncGmailRepliesForLead` aceita `leadId: string | null` + `userLeadId?: string | null`; mensagens inbound salvas com o ID correto; `updateLeadLastReplyAt` chamado apenas para legacy leads
 - ⚠️ Dashboard KPIs ainda contam apenas leads/followups legacy
 - ⚠️ Widget "Respostas Recentes" ainda aponta apenas para leads legacy
 - ⚠️ Timeline de emails não exibida em `/leads/global/[id]`
+- ⚠️ `getInboundMessagesWithLeads` (inbox) ainda não resolve nome de empresa para mensagens com `user_lead_id`
 
 **Localização:** `supabase/migrations/20240101000000_create_leads.sql`
 
-**Próxima fase:** Estender cron de sync Gmail para `user_lead_id`, unificar KPIs do dashboard, exibir timeline de emails em `/leads/global/[id]`.
+**Próxima fase:** Unificar KPIs do dashboard, exibir timeline de emails em `/leads/global/[id]`, corrigir inbox para `user_lead_id`.
 
 ---
 

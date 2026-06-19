@@ -186,6 +186,22 @@ export async function countUnreadInboundMessages(
   return count ?? 0
 }
 
+export async function getEmailThreadsByUserLeadId(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  userLeadId: string
+): Promise<EmailThread[]> {
+  const { data, error } = await supabase
+    .from('email_threads')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('user_lead_id', userLeadId)
+    .order('created_at', { ascending: false })
+
+  if (error) return []
+  return data
+}
+
 export async function getLeadIdsWithThreads(
   supabase: SupabaseClient<Database>,
   userId: string
@@ -194,9 +210,24 @@ export async function getLeadIdsWithThreads(
     .from('email_threads')
     .select('lead_id')
     .eq('user_id', userId)
+    .not('lead_id', 'is', null)
 
   if (error) return []
   return [...new Set(data.map((row) => row.lead_id).filter((id): id is string => id !== null))]
+}
+
+export async function getUserLeadIdsWithThreads(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('email_threads')
+    .select('user_lead_id')
+    .eq('user_id', userId)
+    .not('user_lead_id', 'is', null)
+
+  if (error) return []
+  return [...new Set(data.map((row) => row.user_lead_id).filter((id): id is string => id !== null))]
 }
 
 export async function updateEmailThreadLastReply(

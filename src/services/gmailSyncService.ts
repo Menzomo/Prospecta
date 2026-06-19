@@ -1,7 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/types'
+import type { EmailThread } from '@/types/email'
 import {
   getEmailThreadsByLeadId,
+  getEmailThreadsByUserLeadId,
   getGmailMessageIdsByThreadId,
   createEmailMessage,
   updateEmailThreadLastReply,
@@ -89,18 +91,27 @@ export async function syncGmailRepliesForLead(
   {
     userId,
     leadId,
+    userLeadId,
     accessToken,
     gmailEmail,
     refreshToken,
   }: {
     userId: string
-    leadId: string
+    leadId: string | null
+    userLeadId?: string | null
     accessToken: string
     gmailEmail: string
     refreshToken: string | null
   }
 ): Promise<SyncResult> {
-  const threads = await getEmailThreadsByLeadId(supabase, userId, leadId)
+  let threads: EmailThread[]
+  if (leadId) {
+    threads = await getEmailThreadsByLeadId(supabase, userId, leadId)
+  } else if (userLeadId) {
+    threads = await getEmailThreadsByUserLeadId(supabase, userId, userLeadId)
+  } else {
+    return { synced: 0, errors: 0 }
+  }
 
   let currentToken = accessToken
   let tokenRefreshed = false
@@ -156,7 +167,8 @@ export async function syncGmailRepliesForLead(
       const sentAt = dateStr ? new Date(dateStr).toISOString() : new Date().toISOString()
 
       const saved = await createEmailMessage(supabase, userId, {
-        lead_id: leadId,
+        lead_id: leadId ?? null,
+        user_lead_id: userLeadId ?? null,
         thread_id: thread.id,
         template_id: null,
         subject: subject || thread.subject,
@@ -181,7 +193,7 @@ export async function syncGmailRepliesForLead(
     }
   }
 
-  if (latestReplyAt) {
+  if (latestReplyAt && leadId) {
     await updateLeadLastReplyAt(supabase, leadId, latestReplyAt)
   }
 
