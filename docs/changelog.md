@@ -2,6 +2,18 @@
 
 ---
 
+## Junho 2026 — Filtro de no_reply movido para query DB (DT-NOREPLY1)
+
+Acompanhamentos `no_reply` que ainda não venceram (`due_at > now`) agora são excluídos direto na query do banco, em vez de serem buscados e filtrados em memória.
+
+**Mudança:** Adicionado `.or('type.neq.no_reply,due_at.lte.<now>')` em:
+- `getNextFollowups` — `src/features/dashboard/repositories/dashboardRepository.ts`
+- `getPendingFollowupsByUserId` — `src/repositories/followupRepository.ts`
+
+**Regra de negócio inalterada.** Manuais continuam aparecendo independentemente de `due_at`. A checagem de `last_reply_at > created_at` permanece app-side (requer comparação cross-table, não expressável em PostgREST sem RPC).
+
+---
+
 ## Junho 2026 — Fix: regra de dismiss no-reply revisada (DT-NOREPLY2)
 
 Ajustada a regra de quais status podem ser sobrescritos por `sem_resposta` ao clicar em "Esquecer lead".
