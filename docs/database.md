@@ -369,13 +369,14 @@ Mensagens individuais da thread, tanto enviadas quanto recebidas.
 ---
 
 ### followups
-Tarefa pendente de controle comercial. Representa acompanhamentos agendados para leads.
+Tarefa pendente de controle comercial. Representa acompanhamentos agendados para leads — tanto legacy (`leads`) quanto novos (`user_leads`).
 
 | Campo             | Tipo        | Obs                                                          |
 |-------------------|-------------|--------------------------------------------------------------|
 | id                | uuid PK     |                                                              |
 | user_id           | uuid        |                                                              |
-| lead_id           | uuid        | FK → leads                                                   |
+| lead_id           | uuid        | FK → leads (nullable) — preenchido para leads legacy         |
+| user_lead_id      | uuid        | FK → user_leads (nullable) — preenchido para leads da busca  |
 | title             | text        |                                                              |
 | notes             | text        | opcional                                                     |
 | due_at            | timestamptz |                                                              |
@@ -386,11 +387,15 @@ Tarefa pendente de controle comercial. Representa acompanhamentos agendados para
 | created_at        | timestamptz |                                                              |
 | updated_at        | timestamptz |                                                              |
 
+**Constraint:** `CHECK (lead_id IS NOT NULL OR user_lead_id IS NOT NULL)` — todo followup deve referenciar exatamente um dos dois.
+
+**Migration:** `20260618000000_followups_user_lead_id.sql`
+
 **type — valores oficiais:**
 - `manual` — criado manualmente pelo usuário na seção de acompanhamentos do lead
 - `no_reply` — criado após envio de email; desaparece automaticamente se o lead responder após `created_at`
 
-**Filtragem de no_reply:** app-side — ao buscar pending, acompanhamentos `no_reply` onde `leads.last_reply_at > followup.created_at` são excluídos do resultado sem alterar o status no banco.
+**Filtragem de no_reply:** parcialmente no banco via `.or('type.neq.no_reply,due_at.lte.<now>')`. A checagem de `last_reply_at > created_at` permanece app-side (compara campo de join com campo da tabela principal, requer RPC para mover ao banco). Para `user_leads`, `last_reply_at` não existe — o filtro app-side é ignorado e o followup sempre aparece.
 
 ---
 

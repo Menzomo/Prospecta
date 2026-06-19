@@ -2,6 +2,26 @@
 
 ---
 
+## Junho 2026 — Followups para leads da busca (DT-L3 Fase 1)
+
+Leads vindos da busca (`user_leads` + `global_leads`) agora suportam acompanhamentos.
+
+**Migration:** `20260618000000_followups_user_lead_id.sql`
+- `followups.user_lead_id uuid nullable` adicionado com FK → `user_leads(id) ON DELETE CASCADE`
+- `followups.lead_id` tornado nullable (dados existentes preservados)
+- `CHECK (lead_id IS NOT NULL OR user_lead_id IS NOT NULL)` garante integridade
+
+**Código:**
+- `/leads/global/[id]` agora exibe seção "Acompanhamentos" (criar, editar, concluir)
+- `/leads/global/[id]` ganhou botão "Enviar email" no header (quando há email)
+- Após enviar email para global lead, prompt "Lembrar em 2/5 dias" aparece (cria followup com `user_lead_id`)
+- "Esquecer lead" no dashboard atualiza `user_leads.status = 'sem_resposta'` para o fluxo novo
+- `/followups` lista acompanhamentos de ambos os fluxos com links corretos
+
+**Legacy inalterado:** todos os fluxos existentes de leads manuais continuam funcionando.
+
+---
+
 ## Junho 2026 — Filtro de no_reply movido para query DB (DT-NOREPLY1)
 
 Acompanhamentos `no_reply` que ainda não venceram (`due_at > now`) agora são excluídos direto na query do banco, em vez de serem buscados e filtrados em memória.

@@ -136,14 +136,18 @@ Campo `category` removido de `ImportRow` e de `normalizeRaw()` em `parseImportFi
 
 **Problema:** A tabela `leads` original ainda existe e coexiste com `global_leads` + `user_leads`. As tabelas `email_threads`, `email_messages`, `followups` e `lead_status_history` têm FK para `leads.id`.
 
-**Estado atual (parcialmente resolvido):**
+**Estado atual (em progresso):**
 - ✅ A aba `/leads` exibe ambas as fontes unificadas na mesma tabela
 - ✅ Leads da busca têm página própria em `/leads/global/[id]` com alteração de status e ocultar
-- ⚠️ Envio de email e follow-ups disponíveis apenas para leads manuais (`/leads/[id]`) — funcionalidade depende de `leads.id` FK
+- ✅ **Followups** suportam `user_leads`: `followups.user_lead_id` adicionado, `lead_id` tornado nullable; `/leads/global/[id]` exibe seção de acompanhamentos; prompt pós-envio de email ativado para global leads (migration `20260618000000_followups_user_lead_id.sql`)
+- ⚠️ Sync de respostas Gmail ainda não suporta `user_leads` (cron itera apenas `lead_id`)
+- ⚠️ Dashboard KPIs ainda contam apenas leads/followups legacy
+- ⚠️ Widget "Respostas Recentes" ainda aponta apenas para leads legacy
+- ⚠️ Timeline de emails não exibida em `/leads/global/[id]`
 
 **Localização:** `supabase/migrations/20240101000000_create_leads.sql`
 
-**Solução esperada:** Migrar FKs de `email_threads`, `email_messages`, `followups` para suportar `user_leads`. Vincular ao `user_leads.id` em vez de `leads.id`. Deprecar a tabela `leads` após migração completa. Alta complexidade — não urgente para MVP.
+**Próxima fase:** Estender cron de sync Gmail para `user_lead_id`, unificar KPIs do dashboard, exibir timeline de emails em `/leads/global/[id]`.
 
 ---
 

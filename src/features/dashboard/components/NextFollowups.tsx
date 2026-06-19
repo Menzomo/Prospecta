@@ -152,7 +152,7 @@ export function NextFollowups({ followups }: Props) {
                     Enviar novo email
                   </Link>
                   <span className="text-xs text-gray-300">·</span>
-                  <form action={dismissNoReplyFollowupAction.bind(null, f.id, f.lead_id)}>
+                  <form action={dismissNoReplyFollowupAction.bind(null, f.id, f.lead_id, null)}>
                     <button
                       type="submit"
                       className="cursor-pointer text-xs text-gray-500 transition-colors hover:text-gray-700"

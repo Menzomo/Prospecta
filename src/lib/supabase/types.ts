@@ -297,7 +297,8 @@ export interface Database {
         Row: {
           id: string
           user_id: string
-          lead_id: string
+          lead_id: string | null
+          user_lead_id: string | null
           title: string
           notes: string | null
           due_at: string
@@ -311,7 +312,8 @@ export interface Database {
         Insert: {
           id?: string
           user_id: string
-          lead_id: string
+          lead_id?: string | null
+          user_lead_id?: string | null
           title: string
           notes?: string | null
           due_at: string

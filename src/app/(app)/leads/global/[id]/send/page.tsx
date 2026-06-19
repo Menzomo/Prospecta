@@ -117,7 +117,7 @@ export default async function SendEmailFromGlobalLeadPage({ params }: Props) {
                   user_name: profile?.full_name ?? '',
                 }}
                 attachmentsByTemplate={attachmentsByTemplate}
-                returnPath={`/leads/global/${id}`}
+                followup={{ userLeadId: id }}
               />
             </div>
           ) : null}

@@ -5,7 +5,8 @@ import { useActionState } from 'react'
 import { createFollowupAction } from '@/features/followups/actions'
 
 type Props = {
-  leadId: string
+  leadId?: string | null
+  userLeadId?: string | null
 }
 
 // Converts "YYYY-MM-DDTHH:MM" from datetime-local to UTC ISO.
@@ -15,8 +16,8 @@ function localToUtcIso(localValue: string): string {
   return new Date(`${localValue}:00-03:00`).toISOString()
 }
 
-export function FollowupCreateForm({ leadId }: Props) {
-  const boundAction = createFollowupAction.bind(null, leadId)
+export function FollowupCreateForm({ leadId, userLeadId }: Props) {
+  const boundAction = createFollowupAction.bind(null, leadId ?? null, userLeadId ?? null)
   const [state, formAction, pending] = useActionState(boundAction, null)
   const [dueAtLocal, setDueAtLocal] = useState('')
 
