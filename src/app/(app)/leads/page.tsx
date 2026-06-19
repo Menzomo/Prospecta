@@ -17,6 +17,7 @@ const STATUS_COLORS: Record<LeadStatus, string> = {
   responder_depois: 'bg-orange-100 text-orange-700',
   sem_interesse: 'bg-gray-100 text-gray-600',
   sem_resposta: 'bg-red-100 text-red-700',
+  convertido: 'bg-emerald-100 text-emerald-700',
 }
 
 type SearchParams = Promise<{ category?: string; city?: string }>
