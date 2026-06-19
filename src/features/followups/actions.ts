@@ -202,3 +202,30 @@ export async function completeFollowupAction(
   revalidatePath(leadPath(leadId, userLeadId))
   revalidatePath('/followups')
 }
+
+// --- Send new email from no_reply ("Enviar novo email") ---
+// Marks the no_reply followup as completed before redirecting to the send page.
+// The click signals the user is actively following up, so the followup is done.
+
+export async function sendNewEmailFromNoReplyAction(
+  followupId: string,
+  leadId: string | null,
+  userLeadId: string | null,
+  _formData: FormData
+): Promise<void> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) redirect('/login')
+
+  await updateFollowupStatus(supabase, user.id, followupId, 'completed')
+
+  revalidatePath('/dashboard')
+  revalidatePath('/followups')
+  revalidatePath(leadPath(leadId, userLeadId))
+
+  const sendPath = leadId ? `/leads/${leadId}/send` : `/leads/global/${userLeadId}/send`
+  redirect(sendPath)
+}
