@@ -137,12 +137,15 @@ export async function getNextFollowups(
   supabase: SupabaseClient<Database>,
   userId: string
 ): Promise<NextFollowup[]> {
-  // created_at desc: mais recente primeiro. Limite 20 para absorver filtragem de no_reply.
+  const now = new Date().toISOString()
+
+  // no_reply só aparece quando já vencido (due_at <= now); manuais passam sempre.
   const { data, error } = await supabase
     .from('followups')
     .select('id, lead_id, title, due_at, type, created_at, leads(company_name, last_reply_at)')
     .eq('user_id', userId)
     .eq('status', 'pending')
+    .or(`type.neq.no_reply,due_at.lte.${now}`)
     .order('created_at', { ascending: false })
     .limit(20)
 
