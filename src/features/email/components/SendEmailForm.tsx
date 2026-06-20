@@ -14,9 +14,9 @@ type Props = {
   templates: Template[]
   variables: TemplateVariables
   attachmentsByTemplate?: Record<string, TemplateAttachment[]>
-  // For manual leads: show the followup prompt after send
-  followup?: { leadId: string }
-  // For global leads: redirect straight to this path after send
+  // Show the followup prompt after send — pass leadId for legacy leads, userLeadId for global leads
+  followup?: { leadId: string } | { userLeadId: string }
+  // For global leads without followup prompt: redirect straight to this path after send
   returnPath?: string
 }
 
@@ -52,9 +52,12 @@ export function SendEmailForm({
 
   if (state?.success && state.emailMessageId) {
     if (followup) {
+      const leadId = 'leadId' in followup ? followup.leadId : null
+      const userLeadId = 'userLeadId' in followup ? followup.userLeadId : null
       return (
         <PostSendFollowupPrompt
-          leadId={followup.leadId}
+          leadId={leadId}
+          userLeadId={userLeadId}
           emailMessageId={state.emailMessageId}
         />
       )

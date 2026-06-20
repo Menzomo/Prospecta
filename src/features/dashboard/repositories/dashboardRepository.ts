@@ -10,7 +10,8 @@ export type RecentReply = {
 
 export type NextFollowup = {
   id: string
-  lead_id: string
+  lead_id: string | null
+  user_lead_id: string | null
   company_name: string
   title: string
   due_at: string
@@ -142,7 +143,7 @@ export async function getNextFollowups(
   // no_reply só aparece quando já vencido (due_at <= now); manuais passam sempre.
   const { data, error } = await supabase
     .from('followups')
-    .select('id, lead_id, title, due_at, type, created_at, leads(company_name, last_reply_at)')
+    .select('id, lead_id, user_lead_id, title, due_at, type, created_at, leads(company_name, last_reply_at), user_leads(global_leads(company_name))')
     .eq('user_id', userId)
     .eq('status', 'pending')
     .or(`type.neq.no_reply,due_at.lte.${now}`)
@@ -154,17 +155,21 @@ export async function getNextFollowups(
   // Cast necessário: Relationships vazio em types.ts impede inferência do join
   const rows = data as unknown as Array<{
     id: string
-    lead_id: string
+    lead_id: string | null
+    user_lead_id: string | null
     title: string
     due_at: string
     type: string
     created_at: string
     leads: { company_name: string; last_reply_at: string | null } | null
+    user_leads: { global_leads: { company_name: string } | null } | null
   }>
 
   return rows
     .filter((r) => {
       if (r.type !== 'no_reply') return true
+      // user_leads followups have no last_reply_at — always show when overdue
+      if (r.user_lead_id && !r.lead_id) return true
       const lastReplyAt = r.leads?.last_reply_at
       if (!lastReplyAt) return true
       // Ocultar se o lead respondeu após a criação do acompanhamento
@@ -173,9 +178,13 @@ export async function getNextFollowups(
     .map((r) => ({
       id: r.id,
       lead_id: r.lead_id,
+      user_lead_id: r.user_lead_id,
       title: r.title,
       due_at: r.due_at,
       type: r.type,
-      company_name: r.leads?.company_name ?? '',
+      company_name:
+        r.leads?.company_name ??
+        (r.user_leads?.global_leads as { company_name?: string } | null)?.company_name ??
+        '',
     }))
 }

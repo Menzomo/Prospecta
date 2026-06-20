@@ -23,6 +23,7 @@ export const USER_LEAD_STATUSES = [
   'responder_depois',
   'sem_interesse',
   'sem_resposta',
+  'convertido',
 ] as const
 export type UserLeadStatus = (typeof USER_LEAD_STATUSES)[number]
 

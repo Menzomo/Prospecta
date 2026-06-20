@@ -10,6 +10,7 @@ export const LEAD_STATUSES = [
   'responder_depois',
   'sem_interesse',
   'sem_resposta',
+  'convertido',
 ] as const
 
 export type LeadStatus = (typeof LEAD_STATUSES)[number]
@@ -22,6 +23,7 @@ export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
   responder_depois: 'Responder depois',
   sem_interesse: 'Sem interesse',
   sem_resposta: 'Sem resposta',
+  convertido: 'Convertido',
 }
 
 export type CreateLeadDto = {

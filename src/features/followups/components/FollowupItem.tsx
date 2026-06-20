@@ -7,7 +7,8 @@ import type { Followup } from '@/types/followups'
 
 type Props = {
   followup: Followup
-  leadId: string
+  leadId: string | null
+  userLeadId?: string | null
 }
 
 function formatDueAt(value: string): string {
@@ -44,9 +45,9 @@ function localToUtcIso(localValue: string): string {
   return new Date(`${localValue}:00-03:00`).toISOString()
 }
 
-export function FollowupItem({ followup, leadId }: Props) {
+export function FollowupItem({ followup, leadId, userLeadId }: Props) {
   const [editing, setEditing] = useState(false)
-  const boundUpdate = updateFollowupAction.bind(null, followup.id, leadId)
+  const boundUpdate = updateFollowupAction.bind(null, followup.id, leadId ?? null, userLeadId ?? null)
   const [updateState, updateAction, updatePending] = useActionState(boundUpdate, null)
   const [dueAtLocal, setDueAtLocal] = useState(() => toLocalDatetimeValue(followup.due_at))
 
@@ -104,7 +105,7 @@ export function FollowupItem({ followup, leadId }: Props) {
             {editing ? 'Cancelar' : 'Editar'}
           </button>
 
-          <form action={completeFollowupAction.bind(null, followup.id, leadId)}>
+          <form action={completeFollowupAction.bind(null, followup.id, leadId ?? null, userLeadId ?? null)}>
             <button
               type="submit"
               className="cursor-pointer rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-600 transition-colors hover:border-green-500 hover:bg-green-50 hover:text-green-700"

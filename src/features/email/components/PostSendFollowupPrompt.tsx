@@ -17,29 +17,32 @@ function localToUtcIso(localValue: string): string {
 }
 
 type Props = {
-  leadId: string
+  leadId?: string | null
+  userLeadId?: string | null
   emailMessageId: string
 }
 
-export function PostSendFollowupPrompt({ leadId, emailMessageId }: Props) {
+export function PostSendFollowupPrompt({ leadId, userLeadId, emailMessageId }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [customDate, setCustomDate] = useState('')
   const [error, setError] = useState<string | null>(null)
 
+  const returnPath = leadId ? `/leads/${leadId}` : `/leads/global/${userLeadId}`
+
   function handleSkip() {
-    router.push(`/leads/${leadId}`)
+    router.push(returnPath)
   }
 
   function handleQuickCreate(days: number) {
     startTransition(async () => {
       const dueAt = daysFromNowUtc(days)
-      const result = await createNoReplyFollowupAction(leadId, emailMessageId, dueAt)
+      const result = await createNoReplyFollowupAction(leadId ?? null, userLeadId ?? null, emailMessageId, dueAt)
       if (result.error) {
         setError(result.error)
       } else {
-        router.push(`/leads/${leadId}`)
+        router.push(returnPath)
       }
     })
   }
@@ -48,11 +51,11 @@ export function PostSendFollowupPrompt({ leadId, emailMessageId }: Props) {
     if (!customDate) return
     startTransition(async () => {
       const dueAt = localToUtcIso(customDate)
-      const result = await createNoReplyFollowupAction(leadId, emailMessageId, dueAt)
+      const result = await createNoReplyFollowupAction(leadId ?? null, userLeadId ?? null, emailMessageId, dueAt)
       if (result.error) {
         setError(result.error)
       } else {
-        router.push(`/leads/${leadId}`)
+        router.push(returnPath)
       }
     })
   }

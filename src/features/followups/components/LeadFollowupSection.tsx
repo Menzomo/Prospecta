@@ -3,11 +3,12 @@ import { FollowupItem } from '@/features/followups/components/FollowupItem'
 import type { Followup } from '@/types/followups'
 
 type Props = {
-  leadId: string
+  leadId?: string | null
+  userLeadId?: string | null
   followups: Followup[]
 }
 
-export function LeadFollowupSection({ leadId, followups }: Props) {
+export function LeadFollowupSection({ leadId, userLeadId, followups }: Props) {
   const pending = followups.filter((f) => f.status === 'pending')
 
   return (
@@ -19,12 +20,17 @@ export function LeadFollowupSection({ leadId, followups }: Props) {
       ) : (
         <div className="mb-4 flex flex-col gap-3">
           {pending.map((followup) => (
-            <FollowupItem key={followup.id} followup={followup} leadId={leadId} />
+            <FollowupItem
+              key={followup.id}
+              followup={followup}
+              leadId={leadId ?? null}
+              userLeadId={userLeadId ?? null}
+            />
           ))}
         </div>
       )}
 
-      <FollowupCreateForm leadId={leadId} />
+      <FollowupCreateForm leadId={leadId ?? null} userLeadId={userLeadId ?? null} />
     </div>
   )
 }

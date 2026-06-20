@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { dismissNoReplyFollowupAction } from '@/features/followups/actions'
+import { dismissNoReplyFollowupAction, sendNewEmailFromNoReplyAction } from '@/features/followups/actions'
 import type { NextFollowup } from '../services/dashboardService'
 
 type Props = {
@@ -125,7 +125,7 @@ export function NextFollowups({ followups }: Props) {
             </span>
 
             <Link
-              href={`/leads/${f.lead_id}`}
+              href={f.lead_id ? `/leads/${f.lead_id}` : `/leads/global/${f.user_lead_id}`}
               className="mt-2 block truncate text-sm font-semibold text-gray-900 hover:underline"
             >
               {f.company_name}
@@ -145,14 +145,16 @@ export function NextFollowups({ followups }: Props) {
                   Atrasado · {formatDateTime(f.due_at)}
                 </p>
                 <div className="mt-3 flex items-center gap-3 border-t border-gray-100 pt-3">
-                  <Link
-                    href={`/leads/${f.lead_id}/send`}
-                    className="text-xs font-medium text-blue-600 hover:underline"
-                  >
-                    Enviar novo email
-                  </Link>
+                  <form action={sendNewEmailFromNoReplyAction.bind(null, f.id, f.lead_id, f.user_lead_id ?? null)}>
+                    <button
+                      type="submit"
+                      className="cursor-pointer text-xs font-medium text-blue-600 hover:underline"
+                    >
+                      Enviar novo email
+                    </button>
+                  </form>
                   <span className="text-xs text-gray-300">·</span>
-                  <form action={dismissNoReplyFollowupAction.bind(null, f.id, f.lead_id)}>
+                  <form action={dismissNoReplyFollowupAction.bind(null, f.id, f.lead_id, f.user_lead_id ?? null)}>
                     <button
                       type="submit"
                       className="cursor-pointer text-xs text-gray-500 transition-colors hover:text-gray-700"

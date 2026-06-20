@@ -40,6 +40,22 @@ export async function getFollowupsByLeadId(
   return data
 }
 
+export async function getFollowupsByUserLeadId(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  userLeadId: string
+): Promise<Followup[]> {
+  const { data, error } = await supabase
+    .from('followups')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('user_lead_id', userLeadId)
+    .order('due_at', { ascending: true })
+
+  if (error) return []
+  return data
+}
+
 export async function getPendingFollowupsByUserId(
   supabase: SupabaseClient<Database>,
   userId: string
@@ -49,7 +65,7 @@ export async function getPendingFollowupsByUserId(
   // no_reply só aparece quando já vencido (due_at <= now); manuais passam sempre.
   const { data, error } = await supabase
     .from('followups')
-    .select('*, leads(company_name, last_reply_at)')
+    .select('*, leads(company_name, last_reply_at), user_leads(global_leads(company_name))')
     .eq('user_id', userId)
     .eq('status', 'pending')
     .or(`type.neq.no_reply,due_at.lte.${now}`)
@@ -59,9 +75,11 @@ export async function getPendingFollowupsByUserId(
   // Cast necessário: Relationships vazio em types.ts impede inferência do join
   const all = data as unknown as FollowupWithLead[]
   // Ocultar no_reply quando lead respondeu após a criação do acompanhamento.
+  // Para user_leads não há last_reply_at disponível — exibir sempre.
   // Não pode ser movido para o banco sem RPC: compara campo do join com campo da tabela principal.
   return all.filter((f) => {
     if (f.type !== 'no_reply') return true
+    if (f.user_lead_id && !f.lead_id) return true
     const lastReplyAt = f.leads?.last_reply_at
     if (!lastReplyAt) return true
     return new Date(lastReplyAt) <= new Date(f.created_at)

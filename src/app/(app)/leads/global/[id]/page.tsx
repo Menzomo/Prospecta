@@ -2,6 +2,9 @@ import Link from 'next/link'
 import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { hideUserLeadAction, updateUserLeadStatusAction } from '@/features/leads/actions'
+import { getFollowupsByUserLeadId } from '@/repositories/followupRepository'
+import { LeadFollowupSection } from '@/features/followups/components/LeadFollowupSection'
+import { MarkInboxRead } from '@/features/inbox/components/MarkInboxRead'
 import { LEAD_STATUS_LABELS, LEAD_STATUSES } from '@/types/leads'
 import type { LeadStatus } from '@/types/leads'
 
@@ -17,6 +20,7 @@ const STATUS_COLORS: Record<LeadStatus, string> = {
   responder_depois: 'bg-orange-100 text-orange-700',
   sem_interesse: 'bg-gray-100 text-gray-600',
   sem_resposta: 'bg-red-100 text-red-700',
+  convertido: 'bg-emerald-100 text-emerald-700',
 }
 
 export default async function UserLeadDetailPage({ params }: Props) {
@@ -48,6 +52,10 @@ export default async function UserLeadDetailPage({ params }: Props) {
     state: string | null
   }
 
+  const [followups] = await Promise.all([
+    getFollowupsByUserLeadId(supabase, user.id, id),
+  ])
+
   const status = data.status as LeadStatus
   const statusLabel = LEAD_STATUS_LABELS[status] ?? data.status
 
@@ -63,14 +71,24 @@ export default async function UserLeadDetailPage({ params }: Props) {
             <h1 className="text-lg font-semibold text-gray-900">{gl.company_name}</h1>
           </div>
 
-          <form action={hideUserLeadAction.bind(null, id)}>
-            <button
-              type="submit"
-              className="cursor-pointer rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-50"
-            >
-              Ocultar lead
-            </button>
-          </form>
+          <div className="flex items-center gap-2">
+            {gl.email && (
+              <Link
+                href={`/leads/global/${id}/send`}
+                className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              >
+                Enviar email
+              </Link>
+            )}
+            <form action={hideUserLeadAction.bind(null, id)}>
+              <button
+                type="submit"
+                className="cursor-pointer rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-50"
+              >
+                Ocultar lead
+              </button>
+            </form>
+          </div>
         </div>
       </header>
 
@@ -158,8 +176,14 @@ export default async function UserLeadDetailPage({ params }: Props) {
               </button>
             </form>
           </div>
+
+          {/* Followups */}
+          <LeadFollowupSection userLeadId={id} followups={followups} />
         </div>
       </main>
+
+      {/* Marks inbound messages for this user_lead as read when page is visited */}
+      <MarkInboxRead userLeadId={id} />
     </>
   )
 }

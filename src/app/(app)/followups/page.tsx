@@ -53,7 +53,13 @@ export default async function FollowupsPage() {
             <div className="flex flex-col gap-3">
               {followups.map((followup) => {
                 const overdue = isOverdue(followup.due_at)
-                const leadName = followup.leads?.company_name ?? 'Lead'
+                const leadName =
+                  followup.leads?.company_name ??
+                  (followup.user_leads?.global_leads as { company_name?: string } | null)?.company_name ??
+                  'Lead'
+                const leadHref = followup.lead_id
+                  ? `/leads/${followup.lead_id}`
+                  : `/leads/global/${followup.user_lead_id}`
 
                 return (
                   <div
@@ -63,7 +69,7 @@ export default async function FollowupsPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <Link
-                          href={`/leads/${followup.lead_id}`}
+                          href={leadHref}
                           className="text-xs font-medium text-blue-600 hover:underline"
                         >
                           {leadName}
@@ -99,7 +105,12 @@ export default async function FollowupsPage() {
                       </div>
 
                       <form
-                        action={completeFollowupAction.bind(null, followup.id, followup.lead_id)}
+                        action={completeFollowupAction.bind(
+                          null,
+                          followup.id,
+                          followup.lead_id,
+                          followup.user_lead_id ?? null
+                        )}
                       >
                         <button
                           type="submit"
