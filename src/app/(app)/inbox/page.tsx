@@ -42,7 +42,7 @@ export default async function InboxPage() {
               return (
                 <Link
                   key={message.id}
-                  href={`/leads/${message.lead_id}`}
+                  href={message.lead_id ? `/leads/${message.lead_id}` : `/leads/global/${message.user_lead_id}`}
                   className={`flex items-start gap-4 px-5 py-4 transition-colors hover:bg-gray-50 ${
                     !isLast ? 'border-b border-gray-100' : ''
                   } ${!message.is_read ? 'bg-blue-50 hover:bg-blue-50/80' : ''}`}

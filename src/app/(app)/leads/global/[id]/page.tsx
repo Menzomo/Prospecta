@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { hideUserLeadAction, updateUserLeadStatusAction } from '@/features/leads/actions'
 import { getFollowupsByUserLeadId } from '@/repositories/followupRepository'
 import { LeadFollowupSection } from '@/features/followups/components/LeadFollowupSection'
+import { MarkInboxRead } from '@/features/inbox/components/MarkInboxRead'
 import { LEAD_STATUS_LABELS, LEAD_STATUSES } from '@/types/leads'
 import type { LeadStatus } from '@/types/leads'
 
@@ -180,6 +181,9 @@ export default async function UserLeadDetailPage({ params }: Props) {
           <LeadFollowupSection userLeadId={id} followups={followups} />
         </div>
       </main>
+
+      {/* Marks inbound messages for this user_lead as read when page is visited */}
+      <MarkInboxRead userLeadId={id} />
     </>
   )
 }

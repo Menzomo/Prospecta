@@ -4,13 +4,14 @@ import { useEffect } from 'react'
 import { markLeadInboxReadAction } from '../actions'
 
 type Props = {
-  leadId: string
+  leadId?: string | null
+  userLeadId?: string | null
 }
 
-export function MarkInboxRead({ leadId }: Props) {
+export function MarkInboxRead({ leadId, userLeadId }: Props) {
   useEffect(() => {
-    markLeadInboxReadAction(leadId)
-  }, [leadId])
+    markLeadInboxReadAction(leadId ?? null, userLeadId ?? null)
+  }, [leadId, userLeadId])
 
   return null
 }
