@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
+import { logoutAction } from '@/features/auth/actions'
 
 type NavItem = {
   href: string
@@ -14,57 +15,43 @@ type NavItem = {
 function IconDashboard() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <rect x="3" y="3" width="7" height="7" />
-      <rect x="14" y="3" width="7" height="7" />
-      <rect x="14" y="14" width="7" height="7" />
-      <rect x="3" y="14" width="7" height="7" />
+      <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+      <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
     </svg>
   )
 }
-
 function IconLeads() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   )
 }
-
 function IconSearch() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.35-4.35" />
+      <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
     </svg>
   )
 }
-
 function IconTemplates() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <line x1="16" y1="13" x2="8" y2="13" />
-      <line x1="16" y1="17" x2="8" y2="17" />
-      <polyline points="10 9 9 9 8 9" />
+      <polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" />
     </svg>
   )
 }
-
 function IconFollowups() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
+      <line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
     </svg>
   )
 }
-
 function IconSettings() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -73,7 +60,6 @@ function IconSettings() {
     </svg>
   )
 }
-
 function IconAdmin() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -81,63 +67,47 @@ function IconAdmin() {
     </svg>
   )
 }
-
-function IconInbox() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
-      <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
-    </svg>
-  )
-}
-
 function IconPlus() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
+      <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   )
 }
-
 function IconMenu() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <line x1="3" y1="6" x2="21" y2="6" />
-      <line x1="3" y1="12" x2="21" y2="12" />
-      <line x1="3" y1="18" x2="21" y2="18" />
+      <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
     </svg>
   )
 }
-
 function IconClose() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
+      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   )
 }
 
+const SETTINGS_SUB_ITEMS = [
+  { section: 'empresa',   label: 'Dados da Empresa' },
+  { section: 'gmail',     label: 'Gmail' },
+  { section: 'idioma',    label: 'Idioma' },
+  { section: 'aparencia', label: 'Aparência' },
+  { section: 'plano',     label: 'Assinatura' },
+]
+
 const NAV_ITEMS: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', match: (p) => p.startsWith('/dashboard'), icon: <IconDashboard /> },
-  { href: '/leads', label: 'Leads', match: (p) => p.startsWith('/leads'), icon: <IconLeads /> },
-  { href: '/search', label: 'Buscar Leads', match: (p) => p.startsWith('/search'), icon: <IconSearch /> },
-  { href: '/templates', label: 'Templates', match: (p) => p.startsWith('/templates'), icon: <IconTemplates /> },
-  { href: '/followups', label: 'Acompanhamentos', match: (p) => p.startsWith('/followups'), icon: <IconFollowups /> },
-{ href: '/settings', label: 'Configurações', match: (p) => p === '/settings' || p.startsWith('/settings/'), icon: <IconSettings /> },
+  { href: '/dashboard',  label: 'Dashboard',        match: (p) => p.startsWith('/dashboard'),  icon: <IconDashboard /> },
+  { href: '/leads',      label: 'Leads',            match: (p) => p.startsWith('/leads'),      icon: <IconLeads /> },
+  { href: '/search',     label: 'Buscar Leads',     match: (p) => p.startsWith('/search'),     icon: <IconSearch /> },
+  { href: '/templates',  label: 'Templates',        match: (p) => p.startsWith('/templates'),  icon: <IconTemplates /> },
+  { href: '/followups',  label: 'Acompanhamentos',  match: (p) => p.startsWith('/followups'),  icon: <IconFollowups /> },
+  { href: '/settings',   label: 'Configurações',    match: (p) => p === '/settings' || p.startsWith('/settings/'), icon: <IconSettings /> },
 ]
 
 const ADMIN_ITEM: NavItem = {
-  href: '/admin',
-  label: 'Admin',
-  match: (p) => p.startsWith('/admin'),
-  icon: <IconAdmin />,
-}
-
-interface SidebarProps {
-  isAdmin?: boolean
-  userEmail?: string | null
+  href: '/admin', label: 'Admin', match: (p) => p.startsWith('/admin'), icon: <IconAdmin />,
 }
 
 function getInitials(email: string | null | undefined): string {
@@ -148,35 +118,30 @@ function getInitials(email: string | null | undefined): string {
   return name.slice(0, 2).toUpperCase()
 }
 
-export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
-  const pathname = usePathname()
-  const [open, setOpen] = useState(false)
-
-  const items = isAdmin ? [...NAV_ITEMS, ADMIN_ITEM] : NAV_ITEMS
-
-  useEffect(() => { setOpen(false) }, [pathname])
-  useEffect(() => {
-    document.body.style.overflow = open ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [open])
-
-  const NavContent = () => (
+function NavLinks({
+  items,
+  pathname,
+  inSettings,
+  currentSection,
+  onLinkClick,
+}: {
+  items: NavItem[]
+  pathname: string
+  inSettings: boolean
+  currentSection: string
+  onLinkClick?: () => void
+}) {
+  return (
     <>
-      {/* Header */}
-      <div className="flex flex-col gap-0.5 px-5 py-5 border-b border-white/10">
-        <span className="text-base font-bold text-white font-[--font-heading] tracking-tight">Prospecta</span>
-        <span className="text-xs font-medium text-white/40 uppercase tracking-widest">Beta Fechado</span>
-      </div>
-
-      {/* Nav items */}
-      <nav className="flex-1 overflow-y-auto py-3 px-3">
-        {items.map((item) => {
-          const isActive = item.match(pathname)
-          return (
+      {items.map((item) => {
+        const isActive = item.match(pathname)
+        const isSettings = item.href === '/settings'
+        return (
+          <div key={item.href}>
             <Link
-              key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors mb-0.5 ${
+              onClick={onLinkClick}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-0.5 ${
                 isActive
                   ? 'bg-blue-600/15 text-blue-400 border-l-4 border-blue-500 pl-2'
                   : 'text-white/60 hover:text-white/90 hover:bg-white/5 border-l-4 border-transparent pl-2'
@@ -187,23 +152,36 @@ export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
               </span>
               {item.label}
             </Link>
-          )
-        })}
-      </nav>
 
-      {/* CTA */}
-      <div className="px-3 pb-3">
-        <Link
-          href="/leads/new"
-          className="flex items-center justify-center gap-2 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-dark active:scale-95"
-        >
-          <IconPlus />
-          Adicionar Leads
-        </Link>
-      </div>
+            {isSettings && inSettings && (
+              <div className="mb-1 mt-0.5 space-y-0.5 pl-9">
+                {SETTINGS_SUB_ITEMS.map((sub) => (
+                  <Link
+                    key={sub.section}
+                    href={`/settings?section=${sub.section}`}
+                    onClick={onLinkClick}
+                    className={`block rounded-md px-2.5 py-1.5 text-xs transition-colors ${
+                      currentSection === sub.section
+                        ? 'font-semibold text-blue-400'
+                        : 'text-white/45 hover:text-white/75 hover:bg-white/5'
+                    }`}
+                  >
+                    {sub.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </>
+  )
+}
 
-      {/* Footer — user */}
-      <div className="flex items-center gap-3 border-t border-white/10 px-4 py-4">
+function SidebarFooter({ userEmail }: { userEmail?: string | null }) {
+  return (
+    <div className="border-t border-white/10">
+      <div className="flex items-center gap-3 px-4 py-3">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
           {getInitials(userEmail)}
         </div>
@@ -212,17 +190,73 @@ export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
           <p className="text-xs text-white/40">Beta</p>
         </div>
       </div>
-    </>
+      <form action={logoutAction} className="px-3 pb-3">
+        <button
+          type="submit"
+          className="w-full cursor-pointer rounded-lg px-3 py-1.5 text-left text-xs font-medium text-red-400/70 transition-colors hover:bg-white/5 hover:text-red-400"
+        >
+          Sair
+        </button>
+      </form>
+    </div>
   )
+}
+
+interface SidebarProps {
+  isAdmin?: boolean
+  userEmail?: string | null
+}
+
+export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [open, setOpen] = useState(false)
+
+  const items = isAdmin ? [...NAV_ITEMS, ADMIN_ITEM] : NAV_ITEMS
+  const inSettings = pathname === '/settings' || pathname.startsWith('/settings/')
+  const currentSection = searchParams.get('section') ?? 'empresa'
+
+  useEffect(() => { setOpen(false) }, [pathname])
+  useEffect(() => {
+    document.body.style.overflow = open ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [open])
 
   return (
     <>
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex lg:flex-col lg:w-60 lg:shrink-0 lg:min-h-screen bg-sidebar">
-        <NavContent />
+        {/* Header */}
+        <div className="flex flex-col gap-0.5 border-b border-white/10 px-5 py-5">
+          <span className="text-base font-bold text-white font-[--font-heading] tracking-tight">Prospecta</span>
+          <span className="text-xs font-medium text-white/40 uppercase tracking-widest">Beta Fechado</span>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto px-3 py-3">
+          <NavLinks
+            items={items}
+            pathname={pathname}
+            inSettings={inSettings}
+            currentSection={currentSection}
+          />
+        </nav>
+
+        {/* CTA */}
+        <div className="px-3 pb-3">
+          <Link
+            href="/leads/new"
+            className="flex items-center justify-center gap-2 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-dark active:scale-95"
+          >
+            <IconPlus />
+            Adicionar Leads
+          </Link>
+        </div>
+
+        <SidebarFooter userEmail={userEmail} />
       </aside>
 
-      {/* Mobile header */}
+      {/* Mobile top bar */}
       <div className="lg:hidden flex items-center justify-between border-b border-outline bg-surface-container px-4 py-3 fixed top-0 left-0 right-0 z-40">
         <span className="text-sm font-bold text-on-surface font-[--font-heading]">Prospecta</span>
         <button
@@ -246,7 +280,7 @@ export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
 
       {/* Mobile drawer */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-sidebar shadow-xl transition-transform duration-300 ease-in-out lg:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-sidebar shadow-xl transition-transform duration-300 ease-in-out lg:hidden ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
         aria-label="Menu de navegação"
@@ -262,28 +296,17 @@ export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
             <IconClose />
           </button>
         </div>
-        <nav className="flex-1 overflow-y-auto py-3 px-3">
-          {items.map((item) => {
-            const isActive = item.match(pathname)
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors mb-0.5 ${
-                  isActive
-                    ? 'bg-blue-600/15 text-blue-400 border-l-4 border-blue-500 pl-2'
-                    : 'text-white/60 hover:text-white/90 hover:bg-white/5 border-l-4 border-transparent pl-2'
-                }`}
-              >
-                <span className={`shrink-0 ${isActive ? 'text-blue-400' : 'text-white/40'}`}>
-                  {item.icon}
-                </span>
-                {item.label}
-              </Link>
-            )
-          })}
+
+        <nav className="flex-1 overflow-y-auto px-3 py-3">
+          <NavLinks
+            items={items}
+            pathname={pathname}
+            inSettings={inSettings}
+            currentSection={currentSection}
+            onLinkClick={() => setOpen(false)}
+          />
         </nav>
+
         <div className="px-3 pb-3">
           <Link
             href="/leads/new"
@@ -294,12 +317,8 @@ export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
             Adicionar Leads
           </Link>
         </div>
-        <div className="flex items-center gap-3 border-t border-white/10 px-4 py-4">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-            {getInitials(userEmail)}
-          </div>
-          <p className="truncate text-xs font-medium text-white/80">{userEmail ?? 'Usuário'}</p>
-        </div>
+
+        <SidebarFooter userEmail={userEmail} />
       </div>
     </>
   )
