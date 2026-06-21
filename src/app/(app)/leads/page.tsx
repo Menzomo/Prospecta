@@ -173,78 +173,88 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
           ) : null}
         </div>
       ) : (
-        <div className="rounded-xl border border-outline bg-surface-container shadow-card overflow-hidden">
-          {/* Table header */}
-          <div className="hidden sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr_auto] items-center gap-4 border-b border-outline bg-surface-low px-5 py-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 shrink-0" />
-              <span className="text-xs font-medium uppercase tracking-wide text-on-surface-muted">Empresa</span>
-            </div>
-            <span className="text-xs font-medium uppercase tracking-wide text-on-surface-muted">Categoria</span>
-            <span className="text-xs font-medium uppercase tracking-wide text-on-surface-muted">Cidade</span>
-            <span className="text-xs font-medium uppercase tracking-wide text-on-surface-muted">Status</span>
-            <span className="text-xs font-medium uppercase tracking-wide text-on-surface-muted">Ações</span>
+        <div className="overflow-hidden rounded-xl border border-outline bg-surface-container shadow-card">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-sm">
+              <thead>
+                <tr className="border-b border-outline bg-surface-low text-left text-xs font-medium uppercase tracking-wide text-on-surface-muted">
+                  <th className="px-5 py-3 font-medium">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 shrink-0" />
+                      Empresa
+                    </div>
+                  </th>
+                  <th className="w-36 px-3 py-3 font-medium">Categoria</th>
+                  <th className="w-32 px-3 py-3 font-medium">Cidade</th>
+                  <th className="w-28 px-3 py-3 font-medium">Status</th>
+                  <th className="px-5 py-3 font-medium">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline">
+                {filteredSearchLeads.map((lead) => (
+                  <tr key={`search-${lead.id}`} className="transition-colors hover:bg-surface-low">
+                    <td className="px-5 py-4 align-top">
+                      <div className="flex items-start gap-2.5">
+                        <Avatar name={lead.company_name} size="sm" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-on-surface">{lead.company_name}</p>
+                          {lead.email && (
+                            <p className="text-xs text-on-surface-muted">{lead.email}</p>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3 py-4 align-top text-on-surface-muted">
+                      {lead.category_name ?? <span className="text-on-surface-muted/40">—</span>}
+                    </td>
+                    <td className="px-3 py-4 align-top text-on-surface-muted">
+                      {lead.city ?? <span className="text-on-surface-muted/40">—</span>}
+                    </td>
+                    <td className="px-3 py-4 align-top">
+                      <StatusBadge status={lead.status as LeadStatus} />
+                    </td>
+                    <td className="px-5 py-4 align-top">
+                      <ThreeDotMenu
+                        leadHref={`/leads/global/${lead.id}`}
+                        sendHref={`/leads/global/${lead.id}/send`}
+                        hideAction={hideUserLeadAction.bind(null, lead.id)}
+                      />
+                    </td>
+                  </tr>
+                ))}
+                {filteredManualLeads.map((lead) => (
+                  <tr key={`manual-${lead.id}`} className="transition-colors hover:bg-surface-low">
+                    <td className="px-5 py-4 align-top">
+                      <div className="flex items-start gap-2.5">
+                        <Avatar name={lead.company_name} size="sm" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-on-surface">{lead.company_name}</p>
+                          {lead.email && (
+                            <p className="text-xs text-on-surface-muted">{lead.email}</p>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-3 py-4 align-top text-on-surface-muted/40">—</td>
+                    <td className="px-3 py-4 align-top text-on-surface-muted">
+                      {lead.city ?? <span className="text-on-surface-muted/40">—</span>}
+                    </td>
+                    <td className="px-3 py-4 align-top">
+                      <StatusBadge status={lead.status as LeadStatus} />
+                    </td>
+                    <td className="px-5 py-4 align-top">
+                      <ThreeDotMenu
+                        leadHref={`/leads/${lead.id}`}
+                        sendHref={`/leads/${lead.id}/send`}
+                        hideAction={hideLeadAction.bind(null, lead.id)}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
-          <div className="divide-y divide-outline">
-            {/* Search leads (user_leads) */}
-            {filteredSearchLeads.map((lead) => (
-              <div
-                key={`search-${lead.id}`}
-                className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-surface-low sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr_auto] sm:items-start sm:gap-4"
-              >
-                <div className="flex items-start gap-2.5 min-w-0">
-                  <Avatar name={lead.company_name} size="sm" />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-on-surface">{lead.company_name}</p>
-                    {lead.email && (
-                      <p className="truncate text-xs text-on-surface-muted">{lead.email}</p>
-                    )}
-                  </div>
-                </div>
-                <p className="self-start text-sm text-on-surface-muted">{lead.category_name ?? <span className="text-on-surface-muted/40">—</span>}</p>
-                <p className="self-start text-sm text-on-surface-muted">{lead.city ?? <span className="text-on-surface-muted/40">—</span>}</p>
-                <div className="self-start"><StatusBadge status={lead.status as LeadStatus} /></div>
-                <div className="self-start">
-                  <ThreeDotMenu
-                    leadHref={`/leads/global/${lead.id}`}
-                    sendHref={`/leads/global/${lead.id}/send`}
-                    hideAction={hideUserLeadAction.bind(null, lead.id)}
-                  />
-                </div>
-              </div>
-            ))}
-
-            {/* Manual leads */}
-            {filteredManualLeads.map((lead) => (
-              <div
-                key={`manual-${lead.id}`}
-                className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-surface-low sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr_auto] sm:items-start sm:gap-4"
-              >
-                <div className="flex items-start gap-2.5 min-w-0">
-                  <Avatar name={lead.company_name} size="sm" />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-on-surface">{lead.company_name}</p>
-                    {lead.email && (
-                      <p className="truncate text-xs text-on-surface-muted">{lead.email}</p>
-                    )}
-                  </div>
-                </div>
-                <p className="self-start text-sm text-on-surface-muted/40">—</p>
-                <p className="self-start text-sm text-on-surface-muted">{lead.city ?? <span className="text-on-surface-muted/40">—</span>}</p>
-                <div className="self-start"><StatusBadge status={lead.status as LeadStatus} /></div>
-                <div className="self-start">
-                  <ThreeDotMenu
-                    leadHref={`/leads/${lead.id}`}
-                    sendHref={`/leads/${lead.id}/send`}
-                    hideAction={hideLeadAction.bind(null, lead.id)}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Footer count */}
           <div className="border-t border-outline bg-surface-low px-5 py-3">
             <p className="text-xs text-on-surface-muted">
               {totalCount} {totalCount === 1 ? 'lead' : 'leads'}
