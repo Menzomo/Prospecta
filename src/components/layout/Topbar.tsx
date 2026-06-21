@@ -45,17 +45,17 @@ export function Topbar({ userEmail }: TopbarProps) {
   return (
     <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-outline bg-surface-container px-6 py-3">
       {/* Search */}
-      <div className="relative flex-1 max-w-sm">
+      <form method="GET" action="/leads" className="relative flex-1 max-w-sm">
         <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-on-surface-muted">
           <IconSearch />
         </span>
         <input
           type="search"
-          placeholder="Pesquisar leads, campanhas..."
-          disabled
-          className="w-full rounded-lg border border-outline bg-surface-low py-2 pl-9 pr-4 text-sm text-on-surface placeholder:text-on-surface-muted outline-none disabled:cursor-not-allowed disabled:opacity-60"
+          name="search"
+          placeholder="Pesquisar leads..."
+          className="w-full rounded-lg border border-outline bg-surface-low py-2 pl-9 pr-4 text-sm text-on-surface placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
-      </div>
+      </form>
 
       <div className="flex items-center gap-1 ml-auto">
         {/* Bell */}

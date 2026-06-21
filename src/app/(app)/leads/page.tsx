@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { LeadsGrid } from '@/features/leads/components/LeadsGrid'
 import type { LeadCardData } from '@/features/leads/components/LeadsGrid'
 
-type SearchParams = Promise<{ category?: string; city?: string }>
+type SearchParams = Promise<{ category?: string; city?: string; search?: string }>
 
 function IconSearch() {
   return (
@@ -24,7 +24,7 @@ function IconSearch() {
 
 
 export default async function LeadsPage({ searchParams }: { searchParams: SearchParams }) {
-  const { category: categoryFilter = 'all', city: cityFilter = '' } = await searchParams
+  const { category: categoryFilter = 'all', city: cityFilter = '', search: searchFilter = '' } = await searchParams
 
   const supabase = await createClient()
   const {
@@ -48,10 +48,13 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
   const activeCategoryId =
     categoryFilter === 'all' ? null : (categoryBySlug.get(categoryFilter)?.id ?? null)
 
+  const nameQuery = searchFilter.toLowerCase()
+
   const filteredSearchLeads = searchLeads
     .filter((l) => {
       if (activeCategoryId !== null && l.category_id !== activeCategoryId) return false
       if (cityFilter && !l.city?.toLowerCase().includes(cityFilter.toLowerCase())) return false
+      if (nameQuery && !l.company_name.toLowerCase().includes(nameQuery)) return false
       return true
     })
     .map((l) => ({
@@ -63,6 +66,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
     activeCategoryId === null
       ? manualLeads.filter((l) => {
           if (cityFilter && !l.city?.toLowerCase().includes(cityFilter.toLowerCase())) return false
+          if (nameQuery && !l.company_name.toLowerCase().includes(nameQuery)) return false
           return true
         })
       : []
@@ -86,6 +90,9 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
 
       {/* Filters */}
       <form method="GET" action="/leads" className="flex flex-wrap items-center gap-2">
+        {/* Preserve active name search when applying category/city filters */}
+        {searchFilter && <input type="hidden" name="search" value={searchFilter} />}
+
         <select
           key={categoryFilter}
           name="category"
@@ -119,9 +126,16 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
           Filtrar
         </button>
 
+        {searchFilter && (
+          <span className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+            &ldquo;{searchFilter}&rdquo;
+            <Link href="/leads" aria-label="Limpar busca" className="hover:text-primary-dark">✕</Link>
+          </span>
+        )}
+
         {(categoryFilter !== 'all' || cityFilter) && (
           <Link
-            href="/leads"
+            href={searchFilter ? `/leads?search=${encodeURIComponent(searchFilter)}` : '/leads'}
             className="text-sm text-on-surface-muted hover:text-on-surface hover:underline"
           >
             Limpar filtros
