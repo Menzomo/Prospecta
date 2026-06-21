@@ -5,7 +5,6 @@ import { getDashboardData } from '@/features/dashboard/services/dashboardService
 import { DashboardKpis } from '@/features/dashboard/components/DashboardKpis'
 import { RecentReplies } from '@/features/dashboard/components/RecentReplies'
 import { FollowUpList } from '@/features/dashboard/components/FollowUpList'
-import { DateRangeFilter } from '@/features/dashboard/components/DateRangeFilter'
 import { PageHeader } from '@/components/layout/PageHeader'
 
 export default async function DashboardPage() {
@@ -28,7 +27,6 @@ export default async function DashboardPage() {
       <PageHeader
         title="Visão Geral de Performance"
         subtitle={`${company.company_name} · Prospecção comercial`}
-        actions={<DateRangeFilter />}
       />
 
       <DashboardKpis kpis={dashboard.kpis} />
