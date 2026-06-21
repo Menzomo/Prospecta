@@ -22,36 +22,6 @@ function IconSearch() {
   )
 }
 
-function ThreeDotMenu({ leadHref, sendHref, hideAction }: {
-  leadHref: string
-  sendHref: string
-  hideAction: (_formData: FormData) => Promise<void>
-}) {
-  return (
-    <div className="flex items-center gap-1">
-      <Link
-        href={sendHref}
-        className="rounded-md border border-outline px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-surface-low"
-      >
-        Enviar email
-      </Link>
-      <Link
-        href={leadHref}
-        className="rounded-md border border-outline px-2.5 py-1.5 text-xs font-medium text-on-surface transition-colors hover:bg-surface-low"
-      >
-        Detalhes
-      </Link>
-      <form action={hideAction}>
-        <button
-          type="submit"
-          className="cursor-pointer rounded-md px-2.5 py-1.5 text-xs text-on-surface-muted transition-colors hover:bg-red-50 hover:text-red-500"
-        >
-          Ocultar
-        </button>
-      </form>
-    </div>
-  )
-}
 
 export default async function LeadsPage({ searchParams }: { searchParams: SearchParams }) {
   const { category: categoryFilter = 'all', city: cityFilter = '' } = await searchParams
@@ -173,94 +143,92 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
           ) : null}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-outline bg-surface-container shadow-card">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-sm">
-              <thead>
-                <tr className="border-b border-outline bg-surface-low text-left text-xs font-medium uppercase tracking-wide text-on-surface-muted">
-                  <th className="px-5 py-3 font-medium">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 shrink-0" />
-                      Empresa
-                    </div>
-                  </th>
-                  <th className="w-36 px-3 py-3 font-medium">Categoria</th>
-                  <th className="w-32 px-3 py-3 font-medium">Cidade</th>
-                  <th className="w-28 px-3 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline">
-                {filteredSearchLeads.map((lead) => (
-                  <tr key={`search-${lead.id}`} className="transition-colors hover:bg-surface-low">
-                    <td className="px-5 py-4 align-top">
-                      <div className="flex items-start gap-2.5">
-                        <Avatar name={lead.company_name} size="sm" />
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-on-surface">{lead.company_name}</p>
-                          {lead.email && (
-                            <p className="text-xs text-on-surface-muted">{lead.email}</p>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-3 py-4 align-top text-on-surface-muted">
-                      {lead.category_name ?? <span className="text-on-surface-muted/40">—</span>}
-                    </td>
-                    <td className="px-3 py-4 align-top text-on-surface-muted">
-                      {lead.city ?? <span className="text-on-surface-muted/40">—</span>}
-                    </td>
-                    <td className="px-3 py-4 align-top">
-                      <StatusBadge status={lead.status as LeadStatus} />
-                    </td>
-                    <td className="px-5 py-4 align-top">
-                      <ThreeDotMenu
-                        leadHref={`/leads/global/${lead.id}`}
-                        sendHref={`/leads/global/${lead.id}/send`}
-                        hideAction={hideUserLeadAction.bind(null, lead.id)}
-                      />
-                    </td>
-                  </tr>
-                ))}
-                {filteredManualLeads.map((lead) => (
-                  <tr key={`manual-${lead.id}`} className="transition-colors hover:bg-surface-low">
-                    <td className="px-5 py-4 align-top">
-                      <div className="flex items-start gap-2.5">
-                        <Avatar name={lead.company_name} size="sm" />
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-on-surface">{lead.company_name}</p>
-                          {lead.email && (
-                            <p className="text-xs text-on-surface-muted">{lead.email}</p>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-3 py-4 align-top text-on-surface-muted/40">—</td>
-                    <td className="px-3 py-4 align-top text-on-surface-muted">
-                      {lead.city ?? <span className="text-on-surface-muted/40">—</span>}
-                    </td>
-                    <td className="px-3 py-4 align-top">
-                      <StatusBadge status={lead.status as LeadStatus} />
-                    </td>
-                    <td className="px-5 py-4 align-top">
-                      <ThreeDotMenu
-                        leadHref={`/leads/${lead.id}`}
-                        sendHref={`/leads/${lead.id}/send`}
-                        hideAction={hideLeadAction.bind(null, lead.id)}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <>
+          <p className="text-xs text-on-surface-muted">
+            {totalCount} {totalCount === 1 ? 'lead' : 'leads'}
+          </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredSearchLeads.map((lead) => (
+              <div key={`search-${lead.id}`} className="flex flex-col rounded-xl border border-outline bg-surface-container p-5 shadow-card transition-shadow hover:shadow-hover">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <Avatar name={lead.company_name} size="md" />
+                    <p className="font-semibold leading-snug text-on-surface">{lead.company_name}</p>
+                  </div>
+                  <div className="shrink-0 pt-0.5">
+                    <StatusBadge status={lead.status as LeadStatus} />
+                  </div>
+                </div>
+                <div className="mt-3 space-y-1 text-sm text-on-surface-muted">
+                  {lead.category_name && <p>{lead.category_name}</p>}
+                  {lead.email && <p>{lead.email}</p>}
+                  {lead.city && <p>{lead.city}</p>}
+                </div>
+                <div className="mt-4 flex items-center gap-1.5">
+                  <Link
+                    href={`/leads/global/${lead.id}/send`}
+                    className="rounded-md bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+                  >
+                    Enviar email
+                  </Link>
+                  <Link
+                    href={`/leads/global/${lead.id}`}
+                    className="rounded-md border border-outline px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:bg-surface-low"
+                  >
+                    Detalhes
+                  </Link>
+                  <form action={hideUserLeadAction.bind(null, lead.id)}>
+                    <button
+                      type="submit"
+                      className="cursor-pointer rounded-md px-3 py-1.5 text-xs text-on-surface-muted transition-colors hover:bg-red-50 hover:text-red-500"
+                    >
+                      Ocultar
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ))}
+            {filteredManualLeads.map((lead) => (
+              <div key={`manual-${lead.id}`} className="flex flex-col rounded-xl border border-outline bg-surface-container p-5 shadow-card transition-shadow hover:shadow-hover">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <Avatar name={lead.company_name} size="md" />
+                    <p className="font-semibold leading-snug text-on-surface">{lead.company_name}</p>
+                  </div>
+                  <div className="shrink-0 pt-0.5">
+                    <StatusBadge status={lead.status as LeadStatus} />
+                  </div>
+                </div>
+                <div className="mt-3 space-y-1 text-sm text-on-surface-muted">
+                  {lead.email && <p>{lead.email}</p>}
+                  {lead.city && <p>{lead.city}</p>}
+                </div>
+                <div className="mt-4 flex items-center gap-1.5">
+                  <Link
+                    href={`/leads/${lead.id}/send`}
+                    className="rounded-md bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+                  >
+                    Enviar email
+                  </Link>
+                  <Link
+                    href={`/leads/${lead.id}`}
+                    className="rounded-md border border-outline px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:bg-surface-low"
+                  >
+                    Detalhes
+                  </Link>
+                  <form action={hideLeadAction.bind(null, lead.id)}>
+                    <button
+                      type="submit"
+                      className="cursor-pointer rounded-md px-3 py-1.5 text-xs text-on-surface-muted transition-colors hover:bg-red-50 hover:text-red-500"
+                    >
+                      Ocultar
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ))}
           </div>
-
-          <div className="border-t border-outline bg-surface-low px-5 py-3">
-            <p className="text-xs text-on-surface-muted">
-              {totalCount} {totalCount === 1 ? 'lead' : 'leads'}
-            </p>
-          </div>
-        </div>
+        </>
       )}
     </main>
   )
