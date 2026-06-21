@@ -64,11 +64,13 @@ export async function getPendingFollowupsCount(
   supabase: SupabaseClient<Database>,
   userId: string
 ): Promise<number> {
+  const now = new Date().toISOString()
   const { count, error } = await supabase
     .from('followups')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
     .eq('status', 'pending')
+    .or(`type.neq.no_reply,due_at.lte.${now}`)
 
   if (error) return 0
   return count ?? 0

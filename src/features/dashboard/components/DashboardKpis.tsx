@@ -36,7 +36,7 @@ export function DashboardKpis({ kpis }: Props) {
         note={taxaResposta === 0 && kpis.sentEmails === 0 ? 'Nenhum email enviado ainda' : undefined}
       />
       <KpiCard
-        label="Follow-ups Pendentes"
+        label="Acompanhamentos Pendentes"
         value={kpis.pendingFollowups}
         urgency={kpis.pendingFollowups > 0}
         note={kpis.pendingFollowups === 0 ? 'Tudo em dia' : undefined}
