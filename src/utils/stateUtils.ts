@@ -39,3 +39,15 @@ export function expandStateCode(value: string): string {
   }
   return value
 }
+
+/**
+ * Collapses a full Brazilian state name to its 2-letter UF code.
+ * If the value is already a code (or unknown), returns it unchanged.
+ * Example: 'Rio Grande do Sul' → 'RS', 'RS' → 'RS'
+ */
+export function collapseStateName(value: string): string {
+  if (!value) return ''
+  if (value.length <= 2) return value.toUpperCase()
+  const entry = Object.entries(STATE_CODES).find(([, name]) => name === value)
+  return entry?.[0] ?? ''
+}

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { onboardingAction } from '@/app/onboarding/actions'
 import { requestGmailAccessAction } from '@/features/gmail/actions'
 import { SearchForm } from '@/features/search/components/SearchForm'
+import { collapseStateName } from '@/utils/stateUtils'
 import type { GmailRequestStatus } from '@/types/gmail'
 
 type Category = { id: string; name: string }
@@ -38,7 +39,7 @@ interface Props {
 
 export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStatus = 'not_requested', firstAvailableCity }: Props) {
   const lockedCity = firstAvailableCity
-    ? { name: firstAvailableCity.city, state: firstAvailableCity.state ?? '' }
+    ? { name: firstAvailableCity.city, state: collapseStateName(firstAvailableCity.state ?? '') }
     : { name: 'Caxias do Sul', state: 'RS' }
   const [step, setStep] = useState(initialStep)
   const [state, formAction, pending] = useActionState(onboardingAction, null)
