@@ -7,9 +7,9 @@ import { listLeadCategories } from '@/repositories/leadCategoryRepository'
 import { hideLeadAction, hideUserLeadAction } from '@/features/leads/actions'
 import type { LeadStatus } from '@/types/leads'
 import type { LeadCategory } from '@/types/globalLeads'
-import { StatusBadge } from '@/components/ui/StatusBadge'
-import { Avatar } from '@/components/ui/Avatar'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { LeadsGrid } from '@/features/leads/components/LeadsGrid'
+import type { LeadCardData } from '@/features/leads/components/LeadsGrid'
 
 type SearchParams = Promise<{ category?: string; city?: string }>
 
@@ -147,87 +147,32 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
           <p className="text-xs text-on-surface-muted">
             {totalCount} {totalCount === 1 ? 'lead' : 'leads'}
           </p>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredSearchLeads.map((lead) => (
-              <div key={`search-${lead.id}`} className="flex flex-col rounded-xl border border-outline bg-surface-container p-5 shadow-card transition-shadow hover:shadow-hover">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <Avatar name={lead.company_name} size="md" />
-                    <p className="font-semibold leading-snug text-on-surface">{lead.company_name}</p>
-                  </div>
-                  <div className="shrink-0 pt-0.5">
-                    <StatusBadge status={lead.status as LeadStatus} />
-                  </div>
-                </div>
-                <div className="mt-3 space-y-1 text-sm text-on-surface-muted">
-                  {lead.category_name && <p>{lead.category_name}</p>}
-                  {lead.email && <p>{lead.email}</p>}
-                  {lead.city && <p>{lead.city}</p>}
-                </div>
-                <div className="mt-4 flex items-center gap-1.5">
-                  <Link
-                    href={`/leads/global/${lead.id}/send`}
-                    className="rounded-md bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
-                  >
-                    Enviar email
-                  </Link>
-                  <Link
-                    href={`/leads/global/${lead.id}`}
-                    className="rounded-md border border-outline px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:bg-surface-low"
-                  >
-                    Detalhes
-                  </Link>
-                  <form action={hideUserLeadAction.bind(null, lead.id)}>
-                    <button
-                      type="submit"
-                      className="cursor-pointer rounded-md px-3 py-1.5 text-xs text-on-surface-muted transition-colors hover:bg-red-50 hover:text-red-500"
-                    >
-                      Ocultar
-                    </button>
-                  </form>
-                </div>
-              </div>
-            ))}
-            {filteredManualLeads.map((lead) => (
-              <div key={`manual-${lead.id}`} className="flex flex-col rounded-xl border border-outline bg-surface-container p-5 shadow-card transition-shadow hover:shadow-hover">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <Avatar name={lead.company_name} size="md" />
-                    <p className="font-semibold leading-snug text-on-surface">{lead.company_name}</p>
-                  </div>
-                  <div className="shrink-0 pt-0.5">
-                    <StatusBadge status={lead.status as LeadStatus} />
-                  </div>
-                </div>
-                <div className="mt-3 space-y-1 text-sm text-on-surface-muted">
-                  {lead.email && <p>{lead.email}</p>}
-                  {lead.city && <p>{lead.city}</p>}
-                </div>
-                <div className="mt-4 flex items-center gap-1.5">
-                  <Link
-                    href={`/leads/${lead.id}/send`}
-                    className="rounded-md bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
-                  >
-                    Enviar email
-                  </Link>
-                  <Link
-                    href={`/leads/${lead.id}`}
-                    className="rounded-md border border-outline px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:bg-surface-low"
-                  >
-                    Detalhes
-                  </Link>
-                  <form action={hideLeadAction.bind(null, lead.id)}>
-                    <button
-                      type="submit"
-                      className="cursor-pointer rounded-md px-3 py-1.5 text-xs text-on-surface-muted transition-colors hover:bg-red-50 hover:text-red-500"
-                    >
-                      Ocultar
-                    </button>
-                  </form>
-                </div>
-              </div>
-            ))}
-          </div>
+          <LeadsGrid
+            leads={[
+              ...filteredSearchLeads.map((lead): LeadCardData => ({
+                key: `search-${lead.id}`,
+                company_name: lead.company_name,
+                email: lead.email ?? null,
+                city: lead.city ?? null,
+                category_name: lead.category_name ?? null,
+                status: lead.status as LeadStatus,
+                leadHref: `/leads/global/${lead.id}`,
+                sendHref: `/leads/global/${lead.id}/send`,
+                hideAction: hideUserLeadAction.bind(null, lead.id),
+              })),
+              ...filteredManualLeads.map((lead): LeadCardData => ({
+                key: `manual-${lead.id}`,
+                company_name: lead.company_name,
+                email: lead.email ?? null,
+                city: lead.city ?? null,
+                category_name: null,
+                status: lead.status as LeadStatus,
+                leadHref: `/leads/${lead.id}`,
+                sendHref: `/leads/${lead.id}/send`,
+                hideAction: hideLeadAction.bind(null, lead.id),
+              })),
+            ]}
+          />
         </>
       )}
     </main>
