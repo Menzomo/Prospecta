@@ -31,7 +31,7 @@ export function LoginForm() {
       <div className="flex flex-col gap-4">
         <form action={signupFormAction} className="flex flex-col gap-3">
           <div className="flex flex-col gap-1">
-            <label htmlFor="full_name" className="text-sm font-medium text-gray-700">
+            <label htmlFor="full_name" className="text-sm font-medium text-on-surface">
               Nome completo
             </label>
             <input
@@ -40,7 +40,7 @@ export function LoginForm() {
               type="text"
               placeholder="Seu nome"
               autoComplete="name"
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="rounded-lg border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface [-webkit-text-fill-color:#191b23] placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             />
             {signupState?.errors?.full_name && (
               <p className="text-xs text-red-500">{signupState.errors.full_name[0]}</p>
@@ -48,7 +48,7 @@ export function LoginForm() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="signup-email" className="text-sm font-medium text-gray-700">
+            <label htmlFor="signup-email" className="text-sm font-medium text-on-surface">
               Email
             </label>
             <input
@@ -57,7 +57,7 @@ export function LoginForm() {
               type="email"
               placeholder="seu@email.com"
               autoComplete="email"
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="rounded-lg border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface [-webkit-text-fill-color:#191b23] placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             />
             {signupState?.errors?.email && (
               <p className="text-xs text-red-500">{signupState.errors.email[0]}</p>
@@ -65,7 +65,7 @@ export function LoginForm() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="signup-password" className="text-sm font-medium text-gray-700">
+            <label htmlFor="signup-password" className="text-sm font-medium text-on-surface">
               Senha
             </label>
             <div className="relative">
@@ -75,12 +75,12 @@ export function LoginForm() {
                 type={showSignupPassword ? 'text' : 'password'}
                 placeholder="Mínimo 6 caracteres"
                 autoComplete="new-password"
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-10 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-lg border border-outline bg-surface-container px-3 py-2 pr-10 text-sm text-on-surface [-webkit-text-fill-color:#191b23] placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
               <button
                 type="button"
                 onClick={() => setShowSignupPassword((v) => !v)}
-                className="absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3 text-gray-400 hover:text-gray-600"
+                className="absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3 text-on-surface-muted hover:text-on-surface"
                 tabIndex={-1}
                 aria-label={showSignupPassword ? 'Ocultar senha' : 'Mostrar senha'}
               >
@@ -101,18 +101,18 @@ export function LoginForm() {
           <button
             type="submit"
             disabled={signupPending}
-            className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
           >
             {signupPending ? 'Criando conta...' : 'Criar conta'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-500">
+        <p className="text-center text-sm text-on-surface-muted">
           Já tem conta?{' '}
           <button
             type="button"
             onClick={() => setMode('login')}
-            className="cursor-pointer font-medium text-blue-600 hover:underline"
+            className="cursor-pointer font-medium text-primary hover:underline"
           >
             Entrar
           </button>
@@ -125,7 +125,7 @@ export function LoginForm() {
     <div className="flex flex-col gap-4">
       <form action={loginFormAction} className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <label htmlFor="email" className="text-sm font-medium text-gray-700">
+          <label htmlFor="email" className="text-sm font-medium text-on-surface">
             Email
           </label>
           <input
@@ -134,7 +134,7 @@ export function LoginForm() {
             type="email"
             placeholder="seu@email.com"
             autoComplete="email"
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="rounded-lg border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface [-webkit-text-fill-color:#191b23] placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary"
           />
           {loginState?.errors?.email && (
             <p className="text-xs text-red-500">{loginState.errors.email[0]}</p>
@@ -142,7 +142,7 @@ export function LoginForm() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="password" className="text-sm font-medium text-gray-700">
+          <label htmlFor="password" className="text-sm font-medium text-on-surface">
             Senha
           </label>
           <div className="relative">
@@ -152,12 +152,12 @@ export function LoginForm() {
               type={showLoginPassword ? 'text' : 'password'}
               placeholder="Sua senha"
               autoComplete="current-password"
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-10 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-lg border border-outline bg-surface-container px-3 py-2 pr-10 text-sm text-on-surface [-webkit-text-fill-color:#191b23] placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             />
             <button
               type="button"
               onClick={() => setShowLoginPassword((v) => !v)}
-              className="absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3 text-gray-400 hover:text-gray-600"
+              className="absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3 text-on-surface-muted hover:text-on-surface"
               tabIndex={-1}
               aria-label={showLoginPassword ? 'Ocultar senha' : 'Mostrar senha'}
             >
@@ -178,24 +178,24 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={loginPending}
-          className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loginPending ? 'Entrando...' : 'Entrar'}
         </button>
       </form>
 
       <div className="text-right">
-        <a href="/forgot-password" className="text-xs text-blue-600 hover:underline">
+        <a href="/forgot-password" className="text-xs text-primary hover:underline">
           Esqueci minha senha
         </a>
       </div>
 
-      <p className="text-center text-sm text-gray-500">
+      <p className="text-center text-sm text-on-surface-muted">
         Não tem conta?{' '}
         <button
           type="button"
           onClick={() => setMode('signup')}
-          className="cursor-pointer font-medium text-blue-600 hover:underline"
+          className="cursor-pointer font-medium text-primary hover:underline"
         >
           Criar conta
         </button>
