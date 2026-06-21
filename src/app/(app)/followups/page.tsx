@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getPendingFollowupsByUserId } from '@/repositories/followupRepository'
 import { completeFollowupAction } from '@/features/followups/actions'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 function formatDueAt(value: string): string {
   return new Date(value).toLocaleString('pt-BR', {
@@ -30,22 +31,23 @@ export default async function FollowupsPage() {
   const followups = await getPendingFollowupsByUserId(supabase, user.id)
 
   return (
-    <>
-      <header className="border-b border-gray-200 bg-white px-6 py-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-gray-900">Acompanhamentos</h1>
-          <Link href="/leads" className="text-sm text-gray-500 hover:text-gray-700">
+    <main className="flex flex-col p-6">
+      <PageHeader
+        title="Acompanhamentos"
+        subtitle="Follow-ups pendentes da sua base de leads"
+        actions={
+          <Link href="/leads" className="text-sm text-on-surface-muted hover:text-on-surface">
             ← Leads
           </Link>
-        </div>
-      </header>
+        }
+      />
 
-      <main className="flex flex-1 justify-center p-6">
+      <div className="flex justify-center">
         <div className="w-full max-w-lg">
           {followups.length === 0 ? (
-            <div className="rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-              <p className="text-sm font-medium text-gray-700">Nenhum acompanhamento pendente.</p>
-              <p className="mt-1 text-sm text-gray-400">
+            <div className="rounded-xl border border-outline bg-surface-container p-8 text-center shadow-card">
+              <p className="text-sm font-medium text-on-surface">Nenhum acompanhamento pendente.</p>
+              <p className="mt-1 text-sm text-on-surface-muted">
                 Crie acompanhamentos a partir da página de um lead.
               </p>
             </div>
@@ -64,18 +66,18 @@ export default async function FollowupsPage() {
                 return (
                   <div
                     key={followup.id}
-                    className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                    className="rounded-xl border border-outline bg-surface-container p-4 shadow-card"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <Link
                           href={leadHref}
-                          className="text-xs font-medium text-blue-600 hover:underline"
+                          className="text-xs font-medium text-primary hover:underline"
                         >
                           {leadName}
                         </Link>
                         <div className="mt-1 flex items-center gap-1.5">
-                          <p className="truncate text-sm font-medium text-gray-800">
+                          <p className="truncate text-sm font-medium text-on-surface">
                             {followup.title}
                           </p>
                           {followup.type === 'no_reply' ? (
@@ -89,18 +91,16 @@ export default async function FollowupsPage() {
                               </span>
                             )
                           ) : (
-                            <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+                            <span className="shrink-0 rounded-full bg-surface-low px-2 py-0.5 text-xs text-on-surface-muted">
                               Manual
                             </span>
                           )}
                         </div>
-                        <p
-                          className={`mt-0.5 text-xs ${overdue ? 'font-medium text-red-500' : 'text-gray-500'}`}
-                        >
+                        <p className={`mt-0.5 text-xs ${overdue ? 'font-medium text-red-500' : 'text-on-surface-muted'}`}>
                           {overdue ? 'Atrasado · ' : ''}{formatDueAt(followup.due_at)}
                         </p>
                         {followup.notes && (
-                          <p className="mt-1 text-xs text-gray-500">{followup.notes}</p>
+                          <p className="mt-1 text-xs text-on-surface-muted">{followup.notes}</p>
                         )}
                       </div>
 
@@ -114,7 +114,7 @@ export default async function FollowupsPage() {
                       >
                         <button
                           type="submit"
-                          className="shrink-0 cursor-pointer rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:border-green-500 hover:bg-green-50 hover:text-green-700"
+                          className="shrink-0 cursor-pointer rounded-lg border border-outline px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700"
                         >
                           Concluir
                         </button>
@@ -126,7 +126,7 @@ export default async function FollowupsPage() {
             </div>
           )}
         </div>
-      </main>
-    </>
+      </div>
+    </main>
   )
 }

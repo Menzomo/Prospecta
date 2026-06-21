@@ -64,14 +64,25 @@ export async function getPendingFollowupsCount(
   supabase: SupabaseClient<Database>,
   userId: string
 ): Promise<number> {
-  const { count, error } = await supabase
+  const now = new Date().toISOString()
+  const { data, error } = await supabase
     .from('followups')
-    .select('*', { count: 'exact', head: true })
+    .select('id, type, created_at, lead_id, user_lead_id, leads(last_reply_at)')
     .eq('user_id', userId)
     .eq('status', 'pending')
+    .or(`type.neq.no_reply,due_at.lte.${now}`)
 
-  if (error) return 0
-  return count ?? 0
+  if (error || !data) return 0
+
+  // Mirror the JS filter from getPendingFollowupsByUserId:
+  // hide no_reply when the lead replied after the followup was created
+  return (data as any[]).filter((f) => {
+    if (f.type !== 'no_reply') return true
+    if (f.user_lead_id && !f.lead_id) return true
+    const lastReplyAt = f.leads?.last_reply_at
+    if (!lastReplyAt) return true
+    return new Date(lastReplyAt) <= new Date(f.created_at)
+  }).length
 }
 
 export async function getInterestedLeadsCount(

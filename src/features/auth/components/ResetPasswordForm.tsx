@@ -27,7 +27,7 @@ export function ResetPasswordForm() {
   return (
     <form action={formAction} className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">
-        <label htmlFor="password" className="text-sm font-medium text-gray-700">
+        <label htmlFor="password" className="text-sm font-medium text-on-surface">
           Nova senha
         </label>
         <div className="relative">
@@ -38,12 +38,12 @@ export function ResetPasswordForm() {
             placeholder="Mínimo 6 caracteres"
             autoComplete="new-password"
             required
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-10 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="w-full rounded-lg border border-outline bg-surface-container px-3 py-2 pr-10 text-sm text-on-surface placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary"
           />
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
-            className="absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3 text-gray-400 hover:text-gray-600"
+            className="absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3 text-on-surface-muted hover:text-on-surface"
             tabIndex={-1}
             aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
           >
@@ -53,7 +53,7 @@ export function ResetPasswordForm() {
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="confirm" className="text-sm font-medium text-gray-700">
+        <label htmlFor="confirm" className="text-sm font-medium text-on-surface">
           Confirmar nova senha
         </label>
         <div className="relative">
@@ -64,12 +64,12 @@ export function ResetPasswordForm() {
             placeholder="Repita a senha"
             autoComplete="new-password"
             required
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pr-10 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="w-full rounded-lg border border-outline bg-surface-container px-3 py-2 pr-10 text-sm text-on-surface placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary"
           />
           <button
             type="button"
             onClick={() => setShowConfirm((v) => !v)}
-            className="absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3 text-gray-400 hover:text-gray-600"
+            className="absolute inset-y-0 right-0 flex cursor-pointer items-center pr-3 text-on-surface-muted hover:text-on-surface"
             tabIndex={-1}
             aria-label={showConfirm ? 'Ocultar confirmação' : 'Mostrar confirmação'}
           >
@@ -85,7 +85,7 @@ export function ResetPasswordForm() {
       <button
         type="submit"
         disabled={pending}
-        className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? 'Salvando...' : 'Redefinir senha'}
       </button>

@@ -132,16 +132,16 @@ export function SearchForm({ categories, onConfirmed, lockedCity, betaLimit, ava
       {/* Search form — always visible */}
       <form
         onSubmit={handleSearch}
-        className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
+        className="flex flex-col gap-4 rounded-xl border border-outline bg-surface-container p-6 shadow-card"
       >
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700">
+          <label className="text-sm font-medium text-on-surface">
             Categoria <span className="text-red-500">*</span>
           </label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="rounded-lg border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface [-webkit-text-fill-color:#191b23] outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             required
           >
             <option value="">Selecione uma categoria</option>
@@ -154,7 +154,7 @@ export function SearchForm({ categories, onConfirmed, lockedCity, betaLimit, ava
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700">
+          <label className="text-sm font-medium text-on-surface">
             Cidade <span className="text-red-500">*</span>
           </label>
           {lockedCity ? (
@@ -163,9 +163,9 @@ export function SearchForm({ categories, onConfirmed, lockedCity, betaLimit, ava
                 type="text"
                 value={lockedCity.name}
                 readOnly
-                className="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500 [-webkit-text-fill-color:#6b7280]"
+                className="w-full cursor-not-allowed rounded-lg border border-outline bg-surface-low px-3 py-2 text-sm text-on-surface-muted [-webkit-text-fill-color:#424654]"
               />
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-on-surface-muted">
                 Nesta versão beta, começamos com leads disponíveis em Caxias do Sul.
               </p>
             </>
@@ -178,7 +178,7 @@ export function SearchForm({ categories, onConfirmed, lockedCity, betaLimit, ava
                 const rawState = chosen?.state ?? ''
                 setSelectedState(rawState.length === 2 ? rawState : '')
               }}
-              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="rounded-lg border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface [-webkit-text-fill-color:#191b23] outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               required
             >
               <option value="">Selecione uma cidade</option>
@@ -199,7 +199,7 @@ export function SearchForm({ categories, onConfirmed, lockedCity, betaLimit, ava
                 setSelectedState('')
               }}
               placeholder="Digite para buscar a cidade..."
-              inputClassName="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              inputClassName="w-full rounded-lg border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface [-webkit-text-fill-color:#191b23] placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             />
           )}
         </div>
@@ -211,7 +211,7 @@ export function SearchForm({ categories, onConfirmed, lockedCity, betaLimit, ava
         <button
           type="submit"
           disabled={!canSearch}
-          className="cursor-pointer rounded-lg bg-blue-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed"
+          className="cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed"
         >
           {loading ? 'Buscando...' : 'Buscar leads'}
         </button>
@@ -219,8 +219,8 @@ export function SearchForm({ categories, onConfirmed, lockedCity, betaLimit, ava
 
       {/* Loading spinner */}
       {loading && (
-        <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm text-center">
-          <p className="text-sm text-gray-500">Buscando leads disponíveis...</p>
+        <div className="rounded-xl border border-outline bg-surface-container p-8 shadow-card text-center">
+          <p className="text-sm text-on-surface-muted">Buscando leads disponíveis...</p>
         </div>
       )}
 
@@ -263,8 +263,8 @@ export function SearchForm({ categories, onConfirmed, lockedCity, betaLimit, ava
 
       {/* Empty search result */}
       {!loading && leads.length === 0 && searchMessage && confirmResult === null && (
-        <div className="rounded-xl border border-gray-200 bg-white p-8 shadow-sm text-center">
-          <p className="text-sm text-gray-500">{searchMessage}</p>
+        <div className="rounded-xl border border-outline bg-surface-container p-8 shadow-card text-center">
+          <p className="text-sm text-on-surface-muted">{searchMessage}</p>
         </div>
       )}
 
@@ -272,32 +272,32 @@ export function SearchForm({ categories, onConfirmed, lockedCity, betaLimit, ava
       {!loading && leads.length > 0 && (
         <div className="flex flex-col gap-4">
           {/* Stats + selection controls */}
-          <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
+          <div className="flex items-center justify-between rounded-xl border border-outline bg-surface-container px-5 py-4 shadow-card">
             <div className="flex gap-6">
               <div>
-                <p className="text-xl font-bold text-gray-900">{leads.length}</p>
-                <p className="text-xs text-gray-500">disponíveis</p>
+                <p className="text-xl font-bold text-on-surface">{leads.length}</p>
+                <p className="text-xs text-on-surface-muted">disponíveis</p>
               </div>
               <div>
-                <p className="text-xl font-bold text-blue-600">{selectedIds.size}</p>
-                <p className="text-xs text-gray-500">selecionados</p>
+                <p className="text-xl font-bold text-primary">{selectedIds.size}</p>
+                <p className="text-xs text-on-surface-muted">selecionados</p>
               </div>
               {isUnlimited ? (
                 <div>
                   <p className="text-xl font-bold text-purple-600">∞</p>
-                  <p className="text-xs text-gray-500">sem limite</p>
+                  <p className="text-xs text-on-surface-muted">sem limite</p>
                 </div>
               ) : betaLimit ? (
                 <div>
-                  <p className="text-xl font-bold text-gray-900">
+                  <p className="text-xl font-bold text-on-surface">
                     {Math.min(monthlyRemaining, betaLimit)}
                   </p>
-                  <p className="text-xs text-gray-500">leads no beta</p>
+                  <p className="text-xs text-on-surface-muted">leads no beta</p>
                 </div>
               ) : (
                 <div>
-                  <p className="text-xl font-bold text-gray-900">{monthlyRemaining}</p>
-                  <p className="text-xs text-gray-500">créditos/mês</p>
+                  <p className="text-xl font-bold text-on-surface">{monthlyRemaining}</p>
+                  <p className="text-xs text-on-surface-muted">créditos/mês</p>
                 </div>
               )}
             </div>
@@ -305,15 +305,15 @@ export function SearchForm({ categories, onConfirmed, lockedCity, betaLimit, ava
               <button
                 type="button"
                 onClick={selectAll}
-                className="cursor-pointer text-blue-600 hover:underline"
+                className="cursor-pointer text-primary hover:underline"
               >
                 Selecionar todos
               </button>
-              <span className="text-gray-300">|</span>
+              <span className="text-outline">|</span>
               <button
                 type="button"
                 onClick={clearSelection}
-                className="cursor-pointer text-gray-400 hover:underline"
+                className="cursor-pointer text-on-surface-muted hover:underline"
               >
                 Limpar
               </button>
@@ -345,7 +345,7 @@ export function SearchForm({ categories, onConfirmed, lockedCity, betaLimit, ava
                   ? 'Selecione ao menos 1 lead para adicionar'
                   : `Adicionar ${selectedIds.size} ${selectedIds.size === 1 ? 'lead' : 'leads'} em Leads`}
             </button>
-            <p className="text-center text-xs text-gray-400">
+            <p className="text-center text-xs text-on-surface-muted">
               Leads não selecionados continuarão disponíveis para buscas futuras.
             </p>
           </div>

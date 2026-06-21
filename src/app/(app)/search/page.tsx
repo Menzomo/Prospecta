@@ -6,6 +6,7 @@ import {
 } from '@/repositories/leadCategoryRepository'
 import { getAvailableCitiesForUser } from '@/repositories/globalLeadRepository'
 import { SearchForm } from '@/features/search/components/SearchForm'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 export default async function SearchPage() {
   const supabase = await createClient()
@@ -31,27 +32,18 @@ export default async function SearchPage() {
   ])
 
   return (
-    <>
-      <header className="border-b border-gray-200 bg-white px-6 py-4">
-        <h1 className="text-lg font-semibold text-gray-900">Buscar Leads</h1>
-      </header>
-
-      <main className="flex-1 p-6">
-        <div className="mx-auto max-w-2xl">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Buscar empresas</h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Selecione categoria e cidade, veja os leads disponíveis e escolha quais adicionar em Meus Leads.
-            </p>
-          </div>
-
-          <SearchForm
-            categories={categories}
-            availableCities={availableCities ?? undefined}
-            isAdmin={isAdmin}
-          />
-        </div>
-      </main>
-    </>
+    <main className="p-6">
+      <PageHeader
+        title="Buscar Leads"
+        subtitle="Selecione categoria e cidade para descobrir empresas disponíveis"
+      />
+      <div className="mx-auto max-w-2xl">
+        <SearchForm
+          categories={categories}
+          availableCities={availableCities ?? undefined}
+          isAdmin={isAdmin}
+        />
+      </div>
+    </main>
   )
 }

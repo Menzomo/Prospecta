@@ -5,25 +5,26 @@ import { getLeadsByUserId } from '@/repositories/leadRepository'
 import { getUserLeadsWithGlobalData } from '@/repositories/userLeadRepository'
 import { listLeadCategories } from '@/repositories/leadCategoryRepository'
 import { hideLeadAction, hideUserLeadAction } from '@/features/leads/actions'
-import { LEAD_STATUS_LABELS } from '@/types/leads'
 import type { LeadStatus } from '@/types/leads'
 import type { LeadCategory } from '@/types/globalLeads'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { LeadsGrid } from '@/features/leads/components/LeadsGrid'
+import type { LeadCardData } from '@/features/leads/components/LeadsGrid'
 
-const STATUS_COLORS: Record<LeadStatus, string> = {
-  novo: 'bg-blue-100 text-blue-700',
-  contatado: 'bg-indigo-100 text-indigo-700',
-  interessado: 'bg-green-100 text-green-700',
-  negociacao: 'bg-yellow-100 text-yellow-700',
-  responder_depois: 'bg-orange-100 text-orange-700',
-  sem_interesse: 'bg-gray-100 text-gray-600',
-  sem_resposta: 'bg-red-100 text-red-700',
-  convertido: 'bg-emerald-100 text-emerald-700',
+type SearchParams = Promise<{ category?: string; city?: string; search?: string }>
+
+function IconSearch() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.35-4.35" />
+    </svg>
+  )
 }
 
-type SearchParams = Promise<{ category?: string; city?: string }>
 
 export default async function LeadsPage({ searchParams }: { searchParams: SearchParams }) {
-  const { category: categoryFilter = 'all', city: cityFilter = '' } = await searchParams
+  const { category: categoryFilter = 'all', city: cityFilter = '', search: searchFilter = '' } = await searchParams
 
   const supabase = await createClient()
   const {
@@ -38,23 +39,22 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
     listLeadCategories(supabase),
   ])
 
-  // Build category lookup maps
   const categoryById = new Map<string, LeadCategory>(categories.map((c) => [c.id, c]))
   const categoryBySlug = new Map<string, LeadCategory>(categories.map((c) => [c.slug, c]))
 
-  // Only show categories the user actually has leads in (avoids empty filter options)
   const usedCategoryIds = new Set(searchLeads.map((l) => l.category_id).filter(Boolean))
   const categoriesInUse = categories.filter((c) => usedCategoryIds.has(c.id))
 
-  // Resolve active category filter
   const activeCategoryId =
     categoryFilter === 'all' ? null : (categoryBySlug.get(categoryFilter)?.id ?? null)
 
-  // Filter and enrich search leads
+  const nameQuery = searchFilter.toLowerCase()
+
   const filteredSearchLeads = searchLeads
     .filter((l) => {
       if (activeCategoryId !== null && l.category_id !== activeCategoryId) return false
       if (cityFilter && !l.city?.toLowerCase().includes(cityFilter.toLowerCase())) return false
+      if (nameQuery && !l.company_name.toLowerCase().includes(nameQuery)) return false
       return true
     })
     .map((l) => ({
@@ -62,11 +62,11 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
       category_name: l.category_id ? (categoryById.get(l.category_id)?.name ?? null) : null,
     }))
 
-  // Filter manual leads (no category — only show under "Todos")
   const filteredManualLeads =
     activeCategoryId === null
       ? manualLeads.filter((l) => {
           if (cityFilter && !l.city?.toLowerCase().includes(cityFilter.toLowerCase())) return false
+          if (nameQuery && !l.company_name.toLowerCase().includes(nameQuery)) return false
           return true
         })
       : []
@@ -74,178 +74,121 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
   const totalCount = filteredSearchLeads.length + filteredManualLeads.length
 
   return (
-    <>
-      <header className="border-b border-gray-200 bg-white px-6 py-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-gray-900">Leads</h1>
+    <main className="flex flex-col gap-5 p-6">
+      <PageHeader
+        title="Leads"
+        subtitle="Gerencie sua base de prospecção"
+        actions={
           <Link
             href="/leads/new"
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark active:scale-95"
           >
             + Adicionar lead
           </Link>
-        </div>
-      </header>
+        }
+      />
 
-      <main className="flex flex-1 flex-col gap-4 p-6">
-        {/* Filters */}
-        <form method="GET" action="/leads" className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-          <select
-            key={categoryFilter}
-            name="category"
-            defaultValue={categoryFilter}
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:w-auto"
-          >
-            <option value="all">Todos os nichos</option>
-            {categoriesInUse.map((cat) => (
-              <option key={cat.id} value={cat.slug}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
+      {/* Filters */}
+      <form method="GET" action="/leads" className="flex flex-wrap items-center gap-2">
+        {/* Preserve active name search when applying category/city filters */}
+        {searchFilter && <input type="hidden" name="search" value={searchFilter} />}
 
+        <select
+          key={categoryFilter}
+          name="category"
+          defaultValue={categoryFilter}
+          className="rounded-lg border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+        >
+          <option value="all">Todos os nichos</option>
+          {categoriesInUse.map((cat) => (
+            <option key={cat.id} value={cat.slug}>{cat.name}</option>
+          ))}
+        </select>
+
+        <div className="relative">
+          <span className="pointer-events-none absolute inset-y-0 left-2.5 flex items-center text-on-surface-muted">
+            <IconSearch />
+          </span>
           <input
             key={cityFilter}
             type="text"
             name="city"
             defaultValue={cityFilter}
             placeholder="Filtrar por cidade..."
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:w-auto"
+            className="rounded-lg border border-outline bg-surface-container py-2 pl-8 pr-3 text-sm text-on-surface placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
+        </div>
 
-          <button
-            type="submit"
-            className="cursor-pointer rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
-          >
-            Filtrar
-          </button>
+        <button
+          type="submit"
+          className="cursor-pointer rounded-lg bg-surface-low border border-outline px-4 py-2 text-sm font-medium text-on-surface transition-colors hover:bg-outline"
+        >
+          Filtrar
+        </button>
 
-          {(categoryFilter !== 'all' || cityFilter) && (
-            <Link
-              href="/leads"
-              className="text-center text-sm text-gray-400 hover:text-gray-600 hover:underline sm:text-left"
-            >
-              Limpar filtros
-            </Link>
-          )}
-        </form>
-
-        {/* Cards or empty state */}
-        {totalCount === 0 ? (
-          <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <p className="text-sm text-gray-500">
-              {categoryFilter !== 'all' || cityFilter
-                ? 'Nenhum lead encontrado para os filtros selecionados.'
-                : 'Nenhum lead cadastrado ainda.'}
-            </p>
-            {!categoryFilter || categoryFilter === 'all' ? (
-              <Link href="/leads/new" className="mt-3 text-sm text-blue-600 hover:underline">
-                Adicionar seu primeiro lead
-              </Link>
-            ) : null}
-          </div>
-        ) : (
-          <>
-            <p className="text-xs text-gray-400">
-              {totalCount} {totalCount === 1 ? 'lead' : 'leads'}
-            </p>
-            <div className="max-h-[65vh] overflow-y-auto">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredSearchLeads.map((lead) => {
-                  const status = lead.status as LeadStatus
-                  return (
-                    <div
-                      key={`search-${lead.id}`}
-                      className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="font-semibold text-gray-900">{lead.company_name}</p>
-                        <span
-                          className={`shrink-0 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_COLORS[status] ?? 'bg-gray-100 text-gray-600'}`}
-                        >
-                          {LEAD_STATUS_LABELS[status] ?? lead.status}
-                        </span>
-                      </div>
-                      <div className="mt-1.5 space-y-0.5 text-sm text-gray-500">
-                        <p>{lead.category_name ?? <span className="text-gray-300">Sem categoria</span>}</p>
-                        <p className="break-all">{lead.email ?? '—'}</p>
-                        <p>{lead.city ?? '—'}</p>
-                      </div>
-                      <div className="mt-3 flex items-center gap-2">
-                        <Link
-                          href={`/leads/global/${lead.id}/send`}
-                          className="flex-1 rounded-md bg-blue-50 px-3 py-2 text-center text-xs font-medium text-blue-700 hover:bg-blue-100"
-                        >
-                          Enviar email
-                        </Link>
-                        <Link
-                          href={`/leads/global/${lead.id}`}
-                          className="flex-1 rounded-md bg-gray-100 px-3 py-2 text-center text-xs font-medium text-gray-600 hover:bg-gray-200"
-                        >
-                          Detalhes
-                        </Link>
-                        <form action={hideUserLeadAction.bind(null, lead.id)}>
-                          <button
-                            type="submit"
-                            className="cursor-pointer rounded px-3 py-2 text-xs text-gray-400 hover:bg-red-50 hover:text-red-500"
-                          >
-                            Ocultar
-                          </button>
-                        </form>
-                      </div>
-                    </div>
-                  )
-                })}
-                {filteredManualLeads.map((lead) => {
-                  const status = lead.status as LeadStatus
-                  return (
-                    <div
-                      key={`manual-${lead.id}`}
-                      className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="font-semibold text-gray-900">{lead.company_name}</p>
-                        <span
-                          className={`shrink-0 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_COLORS[status] ?? 'bg-gray-100 text-gray-600'}`}
-                        >
-                          {LEAD_STATUS_LABELS[status] ?? lead.status}
-                        </span>
-                      </div>
-                      <div className="mt-1.5 space-y-0.5 text-sm text-gray-500">
-                        <p className="text-gray-300">Sem categoria</p>
-                        <p className="break-all">{lead.email ?? '—'}</p>
-                        <p>{lead.city ?? '—'}</p>
-                      </div>
-                      <div className="mt-3 flex items-center gap-2">
-                        <Link
-                          href={`/leads/${lead.id}/send`}
-                          className="flex-1 rounded-md bg-blue-50 px-3 py-2 text-center text-xs font-medium text-blue-700 hover:bg-blue-100"
-                        >
-                          Enviar email
-                        </Link>
-                        <Link
-                          href={`/leads/${lead.id}`}
-                          className="flex-1 rounded-md bg-gray-100 px-3 py-2 text-center text-xs font-medium text-gray-600 hover:bg-gray-200"
-                        >
-                          Detalhes
-                        </Link>
-                        <form action={hideLeadAction.bind(null, lead.id)}>
-                          <button
-                            type="submit"
-                            className="cursor-pointer rounded px-3 py-2 text-xs text-gray-400 hover:bg-red-50 hover:text-red-500"
-                          >
-                            Ocultar
-                          </button>
-                        </form>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          </>
+        {searchFilter && (
+          <span className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+            &ldquo;{searchFilter}&rdquo;
+            <Link href="/leads" aria-label="Limpar busca" className="hover:text-primary-dark">✕</Link>
+          </span>
         )}
-      </main>
-    </>
+
+        {(categoryFilter !== 'all' || cityFilter) && (
+          <Link
+            href={searchFilter ? `/leads?search=${encodeURIComponent(searchFilter)}` : '/leads'}
+            className="text-sm text-on-surface-muted hover:text-on-surface hover:underline"
+          >
+            Limpar filtros
+          </Link>
+        )}
+      </form>
+
+      {totalCount === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center py-16 text-center">
+          <p className="text-sm text-on-surface-muted">
+            {categoryFilter !== 'all' || cityFilter
+              ? 'Nenhum lead encontrado para os filtros selecionados.'
+              : 'Nenhum lead cadastrado ainda.'}
+          </p>
+          {!categoryFilter || categoryFilter === 'all' ? (
+            <Link href="/leads/new" className="mt-3 text-sm text-primary hover:underline">
+              Adicionar seu primeiro lead
+            </Link>
+          ) : null}
+        </div>
+      ) : (
+        <>
+          <p className="text-xs text-on-surface-muted">
+            {totalCount} {totalCount === 1 ? 'lead' : 'leads'}
+          </p>
+          <LeadsGrid
+            leads={[
+              ...filteredSearchLeads.map((lead): LeadCardData => ({
+                key: `search-${lead.id}`,
+                company_name: lead.company_name,
+                email: lead.email ?? null,
+                city: lead.city ?? null,
+                category_name: lead.category_name ?? null,
+                status: lead.status as LeadStatus,
+                leadHref: `/leads/global/${lead.id}`,
+                sendHref: `/leads/global/${lead.id}/send`,
+                hideAction: hideUserLeadAction.bind(null, lead.id),
+              })),
+              ...filteredManualLeads.map((lead): LeadCardData => ({
+                key: `manual-${lead.id}`,
+                company_name: lead.company_name,
+                email: lead.email ?? null,
+                city: lead.city ?? null,
+                category_name: null,
+                status: lead.status as LeadStatus,
+                leadHref: `/leads/${lead.id}`,
+                sendHref: `/leads/${lead.id}/send`,
+                hideAction: hideLeadAction.bind(null, lead.id),
+              })),
+            ]}
+          />
+        </>
+      )}
+    </main>
   )
 }

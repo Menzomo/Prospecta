@@ -21,13 +21,13 @@ type RecentLead = {
 const TOTAL_STEPS = 9
 
 const INPUT_CLASS =
-  'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:py-2.5'
+  'w-full rounded-lg border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface [-webkit-text-fill-color:#191b23] placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary sm:py-2.5'
 
 const BTN_PRIMARY =
-  'w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:py-3'
+  'w-full cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark sm:py-3'
 
 const BTN_SECONDARY =
-  'w-full cursor-pointer rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 sm:py-3'
+  'w-full cursor-pointer rounded-lg border border-outline px-4 py-2 text-sm font-medium text-on-surface-muted transition-colors hover:bg-surface-low sm:py-3'
 
 interface Props {
   initialStep?: number
@@ -106,10 +106,10 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
     !(step === 6 && totalLeadsAdded < MIN_LEADS)
 
   const NAV_BTN =
-    'flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-30 disabled:shadow-none sm:h-9 sm:w-9'
+    'flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-outline bg-surface-container text-on-surface-muted shadow-card transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary disabled:cursor-not-allowed disabled:opacity-30 disabled:shadow-none sm:h-9 sm:w-9'
 
   return (
-    <div className="flex min-h-screen items-start justify-center bg-gray-50 px-3 py-3 sm:px-4 sm:py-10">
+    <div className="flex min-h-screen items-start justify-center bg-surface px-3 py-3 sm:px-4 sm:py-10">
       <div className={`w-full ${containerWidth}`}>
 
         {/* Progress bar */}
@@ -126,9 +126,9 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <span className="text-xs text-gray-500">Etapa {step} de {TOTAL_STEPS}</span>
+            <span className="text-xs text-on-surface-muted">Etapa {step} de {TOTAL_STEPS}</span>
             <div className="flex-1" />
-            <span className="text-xs text-gray-500">{progressPct}%</span>
+            <span className="text-xs text-on-surface-muted">{progressPct}%</span>
             <button
               type="button"
               onClick={next}
@@ -141,9 +141,9 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
               </svg>
             </button>
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-low">
             <div
-              className="h-1.5 rounded-full bg-blue-600 transition-all duration-500"
+              className="h-1.5 rounded-full bg-primary transition-all duration-500"
               style={{ width: `${progressPct}%` }}
             />
           </div>
@@ -151,11 +151,11 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
 
         {/* ── Etapa 1 — Boas-vindas ── */}
         {step === 1 && (
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-8">
+          <div className="rounded-xl border border-outline bg-surface-container p-4 shadow-card sm:rounded-2xl sm:p-8">
             <div className="mb-4 text-center sm:mb-8">
               <p className="mb-1 text-3xl sm:mb-3 sm:text-5xl">🚀</p>
-              <h1 className="text-base font-bold text-gray-900 sm:text-2xl">Bem-vindo ao Prospecta</h1>
-              <p className="mt-1 text-xs leading-snug text-gray-500 sm:mt-2 sm:text-sm sm:leading-relaxed">
+              <h1 className="text-base font-bold text-on-surface font-[--font-heading] sm:text-2xl">Bem-vindo ao Prospecta</h1>
+              <p className="mt-1 text-xs leading-snug text-on-surface-muted sm:mt-2 sm:text-sm sm:leading-relaxed">
                 Encontre empresas, envie emails e acompanhe suas prospecções em um único lugar.
               </p>
             </div>
@@ -165,16 +165,16 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
 
         {/* ── Etapa 2 — Empresa ── */}
         {step === 2 && (
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-8">
+          <div className="rounded-xl border border-outline bg-surface-container p-4 shadow-card sm:rounded-2xl sm:p-8">
             <div className="mb-3 sm:mb-6">
-              <h1 className="text-base font-bold text-gray-900 sm:text-xl">Configure sua empresa</h1>
-              <p className="mt-0.5 text-xs text-gray-500 sm:mt-1 sm:text-sm">
+              <h1 className="text-base font-bold text-on-surface font-[--font-heading] sm:text-xl">Configure sua empresa</h1>
+              <p className="mt-0.5 text-xs text-on-surface-muted sm:mt-1 sm:text-sm">
                 Essas informações serão usadas nos seus emails de prospecção.
               </p>
             </div>
             <form action={formAction} className="flex flex-col gap-2 sm:gap-4">
               <div className="flex flex-col gap-0.5 sm:gap-1">
-                <label htmlFor="company_name" className="text-xs font-medium text-gray-700 sm:text-sm">
+                <label htmlFor="company_name" className="text-xs font-medium text-on-surface sm:text-sm">
                   Nome da empresa <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -190,7 +190,7 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
               </div>
 
               <div className="flex flex-col gap-0.5 sm:gap-1">
-                <label htmlFor="website" className="text-xs font-medium text-gray-700 sm:text-sm">Website</label>
+                <label htmlFor="website" className="text-xs font-medium text-on-surface sm:text-sm">Website</label>
                 <input
                   id="website"
                   name="website"
@@ -202,17 +202,17 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
 
               <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 <div className="flex flex-col gap-0.5 sm:gap-1">
-                  <label htmlFor="city" className="text-xs font-medium text-gray-700 sm:text-sm">Cidade</label>
+                  <label htmlFor="city" className="text-xs font-medium text-on-surface sm:text-sm">Cidade</label>
                   <input id="city" name="city" type="text" placeholder="Ex: São Paulo" className={INPUT_CLASS} />
                 </div>
                 <div className="flex flex-col gap-0.5 sm:gap-1">
-                  <label htmlFor="phone" className="text-xs font-medium text-gray-700 sm:text-sm">Telefone</label>
+                  <label htmlFor="phone" className="text-xs font-medium text-on-surface sm:text-sm">Telefone</label>
                   <input id="phone" name="phone" type="tel" placeholder="(11) 99999-9999" className={INPUT_CLASS} />
                 </div>
               </div>
 
               <div className="flex flex-col gap-0.5 sm:gap-1">
-                <label htmlFor="commercial_email" className="text-xs font-medium text-gray-700 sm:text-sm">Email comercial</label>
+                <label htmlFor="commercial_email" className="text-xs font-medium text-on-surface sm:text-sm">Email comercial</label>
                 <input
                   id="commercial_email"
                   name="commercial_email"
@@ -226,13 +226,13 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
               </div>
 
               <div className="flex flex-col gap-0.5 sm:gap-1">
-                <label htmlFor="description" className="text-xs font-medium text-gray-700 sm:text-sm">Descrição</label>
+                <label htmlFor="description" className="text-xs font-medium text-on-surface sm:text-sm">Descrição</label>
                 <textarea
                   id="description"
                   name="description"
                   placeholder="O que sua empresa faz?"
                   rows={2}
-                  className="w-full resize-none rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:py-2.5"
+                  className="w-full resize-none rounded-lg border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface [-webkit-text-fill-color:#191b23] placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary sm:py-2.5"
                 />
               </div>
 
@@ -243,7 +243,7 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
               <button
                 type="submit"
                 disabled={pending}
-                className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 sm:py-3"
+                className="cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60 sm:py-3"
               >
                 {pending ? 'Salvando...' : 'Continuar'}
               </button>
@@ -253,11 +253,11 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
 
         {/* ── Etapa 3 — Nicho e Cidade ── */}
         {step === 3 && (
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-8">
+          <div className="rounded-xl border border-outline bg-surface-container p-4 shadow-card sm:rounded-2xl sm:p-8">
             <div className="mb-4 text-center sm:mb-8">
               <p className="mb-1 text-2xl sm:mb-3 sm:text-4xl">🎯</p>
-              <h1 className="text-base font-bold text-gray-900 sm:text-xl">Nicho e Cidade</h1>
-              <p className="mt-1 text-xs leading-snug text-gray-500 sm:mt-3 sm:text-sm sm:leading-relaxed">
+              <h1 className="text-base font-bold text-on-surface font-[--font-heading] sm:text-xl">Nicho e Cidade</h1>
+              <p className="mt-1 text-xs leading-snug text-on-surface-muted sm:mt-3 sm:text-sm sm:leading-relaxed">
                 No Prospecta você encontra leads escolhendo um nicho e uma cidade — empresas do segmento e região certos para o seu negócio.
               </p>
             </div>
@@ -267,28 +267,28 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
 
         {/* ── Etapa 4 — Plano Beta ── */}
         {step === 4 && (
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-8">
+          <div className="rounded-xl border border-outline bg-surface-container p-4 shadow-card sm:rounded-2xl sm:p-8">
             <div className="mb-3 text-center sm:mb-6">
               <p className="mb-1 text-2xl sm:mb-3 sm:text-4xl">🎁</p>
-              <h1 className="text-base font-bold text-gray-900 sm:text-xl">Seu acesso Beta</h1>
-              <p className="mt-0.5 text-xs text-gray-500 sm:mt-1 sm:text-sm">Você recebeu acesso ao Prospecta Beta.</p>
+              <h1 className="text-base font-bold text-on-surface font-[--font-heading] sm:text-xl">Seu acesso Beta</h1>
+              <p className="mt-0.5 text-xs text-on-surface-muted sm:mt-1 sm:text-sm">Você recebeu acesso ao Prospecta Beta.</p>
             </div>
-            <div className="mb-2 rounded-xl border border-blue-100 bg-blue-50 p-3 sm:mb-4 sm:p-4">
-              <p className="mb-1.5 text-xs font-semibold text-blue-800 sm:text-sm">Durante o período de testes você possui:</p>
-              <ul className="space-y-1 text-xs text-blue-700 sm:text-sm">
+            <div className="mb-2 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:mb-4 sm:p-4">
+              <p className="mb-1.5 text-xs font-semibold text-primary sm:text-sm">Durante o período de testes você possui:</p>
+              <ul className="space-y-1 text-xs text-primary/80 sm:text-sm">
                 <li>✓ 20 leads gratuitos</li>
                 <li>✓ Templates de email</li>
                 <li>✓ Gestão de leads</li>
                 <li>✓ Acompanhamentos</li>
               </ul>
             </div>
-            <div className="mb-3 rounded-xl border border-gray-200 p-3 sm:mb-6 sm:p-4">
-              <p className="mb-0.5 text-xs font-medium uppercase tracking-wide text-gray-400">Plano futuro</p>
-              <p className="text-xs font-semibold text-gray-900 sm:text-sm">Prospecta Starter</p>
-              <p className="text-base font-bold text-gray-900 sm:text-lg">
-                R$ 49,90<span className="text-xs font-normal text-gray-500 sm:text-sm">/mês</span>
+            <div className="mb-3 rounded-xl border border-outline p-3 sm:mb-6 sm:p-4">
+              <p className="mb-0.5 text-xs font-medium uppercase tracking-wide text-on-surface-muted">Plano futuro</p>
+              <p className="text-xs font-semibold text-on-surface sm:text-sm">Prospecta Starter</p>
+              <p className="text-base font-bold text-on-surface sm:text-lg">
+                R$ 49,90<span className="text-xs font-normal text-on-surface-muted sm:text-sm">/mês</span>
               </p>
-              <p className="text-xs text-gray-500">200 leads por mês</p>
+              <p className="text-xs text-on-surface-muted">200 leads por mês</p>
             </div>
             <button onClick={next} className={BTN_PRIMARY}>Continuar</button>
           </div>
@@ -296,18 +296,18 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
 
         {/* ── Etapa 5 — Templates ── */}
         {step === 5 && (
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-8">
+          <div className="rounded-xl border border-outline bg-surface-container p-4 shadow-card sm:rounded-2xl sm:p-8">
             <div className="mb-4 text-center sm:mb-6">
               <p className="mb-1 text-2xl sm:mb-3 sm:text-4xl">✉️</p>
-              <h1 className="text-base font-bold text-gray-900 sm:text-xl">Templates de Email</h1>
-              <p className="mt-1 text-xs leading-snug text-gray-500 sm:mt-2 sm:text-sm sm:leading-relaxed">
+              <h1 className="text-base font-bold text-on-surface font-[--font-heading] sm:text-xl">Templates de Email</h1>
+              <p className="mt-1 text-xs leading-snug text-on-surface-muted sm:mt-2 sm:text-sm sm:leading-relaxed">
                 Crie modelos reutilizáveis para enviar emails mais rápido. Crie agora ou faça depois.
               </p>
             </div>
             <div className="flex flex-col gap-2 sm:gap-3">
               <Link
                 href="/templates/new?returnTo=/onboarding&step=6"
-                className="block w-full rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:py-3"
+                className="block w-full rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-primary-dark sm:py-3"
               >
                 Criar primeiro template
               </Link>
@@ -319,9 +319,9 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
         {/* ── Etapa 6 — Buscar Leads ── */}
         {step === 6 && (
           <div>
-            <div className="mb-3 rounded-xl border border-gray-200 bg-white px-3 py-3 shadow-sm sm:mb-5 sm:rounded-2xl sm:px-6 sm:py-5">
-              <p className="text-base font-bold text-gray-900 sm:text-xl">Buscar Leads</p>
-              <p className="mt-0.5 text-xs text-gray-500 sm:mt-1 sm:text-sm">
+            <div className="mb-3 rounded-xl border border-outline bg-surface-container px-3 py-3 shadow-card sm:mb-5 sm:rounded-2xl sm:px-6 sm:py-5">
+              <p className="text-base font-bold text-on-surface font-[--font-heading] sm:text-xl">Buscar Leads</p>
+              <p className="mt-0.5 text-xs text-on-surface-muted sm:mt-1 sm:text-sm">
                 Selecione um nicho e uma cidade, busque empresas e adicione pelo menos {MIN_LEADS} leads para continuar.
               </p>
             </div>
@@ -342,7 +342,7 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
               <button
                 onClick={next}
                 disabled={totalLeadsAdded < MIN_LEADS}
-                className="w-full cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 sm:py-3"
+                className="w-full cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50 sm:py-3"
               >
                 Continuar
               </button>
@@ -352,19 +352,19 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
 
         {/* ── Etapa 7 — Leads Adicionados ── */}
         {step === 7 && (
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-8">
+          <div className="rounded-xl border border-outline bg-surface-container p-4 shadow-card sm:rounded-2xl sm:p-8">
             <div className="mb-3 sm:mb-5">
-              <p className="text-base font-bold text-gray-900 sm:text-xl">Seus Leads</p>
-              <p className="mt-0.5 text-xs text-gray-500 sm:mt-1 sm:text-sm">
+              <p className="text-base font-bold text-on-surface font-[--font-heading] sm:text-xl">Seus Leads</p>
+              <p className="mt-0.5 text-xs text-on-surface-muted sm:mt-1 sm:text-sm">
                 Esses são os leads que você adicionou. Estarão disponíveis na área de Leads.
               </p>
             </div>
 
             {loadingLeads ? (
-              <p className="py-3 text-center text-xs text-gray-400 sm:py-6 sm:text-sm">Carregando leads...</p>
+              <p className="py-3 text-center text-xs text-on-surface-muted sm:py-6 sm:text-sm">Carregando leads...</p>
             ) : recentLeads.length === 0 ? (
-              <div className="mb-3 rounded-xl border border-gray-100 bg-gray-50 p-3 text-center sm:mb-6 sm:p-6">
-                <p className="text-xs text-gray-500 sm:text-sm">
+              <div className="mb-3 rounded-xl border border-outline bg-surface-low p-3 text-center sm:mb-6 sm:p-6">
+                <p className="text-xs text-on-surface-muted sm:text-sm">
                   Nenhum lead adicionado ainda. Você pode buscar leads a qualquer momento na área de Busca.
                 </p>
               </div>
@@ -374,10 +374,10 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
                   {recentLeads.map((lead) => (
                     <div
                       key={lead.id}
-                      className="rounded-lg border border-gray-200 bg-gray-50 p-2.5 sm:rounded-xl sm:p-4"
+                      className="rounded-lg border border-outline bg-surface-low p-2.5 sm:rounded-xl sm:p-4"
                     >
-                      <p className="text-sm font-semibold text-gray-900">{lead.company_name}</p>
-                      <div className="mt-0.5 space-y-0.5 text-xs text-gray-500 sm:mt-1 sm:text-sm">
+                      <p className="text-sm font-semibold text-on-surface">{lead.company_name}</p>
+                      <div className="mt-0.5 space-y-0.5 text-xs text-on-surface-muted sm:mt-1 sm:text-sm">
                         <p className="break-all">{lead.email ?? '—'}</p>
                         <p>{lead.city ?? '—'}</p>
                       </div>
@@ -393,11 +393,11 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
 
         {/* ── Etapa 8 — Gmail ── */}
         {step === 8 && (
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-8">
+          <div className="rounded-xl border border-outline bg-surface-container p-4 shadow-card sm:rounded-2xl sm:p-8">
             <div className="mb-4 text-center sm:mb-6">
               <p className="mb-1 text-2xl sm:mb-3 sm:text-4xl">📧</p>
-              <h1 className="text-base font-bold text-gray-900 sm:text-xl">Conecte seu Gmail</h1>
-              <p className="mt-1 text-xs leading-snug text-gray-500 sm:mt-2 sm:text-sm sm:leading-relaxed">
+              <h1 className="text-base font-bold text-on-surface font-[--font-heading] sm:text-xl">Conecte seu Gmail</h1>
+              <p className="mt-1 text-xs leading-snug text-on-surface-muted sm:mt-2 sm:text-sm sm:leading-relaxed">
                 O Prospecta utiliza o Gmail para envio e acompanhamento de emails. Como estamos em fase beta, precisamos liberar sua conta antes da conexão.
               </p>
             </div>
@@ -422,7 +422,7 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
                 </div>
                 <a
                   href="/api/gmail/connect"
-                  className="block w-full rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:py-3"
+                  className="block w-full rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-primary-dark sm:py-3"
                 >
                   Conectar Gmail
                 </a>
@@ -445,7 +445,7 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
             {gmailRequestStatus === 'not_requested' && !gmailJustRequested && (
               <div className="flex flex-col gap-2 sm:gap-3">
                 <div className="flex flex-col gap-1">
-                  <label htmlFor="gmail_request" className="text-xs font-medium text-gray-700 sm:text-sm">
+                  <label htmlFor="gmail_request" className="text-xs font-medium text-on-surface sm:text-sm">
                     Gmail que deseja utilizar
                   </label>
                   <input
@@ -455,7 +455,7 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
                     value={gmailInput}
                     onChange={(e) => setGmailInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleGmailRequest()}
-                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 [-webkit-text-fill-color:#111827] placeholder:text-gray-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    className="w-full rounded-lg border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface [-webkit-text-fill-color:#191b23] placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                   />
                   {gmailRequestError && (
                     <p className="text-xs text-red-500">{gmailRequestError}</p>
@@ -465,7 +465,7 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
                   type="button"
                   onClick={handleGmailRequest}
                   disabled={gmailRequesting || !gmailInput.trim()}
-                  className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 sm:py-3"
+                  className="cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60 sm:py-3"
                 >
                   {gmailRequesting ? 'Enviando...' : 'Solicitar liberação'}
                 </button>
@@ -477,15 +477,15 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
 
         {/* ── Etapa 9 — Finalização ── */}
         {step === 9 && (
-          <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm sm:rounded-2xl sm:p-8">
+          <div className="rounded-xl border border-outline bg-surface-container p-4 text-center shadow-card sm:rounded-2xl sm:p-8">
             <p className="mb-1 text-3xl sm:mb-3 sm:text-5xl">🚀</p>
-            <h1 className="text-base font-bold text-gray-900 sm:text-2xl">Tudo pronto!</h1>
-            <p className="mt-1 mb-4 text-xs text-gray-500 sm:mt-2 sm:mb-8 sm:text-sm">
+            <h1 className="text-base font-bold text-on-surface font-[--font-heading] sm:text-2xl">Tudo pronto!</h1>
+            <p className="mt-1 mb-4 text-xs text-on-surface-muted sm:mt-2 sm:mb-8 sm:text-sm">
               Seu Prospecta está configurado e pronto para uso.
             </p>
             <Link
               href="/dashboard"
-              className="block w-full rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:py-3"
+              className="block w-full rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-primary-dark sm:py-3"
             >
               Ir para Dashboard
             </Link>
