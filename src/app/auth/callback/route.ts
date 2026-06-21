@@ -47,18 +47,28 @@ export async function GET(request: Request) {
         return response
       }
 
-      const { data: { user } } = await supabase.auth.getUser()
+      // Default to /dashboard — the page itself handles the /onboarding redirect
+      // if the user has no company profile yet.
+      let destination = '/dashboard'
 
-      if (user) {
-        await checkAndSendBetaNotification(user.id)
-
-        const company = await getCompanyProfileByUserId(supabase, user.id)
-        const destination = company ? '/dashboard' : '/onboarding'
-        const response = NextResponse.redirect(new URL(destination, origin))
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        pendingCookies.forEach(({ name, value, options }) => response.cookies.set(name, value, options as any))
-        return response
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          await checkAndSendBetaNotification(user.id)
+          const company = await getCompanyProfileByUserId(supabase, user.id)
+          if (!company) destination = '/onboarding'
+        }
+      } catch {
+        // getUser() failure must not drop the session: pendingCookies already
+        // has the auth cookies from exchangeCodeForSession — apply them below.
       }
+
+      // Always redirect with the session cookies captured during the exchange.
+      // Never fall through to /login when the exchange itself succeeded.
+      const response = NextResponse.redirect(new URL(destination, origin))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      pendingCookies.forEach(({ name, value, options }) => response.cookies.set(name, value, options as any))
+      return response
     }
   }
 
