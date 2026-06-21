@@ -36,7 +36,9 @@ export default async function SettingsPage({ searchParams }: Props) {
   const gmailRequestStatus: GmailRequestStatus =
     gmailConnection?.is_connected
       ? 'connected'
-      : (gmailRequest?.gmail_request_status as GmailRequestStatus) ?? 'not_requested'
+      : gmailConnection !== null
+        ? 'approved'  // already connected before → skip request, go straight to connect
+        : (gmailRequest?.gmail_request_status as GmailRequestStatus) ?? 'not_requested'
 
   return (
     <main className="flex flex-col gap-6 p-6">
