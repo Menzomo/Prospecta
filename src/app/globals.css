@@ -1,26 +1,43 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  /* Fontes */
+  --font-heading: var(--font-plus-jakarta);
+  --font-body: var(--font-inter);
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Cores principais */
+  --color-primary: #0061e0;
+  --color-primary-dark: #004aaf;
+  --color-sidebar: #0b0c0e;
+  --color-surface: #fafaff;
+  --color-surface-container: #ffffff;
+  --color-surface-low: #f2f3fe;
+  --color-outline: #e2e8f0;
+  --color-outline-strong: #727786;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Cores semânticas */
+  --color-on-surface: #191b23;
+  --color-on-surface-muted: #424654;
+
+  /* Sombras */
+  --shadow-card: 0px 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-hover: 0px 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+  /* Radius */
+  --radius-sm: 0.25rem;
+  --radius-DEFAULT: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  font-family: var(--font-body, Inter, system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading, 'Plus Jakarta Sans', system-ui, sans-serif);
 }

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
-import { AppNav } from '@/components/layout/AppNav'
+import { Sidebar } from '@/components/layout/Sidebar'
+import { Topbar } from '@/components/layout/Topbar'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -17,10 +18,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     isAdmin = profile?.role === 'admin'
   }
 
+  const userEmail = user?.email ?? null
+
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
-      <AppNav isAdmin={isAdmin} />
-      {children}
+    <div className="flex min-h-screen bg-surface">
+      <Sidebar isAdmin={isAdmin} userEmail={userEmail} />
+      <div className="flex flex-1 flex-col min-w-0 lg:pt-0 pt-13">
+        <Topbar userEmail={userEmail} />
+        <div className="flex-1">
+          {children}
+        </div>
+      </div>
     </div>
   )
 }

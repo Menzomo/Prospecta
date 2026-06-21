@@ -7,6 +7,7 @@ import type { GmailRequestStatus } from '@/types/gmail'
 import { CompanyProfileForm } from '@/features/settings/components/CompanyProfileForm'
 import { GmailConnectionCard } from '@/features/gmail/components/GmailConnectionCard'
 import { logoutAction } from '@/features/auth/actions'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 type Section = 'empresa' | 'gmail' | 'idioma' | 'aparencia' | 'plano'
 
@@ -41,9 +42,9 @@ export default async function SettingsPage({ searchParams }: Props) {
 
   return (
     <>
-      <header className="shrink-0 border-b border-gray-200 bg-white px-6 py-4">
-        <h1 className="text-lg font-semibold text-gray-900">Configurações</h1>
-      </header>
+      <div className="px-6 pt-6">
+        <PageHeader title="Configurações" subtitle="Gerencie sua conta e integrações" />
+      </div>
 
       <div className="flex flex-1 flex-col md:flex-row">
 
