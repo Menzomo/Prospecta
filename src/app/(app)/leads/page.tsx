@@ -199,14 +199,16 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
                     )}
                   </div>
                 </div>
-                <p className="text-sm text-on-surface-muted">{lead.category_name ?? <span className="text-on-surface-muted/40">—</span>}</p>
-                <p className="text-sm text-on-surface-muted">{lead.city ?? <span className="text-on-surface-muted/40">—</span>}</p>
-                <StatusBadge status={lead.status as LeadStatus} />
-                <ThreeDotMenu
-                  leadHref={`/leads/global/${lead.id}`}
-                  sendHref={`/leads/global/${lead.id}/send`}
-                  hideAction={hideUserLeadAction.bind(null, lead.id)}
-                />
+                <p className="self-start text-sm text-on-surface-muted">{lead.category_name ?? <span className="text-on-surface-muted/40">—</span>}</p>
+                <p className="self-start text-sm text-on-surface-muted">{lead.city ?? <span className="text-on-surface-muted/40">—</span>}</p>
+                <div className="self-start"><StatusBadge status={lead.status as LeadStatus} /></div>
+                <div className="self-start">
+                  <ThreeDotMenu
+                    leadHref={`/leads/global/${lead.id}`}
+                    sendHref={`/leads/global/${lead.id}/send`}
+                    hideAction={hideUserLeadAction.bind(null, lead.id)}
+                  />
+                </div>
               </div>
             ))}
 
@@ -225,14 +227,16 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
                     )}
                   </div>
                 </div>
-                <p className="text-sm text-on-surface-muted/40">—</p>
-                <p className="text-sm text-on-surface-muted">{lead.city ?? <span className="text-on-surface-muted/40">—</span>}</p>
-                <StatusBadge status={lead.status as LeadStatus} />
-                <ThreeDotMenu
-                  leadHref={`/leads/${lead.id}`}
-                  sendHref={`/leads/${lead.id}/send`}
-                  hideAction={hideLeadAction.bind(null, lead.id)}
-                />
+                <p className="self-start text-sm text-on-surface-muted/40">—</p>
+                <p className="self-start text-sm text-on-surface-muted">{lead.city ?? <span className="text-on-surface-muted/40">—</span>}</p>
+                <div className="self-start"><StatusBadge status={lead.status as LeadStatus} /></div>
+                <div className="self-start">
+                  <ThreeDotMenu
+                    leadHref={`/leads/${lead.id}`}
+                    sendHref={`/leads/${lead.id}/send`}
+                    hideAction={hideLeadAction.bind(null, lead.id)}
+                  />
+                </div>
               </div>
             ))}
           </div>
