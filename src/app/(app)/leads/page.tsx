@@ -176,7 +176,10 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
         <div className="rounded-xl border border-outline bg-surface-container shadow-card overflow-hidden">
           {/* Table header */}
           <div className="hidden sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr_auto] items-center gap-4 border-b border-outline bg-surface-low px-5 py-3">
-            <span className="text-xs font-medium uppercase tracking-wide text-on-surface-muted">Empresa</span>
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 shrink-0" />
+              <span className="text-xs font-medium uppercase tracking-wide text-on-surface-muted">Empresa</span>
+            </div>
             <span className="text-xs font-medium uppercase tracking-wide text-on-surface-muted">Categoria</span>
             <span className="text-xs font-medium uppercase tracking-wide text-on-surface-muted">Cidade</span>
             <span className="text-xs font-medium uppercase tracking-wide text-on-surface-muted">Status</span>
