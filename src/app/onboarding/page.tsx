@@ -34,7 +34,9 @@ export default async function OnboardingPage({ searchParams }: Props) {
   const gmailRequestStatus: GmailRequestStatus =
     connection?.is_connected
       ? 'connected'
-      : (gmailRequest?.gmail_request_status as GmailRequestStatus) ?? 'not_requested'
+      : connection !== null
+        ? 'approved'  // already connected before → skip request, go straight to connect
+        : (gmailRequest?.gmail_request_status as GmailRequestStatus) ?? 'not_requested'
 
   return (
     <OnboardingWizard
