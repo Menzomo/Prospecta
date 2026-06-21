@@ -1,10 +1,13 @@
 'use client'
 
+import { useRef, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { suggestLeadNames } from '@/features/search/suggestActions'
 
 function IconSearch() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <circle cx="11" cy="11" r="8" />
       <path d="m21 21-4.35-4.35" />
     </svg>
@@ -42,22 +45,88 @@ function getInitials(email: string | null | undefined): string {
 }
 
 export function Topbar({ userEmail }: TopbarProps) {
+  const router = useRouter()
+  const [query, setQuery] = useState('')
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [open, setOpen] = useState(false)
+  const [, startTransition] = useTransition()
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setQuery(val)
+
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+
+    if (val.trim().length < 2) {
+      setSuggestions([])
+      setOpen(false)
+      return
+    }
+
+    debounceRef.current = setTimeout(() => {
+      startTransition(async () => {
+        const results = await suggestLeadNames(val)
+        setSuggestions(results)
+        setOpen(results.length > 0)
+      })
+    }, 220)
+  }
+
+  const navigate = (name: string) => {
+    setQuery(name)
+    setOpen(false)
+    router.push(`/leads?search=${encodeURIComponent(name)}`)
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setOpen(false)
+    if (query.trim()) router.push(`/leads?search=${encodeURIComponent(query.trim())}`)
+  }
+
   return (
     <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-outline bg-surface-container px-6 py-3">
-      {/* Search */}
-      <form method="GET" action="/leads" className="relative flex-1 max-w-sm">
-        <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-on-surface-muted">
-          <IconSearch />
-        </span>
-        <input
-          type="search"
-          name="search"
-          placeholder="Pesquisar leads..."
-          className="w-full rounded-lg border border-outline bg-surface-low py-2 pl-9 pr-4 text-sm text-on-surface placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-        />
-      </form>
+      {/* Search with suggestions */}
+      <div className="relative flex-1 max-w-sm">
+        <form onSubmit={handleSubmit}>
+          <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-on-surface-muted">
+            <IconSearch />
+          </span>
+          <input
+            type="search"
+            value={query}
+            onChange={handleChange}
+            onFocus={() => { if (suggestions.length > 0) setOpen(true) }}
+            onBlur={() => setTimeout(() => setOpen(false), 150)}
+            onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false) }}
+            placeholder="Pesquisar leads..."
+            autoComplete="off"
+            className="w-full rounded-lg border border-outline bg-surface-low py-2 pl-9 pr-4 text-sm text-on-surface placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          />
+        </form>
 
-      <div className="flex items-center gap-1 ml-auto">
+        {open && suggestions.length > 0 && (
+          <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-outline bg-surface-container shadow-hover">
+            {suggestions.map((name) => (
+              <button
+                key={name}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => navigate(name)}
+                className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm text-on-surface transition-colors hover:bg-surface-low"
+              >
+                <span className="shrink-0 text-on-surface-muted">
+                  <IconSearch />
+                </span>
+                {name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="ml-auto flex items-center gap-1">
         {/* Bell */}
         <button
           type="button"
@@ -70,7 +139,7 @@ export function Topbar({ userEmail }: TopbarProps) {
         {/* Add Leads CTA */}
         <Link
           href="/leads/new"
-          className="flex items-center gap-1.5 rounded-lg border border-outline px-3 py-1.5 text-sm font-medium text-on-surface transition-colors hover:bg-surface-low ml-2"
+          className="ml-2 flex items-center gap-1.5 rounded-lg border border-outline px-3 py-1.5 text-sm font-medium text-on-surface transition-colors hover:bg-surface-low"
         >
           <IconPlus />
           Adicionar Lead
