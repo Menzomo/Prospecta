@@ -125,8 +125,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/search', label: 'Buscar Leads', match: (p) => p.startsWith('/search'), icon: <IconSearch /> },
   { href: '/templates', label: 'Templates', match: (p) => p.startsWith('/templates'), icon: <IconTemplates /> },
   { href: '/followups', label: 'Acompanhamentos', match: (p) => p.startsWith('/followups'), icon: <IconFollowups /> },
-  { href: '/inbox', label: 'Inbox', match: (p) => p.startsWith('/inbox'), icon: <IconInbox /> },
-  { href: '/settings', label: 'Configurações', match: (p) => p === '/settings' || p.startsWith('/settings/'), icon: <IconSettings /> },
+{ href: '/settings', label: 'Configurações', match: (p) => p === '/settings' || p.startsWith('/settings/'), icon: <IconSettings /> },
 ]
 
 const ADMIN_ITEM: NavItem = {
