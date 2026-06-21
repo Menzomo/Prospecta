@@ -188,9 +188,9 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
             {filteredSearchLeads.map((lead) => (
               <div
                 key={`search-${lead.id}`}
-                className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-surface-low sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr_auto] sm:items-center sm:gap-4"
+                className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-surface-low sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr_auto] sm:items-start sm:gap-4"
               >
-                <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex items-start gap-2.5 min-w-0">
                   <Avatar name={lead.company_name} size="sm" />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-on-surface">{lead.company_name}</p>
@@ -214,9 +214,9 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
             {filteredManualLeads.map((lead) => (
               <div
                 key={`manual-${lead.id}`}
-                className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-surface-low sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr_auto] sm:items-center sm:gap-4"
+                className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-surface-low sm:grid sm:grid-cols-[2fr_1fr_1fr_1fr_auto] sm:items-start sm:gap-4"
               >
-                <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex items-start gap-2.5 min-w-0">
                   <Avatar name={lead.company_name} size="sm" />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-on-surface">{lead.company_name}</p>
