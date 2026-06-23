@@ -92,6 +92,7 @@ function IconClose() {
 const SETTINGS_SUB_ITEMS = [
   { section: 'empresa',   label: 'Dados da Empresa' },
   { section: 'gmail',     label: 'Gmail' },
+  { section: 'telefonia', label: 'Telefonia' },
   { section: 'idioma',    label: 'Idioma' },
   { section: 'aparencia', label: 'Aparência' },
   { section: 'plano',     label: 'Assinatura' },

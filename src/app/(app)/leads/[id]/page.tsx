@@ -4,11 +4,13 @@ import { createClient } from '@/lib/supabase/server'
 import { getLeadById } from '@/repositories/leadRepository'
 import { getEmailMessagesByLeadId, getEmailThreadsByLeadId } from '@/repositories/emailRepository'
 import { getFollowupsByLeadId } from '@/repositories/followupRepository'
+import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
 import { hideLeadAction } from '@/features/leads/actions'
 import { LeadEditForm } from '@/features/leads/components/LeadEditForm'
 import { LeadTimeline } from '@/features/leads/components/LeadTimeline'
 import { LeadRepliesButton } from '@/features/leads/components/LeadRepliesButton'
 import { LeadFollowupSection } from '@/features/followups/components/LeadFollowupSection'
+import { CallButton } from '@/features/calls/components/CallButton'
 import { LEAD_STATUS_LABELS } from '@/types/leads'
 import type { LeadStatus } from '@/types/leads'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -30,10 +32,11 @@ export default async function LeadDetailPage({ params }: Props) {
   const lead = await getLeadById(supabase, id)
   if (!lead) notFound()
 
-  const [emailMessages, followups, emailThreads] = await Promise.all([
+  const [emailMessages, followups, emailThreads, telephonySettings] = await Promise.all([
     getEmailMessagesByLeadId(supabase, user.id, id),
     getFollowupsByLeadId(supabase, user.id, id),
     getEmailThreadsByLeadId(supabase, user.id, id),
+    getTelephonySettings(supabase, user.id),
   ])
 
   const status = lead.status as LeadStatus
@@ -54,6 +57,7 @@ export default async function LeadDetailPage({ params }: Props) {
 
           <div className="flex items-center gap-2">
             <LeadRepliesButton messages={emailMessages} threads={emailThreads} leadId={lead.id} />
+            <CallButton phone={lead.phone ?? null} hasSettings={telephonySettings !== null} />
             <Link
               href={`/leads/${lead.id}/send`}
               className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
