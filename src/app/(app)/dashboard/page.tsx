@@ -1,11 +1,15 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCompanyProfileByUserId } from '@/repositories/companyProfileRepository'
+import { getSyncStatus, touchEmailSync } from '@/repositories/userSyncStatusRepository'
 import { getDashboardData } from '@/features/dashboard/services/dashboardService'
+import { syncGmailForUser } from '@/services/gmailUserSyncService'
 import { DashboardKpis } from '@/features/dashboard/components/DashboardKpis'
 import { RecentReplies } from '@/features/dashboard/components/RecentReplies'
 import { FollowUpList } from '@/features/dashboard/components/FollowUpList'
 import { PageHeader } from '@/components/layout/PageHeader'
+
+const DASHBOARD_SYNC_WINDOW_MS = 20 * 60 * 1000
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -18,6 +22,15 @@ export default async function DashboardPage() {
   const company = await getCompanyProfileByUserId(supabase, user.id)
   if (!company) {
     redirect('/onboarding')
+  }
+
+  const syncStatus = await getSyncStatus(supabase, user.id)
+  const lastSync = syncStatus?.last_email_sync ? new Date(syncStatus.last_email_sync).getTime() : 0
+  const isStale = Date.now() - lastSync > DASHBOARD_SYNC_WINDOW_MS
+
+  if (isStale) {
+    await syncGmailForUser(supabase, user.id)
+    await touchEmailSync(supabase, user.id)
   }
 
   const dashboard = await getDashboardData(supabase, user.id)

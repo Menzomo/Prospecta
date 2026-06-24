@@ -737,6 +737,30 @@ export interface Database {
         }
         Relationships: []
       }
+      user_sync_status: {
+        Row: {
+          id: string
+          user_id: string
+          last_email_sync: string | null
+          last_call_sync: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          last_email_sync?: string | null
+          last_call_sync?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          last_email_sync?: string | null
+          last_call_sync?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
