@@ -12,9 +12,10 @@ export type ImportSummary = {
   imported: number
   skipped_duplicate: number
   invalid: number
-  email_found: number
-  website_only: number
-  manual_review: number
+  complete: number
+  email_only: number
+  phone_only: number
+  incomplete: number
 }
 
 // -------------------------------------------------------------------

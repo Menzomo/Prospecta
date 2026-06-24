@@ -165,7 +165,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
   type DiscardedItem = { company_name: string; city: string | null; website: string | null; placeId: string | null; reason: string }
 
   let imported = 0, invalid = 0
-  let emailFound = 0, websiteOnly = 0, manualReview = 0
+  let complete = 0, emailOnly = 0, phoneOnly = 0, incomplete = 0
   let dedupByPlaceId = 0, dedupByWebsite = 0, dedupByNameCity = 0
 
   const discardedByPlaceId: DiscardedItem[] = []
@@ -233,7 +233,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
       console.warn(`[import-apify/sync] Lead sem city, placeId ou website — dedup incompleta: "${companyName}"`)
     }
 
-    const qualityStatus = classifyLeadQuality({ email, website })
+    const qualityStatus = classifyLeadQuality({ email, phone, website })
 
     const created = await createGlobalLead(supabase, {
       company_name: companyName,
@@ -246,13 +246,15 @@ export async function POST(_request: Request, { params }: RouteParams) {
       provider_source: 'apify',
       provider_external_id: placeId,
       lead_quality_status: qualityStatus,
+      status: qualityStatus === 'incomplete' ? 'rejected' : 'pending_review',
     })
 
     if (created) {
       imported++
-      if (qualityStatus === 'email_found') emailFound++
-      else if (qualityStatus === 'website_only') websiteOnly++
-      else manualReview++
+      if (qualityStatus === 'complete') complete++
+      else if (qualityStatus === 'email_only') emailOnly++
+      else if (qualityStatus === 'phone_only') phoneOnly++
+      else incomplete++
     }
   }
 
@@ -265,9 +267,9 @@ export async function POST(_request: Request, { params }: RouteParams) {
     apify_dataset_id: defaultDatasetId,
     imported_count: imported,
     skipped_duplicate_count: skippedDuplicate,
-    email_found_count: emailFound,
-    website_only_count: websiteOnly,
-    manual_review_count: manualReview,
+    email_found_count: complete + emailOnly,
+    website_only_count: phoneOnly,
+    manual_review_count: incomplete,
     invalid_count: invalid,
     finished_at: new Date().toISOString(),
   })
@@ -291,7 +293,7 @@ export async function POST(_request: Request, { params }: RouteParams) {
       by_website: dedupByWebsite,
       by_name_city: dedupByNameCity,
     },
-    quality: { email_found: emailFound, website_only: websiteOnly, manual_review: manualReview },
+    quality: { complete, email_only: emailOnly, phone_only: phoneOnly, incomplete },
     discarded_samples: {
       by_place_id: discardedByPlaceId,
       by_website: discardedByWebsite,

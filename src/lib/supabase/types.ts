@@ -380,6 +380,11 @@ export interface Database {
           status: string
           review_required: boolean
           lead_quality_status: string
+          last_enrichment_at: string | null
+          enrichment_attempts: number
+          approved_at: string | null
+          approved_by: string | null
+          rejection_reason: string | null
           created_at: string
           updated_at: string
         }
@@ -398,6 +403,11 @@ export interface Database {
           status?: string
           review_required?: boolean
           lead_quality_status?: string
+          last_enrichment_at?: string | null
+          enrichment_attempts?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          rejection_reason?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -415,6 +425,11 @@ export interface Database {
           status?: string
           review_required?: boolean
           lead_quality_status?: string
+          last_enrichment_at?: string | null
+          enrichment_attempts?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          rejection_reason?: string | null
           updated_at?: string
         }
         Relationships: []

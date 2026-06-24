@@ -227,9 +227,9 @@ export function AdminImportForm({ categories }: Props) {
             <SummaryCard label="Importados" value={summary.imported} color="text-green-700 bg-green-50" />
             <SummaryCard label="Ignorados (duplicata)" value={summary.skipped_duplicate} color="text-gray-700 bg-gray-50" />
             <SummaryCard label="Inválidos" value={summary.invalid} color="text-red-700 bg-red-50" />
-            <SummaryCard label="Email Found" value={summary.email_found} color="text-green-700 bg-green-50" />
-            <SummaryCard label="Website Only" value={summary.website_only} color="text-blue-700 bg-blue-50" />
-            <SummaryCard label="Manual Review" value={summary.manual_review} color="text-yellow-700 bg-yellow-50" />
+            <SummaryCard label="Completos" value={summary.complete} color="text-green-700 bg-green-50" />
+            <SummaryCard label="Só email" value={summary.email_only} color="text-blue-700 bg-blue-50" />
+            <SummaryCard label="Só telefone" value={summary.phone_only} color="text-purple-700 bg-purple-50" />
           </div>
 
           <button

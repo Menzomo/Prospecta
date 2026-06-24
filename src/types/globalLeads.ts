@@ -4,16 +4,31 @@ export type LeadCategory = Database['public']['Tables']['lead_categories']['Row'
 export type GlobalLead = Database['public']['Tables']['global_leads']['Row']
 export type UserLead = Database['public']['Tables']['user_leads']['Row']
 
-export const GLOBAL_LEAD_STATUSES = ['active', 'hidden', 'invalid'] as const
+export const GLOBAL_LEAD_STATUSES = [
+  'pending_enrichment',
+  'pending_review',
+  'active',
+  'rejected',
+] as const
 export type GlobalLeadStatus = (typeof GLOBAL_LEAD_STATUSES)[number]
 
 export const LEAD_QUALITY_STATUSES = [
-  'email_found',
-  'website_only',
-  'manual_review',
-  'invalid',
+  'complete',
+  'email_only',
+  'phone_only',
+  'incomplete',
 ] as const
 export type LeadQualityStatus = (typeof LEAD_QUALITY_STATUSES)[number]
+
+export function computeLeadQualityStatus(
+  email: string | null | undefined,
+  phone: string | null | undefined
+): LeadQualityStatus {
+  if (email && phone) return 'complete'
+  if (email && !phone) return 'email_only'
+  if (!email && phone) return 'phone_only'
+  return 'incomplete'
+}
 
 export const USER_LEAD_STATUSES = [
   'novo',
@@ -53,4 +68,5 @@ export type CreateGlobalLeadDto = {
   provider_source?: string | null
   provider_external_id?: string | null
   lead_quality_status?: LeadQualityStatus
+  status?: GlobalLeadStatus
 }

@@ -1,7 +1,12 @@
 import Link from 'next/link'
 import type { ManualReviewLead } from '@/repositories/leadQualityRepository'
 import type { AdminCategory } from '@/repositories/adminRepository'
-import { dismissGlobalLeadAction } from '@/features/admin/actions'
+import {
+  dismissGlobalLeadAction,
+  approveGlobalLeadAction,
+  rejectGlobalLeadAction,
+  reprocessGlobalLeadAction,
+} from '@/features/admin/actions'
 
 interface Props {
   leads: ManualReviewLead[]
@@ -12,8 +17,17 @@ interface Props {
 }
 
 const QUALITY_BADGE: Record<string, string> = {
-  manual_review: 'bg-yellow-50 text-yellow-700',
-  website_only: 'bg-blue-50 text-blue-700',
+  complete:   'bg-green-50 text-green-700',
+  email_only: 'bg-blue-50 text-blue-700',
+  phone_only: 'bg-purple-50 text-purple-700',
+  incomplete: 'bg-red-50 text-red-700',
+}
+
+const QUALITY_LABEL: Record<string, string> = {
+  complete:   'Completo',
+  email_only: 'Só email',
+  phone_only: 'Só telefone',
+  incomplete: 'Incompleto',
 }
 
 export function AdminManualReviewQueue({
@@ -35,7 +49,7 @@ export function AdminManualReviewQueue({
   return (
     <section>
       <h2 className="mb-3 text-base font-semibold text-gray-900">
-        Leads sem Email{' '}
+        Revisão de Leads{' '}
         <span className="text-sm font-normal text-gray-400">({leads.length} aguardando)</span>
       </h2>
 
@@ -86,10 +100,10 @@ export function AdminManualReviewQueue({
                   <th className="px-4 py-3 text-left font-medium text-gray-600">Empresa</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-600">Nicho</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-600">Cidade</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">Site</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">Email</th>
                   <th className="px-4 py-3 text-left font-medium text-gray-600">Telefone</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">Status</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600"></th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">Qualidade</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -103,44 +117,62 @@ export function AdminManualReviewQueue({
                       {lead.category_id ? (categoryNameById.get(lead.category_id) ?? '—') : '—'}
                     </td>
                     <td className="px-4 py-3 text-gray-600">{lead.city ?? '—'}</td>
-                    <td className="max-w-45 truncate px-4 py-3 text-gray-600">
-                      {lead.website ? (
-                        <a
-                          href={lead.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          {lead.website}
-                        </a>
+                    <td className="px-4 py-3 text-gray-600 text-xs">
+                      {lead.email ? (
+                        <span className="text-blue-600">{lead.email}</span>
                       ) : (
-                        '—'
+                        <span className="text-gray-300">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{lead.phone ?? '—'}</td>
+                    <td className="px-4 py-3 text-gray-600 text-xs">{lead.phone ?? <span className="text-gray-300">—</span>}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${QUALITY_BADGE[lead.lead_quality_status] ?? 'bg-gray-100 text-gray-500'}`}
                       >
-                        {lead.lead_quality_status}
+                        {QUALITY_LABEL[lead.lead_quality_status] ?? lead.lead_quality_status}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-4">
-                        <Link
-                          href={`/admin/global-leads/${lead.id}`}
-                          className="text-xs font-medium text-blue-600 hover:underline"
-                        >
-                          Adicionar email
-                        </Link>
-                        <form action={dismissGlobalLeadAction.bind(null, lead.id)}>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Aprovar */}
+                        <form action={approveGlobalLeadAction.bind(null, lead.id)}>
                           <button
                             type="submit"
-                            className="cursor-pointer text-xs font-medium text-red-400 hover:text-red-600"
+                            className="cursor-pointer rounded px-2 py-1 text-xs font-medium bg-green-600 text-white hover:bg-green-700 transition-colors"
                           >
-                            Esquecer lead
+                            Aprovar
                           </button>
                         </form>
+
+                        {/* Rejeitar */}
+                        <form action={rejectGlobalLeadAction.bind(null, lead.id)}>
+                          <button
+                            type="submit"
+                            className="cursor-pointer rounded px-2 py-1 text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
+                          >
+                            Rejeitar
+                          </button>
+                        </form>
+
+                        {/* Reprocessar */}
+                        <form action={reprocessGlobalLeadAction.bind(null, lead.id)}>
+                          <button
+                            type="submit"
+                            className="cursor-pointer rounded px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                          >
+                            Reprocessar
+                          </button>
+                        </form>
+
+                        {/* Adicionar email (se não tem) */}
+                        {!lead.email && (
+                          <Link
+                            href={`/admin/global-leads/${lead.id}`}
+                            className="text-xs font-medium text-blue-600 hover:underline"
+                          >
+                            + Email
+                          </Link>
+                        )}
                       </div>
                     </td>
                   </tr>

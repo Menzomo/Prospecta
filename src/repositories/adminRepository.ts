@@ -34,10 +34,10 @@ export type AdminGlobalLead = {
 export type NichoStats = {
   category_id: string | null
   total: number
-  email_found: number
-  website_only: number
-  manual_review: number
-  invalid: number
+  active: number
+  pending_review: number
+  pending_enrichment: number
+  rejected: number
 }
 
 export type AdminCategory = {
@@ -97,7 +97,7 @@ export async function getLeadStatsByCategory(
 ): Promise<NichoStats[]> {
   const { data, error } = await supabase
     .from('global_leads')
-    .select('category_id, lead_quality_status')
+    .select('category_id, status')
 
   if (error || !data) return []
 
@@ -109,18 +109,18 @@ export async function getLeadStatsByCategory(
       statsMap.set(key, {
         category_id: key,
         total: 0,
-        email_found: 0,
-        website_only: 0,
-        manual_review: 0,
-        invalid: 0,
+        active: 0,
+        pending_review: 0,
+        pending_enrichment: 0,
+        rejected: 0,
       })
     }
     const stats = statsMap.get(key)!
     stats.total++
-    if (row.lead_quality_status === 'email_found') stats.email_found++
-    else if (row.lead_quality_status === 'website_only') stats.website_only++
-    else if (row.lead_quality_status === 'manual_review') stats.manual_review++
-    else if (row.lead_quality_status === 'invalid') stats.invalid++
+    if (row.status === 'active') stats.active++
+    else if (row.status === 'pending_review') stats.pending_review++
+    else if (row.status === 'pending_enrichment') stats.pending_enrichment++
+    else if (row.status === 'rejected') stats.rejected++
   }
 
   return Array.from(statsMap.values()).sort((a, b) => b.total - a.total)
@@ -154,7 +154,7 @@ export async function getStockByUserAndCategory(
     .from('global_leads')
     .select('id, category_id')
     .eq('status', 'active')
-    .eq('lead_quality_status', 'email_found')
+    .in('lead_quality_status', ['complete', 'email_only', 'phone_only'])
 
   if (!globalLeads || globalLeads.length === 0) return []
 
@@ -225,7 +225,7 @@ export async function getStockByCategory(
     .from('global_leads')
     .select('id, category_id')
     .eq('status', 'active')
-    .eq('lead_quality_status', 'email_found')
+    .in('lead_quality_status', ['complete', 'email_only', 'phone_only'])
 
   if (!stockLeads || stockLeads.length === 0) return []
 
