@@ -80,8 +80,19 @@ export async function POST(request: NextRequest) {
     return Response.json({ ok: true, action: 'pending_review', reason: 'no_contacts_found' })
   }
 
+  // Busca contatos existentes para mesclar com os dados do n8n antes de calcular quality
+  // (ex: lead phone_only recebe email do n8n → deve virar complete, não email_only)
+  const { data: currentLead } = await supabase
+    .from('global_leads')
+    .select('email, phone')
+    .eq('id', id)
+    .single()
+
+  const mergedEmail = resolvedEmail ?? currentLead?.email ?? null
+  const mergedPhone = resolvedPhone ?? currentLead?.phone ?? null
+
   // n8n encontrou contatos → atualiza campos e manda para pending_review
-  const qualityStatus = computeLeadQualityStatus(resolvedEmail, resolvedPhone)
+  const qualityStatus = computeLeadQualityStatus(mergedEmail, mergedPhone)
 
   const patch: {
     lead_quality_status: string
