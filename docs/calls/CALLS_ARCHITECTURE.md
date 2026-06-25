@@ -214,18 +214,21 @@ O botão "Ligar" abre um modal gerenciado pelo `PhoneCallModal` (novo componente
 
 ## Arquitetura do Provedor de Telefonia
 
-Para suportar troca futura de provedor (Twilio → Vonage, Plivo, etc.), as integrações serão abstraídas:
+**Regra arquitetural:** `import from 'twilio'` (ou de qualquer SDK de provedor) só pode aparecer em `src/lib/telephony/twilioProvider.ts`. O restante da aplicação conhece apenas `ITelephonyProvider`.
 
 ```
 src/
+├── lib/
+│   └── telephony/                    ← tudo relacionado ao SDK do provedor fica aqui
+│       ├── ITelephonyProvider.ts     ← interface + DTOs normalizados
+│       ├── twilioProvider.ts         ← ÚNICO arquivo que importa 'twilio'
+│       └── factory.ts                ← cria o provider a partir de TelephonySettings
+│
+├── services/
+│   └── callService.ts                ← lógica de negócio (usa ITelephonyProvider)
+│
 └── features/
     └── calls/
-        ├── providers/
-        │   ├── types.ts              ← Interface ITelephonyProvider
-        │   ├── twilioProvider.ts     ← Implementação Twilio
-        │   └── getProvider.ts        ← Factory (lê configuração do usuário)
-        ├── services/
-        │   └── callService.ts        ← Lógica de negócio (usa provider)
         └── components/
             ├── PhoneCallModal.tsx
             ├── CallTimer.tsx
@@ -233,13 +236,30 @@ src/
             └── CallHistoryItem.tsx   ← Para o timeline
 ```
 
+**Fluxo de dependências:**
+
+```
+UI (components)
+    ↓
+API Routes  (src/app/api/calls/*)
+    ↓  — chama apenas callService, nunca o provider diretamente
+callService  (src/services/callService.ts)
+    ↓  — recebe ITelephonyProvider via factory
+ITelephonyProvider  (src/lib/telephony/ITelephonyProvider.ts)
+    ↓
+TwilioProvider  (src/lib/telephony/twilioProvider.ts)
+```
+
+Para trocar de provedor no futuro: implementar `ITelephonyProvider`, registrar no `factory.ts`. Nenhuma rota, serviço ou componente precisa mudar.
+
 ```typescript
-// features/calls/providers/types.ts
+// src/lib/telephony/ITelephonyProvider.ts
 interface ITelephonyProvider {
-  generateAccessToken(userId: string, identity: string): Promise<string>
-  generateTwiML(to: string, callId: string, record: boolean): string
-  getRecordingUrl(recordingSid: string): string
-  deleteRecording(recordingSid: string): Promise<void>
+  generateAccessToken(userId: string): AccessTokenResult
+  generateCallInstruction(to: string, callId: string, record: boolean): string
+  validateWebhookSignature(signature: string, url: string, params: Record<string, string>): boolean
+  parseOutboundCallRequest(params: Record<string, string>): OutboundCallRequest
+  parseStatusCallback(params: Record<string, string>): CallStatusUpdate
 }
 ```
 
