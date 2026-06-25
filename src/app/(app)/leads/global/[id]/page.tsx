@@ -3,8 +3,10 @@ import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { hideUserLeadAction, updateUserLeadStatusAction } from '@/features/leads/actions'
 import { getFollowupsByUserLeadId } from '@/repositories/followupRepository'
+import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
 import { LeadFollowupSection } from '@/features/followups/components/LeadFollowupSection'
 import { MarkInboxRead } from '@/features/inbox/components/MarkInboxRead'
+import { CallButton } from '@/features/calls/components/CallButton'
 import { LEAD_STATUS_LABELS, LEAD_STATUSES } from '@/types/leads'
 import type { LeadStatus } from '@/types/leads'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -42,8 +44,9 @@ export default async function UserLeadDetailPage({ params }: Props) {
     state: string | null
   }
 
-  const [followups] = await Promise.all([
+  const [followups, telephonySettings] = await Promise.all([
     getFollowupsByUserLeadId(supabase, user.id, id),
+    getTelephonySettings(supabase, user.id),
   ])
 
   const status = data.status as LeadStatus
@@ -63,6 +66,7 @@ export default async function UserLeadDetailPage({ params }: Props) {
           </div>
 
           <div className="flex items-center gap-2">
+            <CallButton phone={gl.phone ?? null} hasSettings={telephonySettings !== null} />
             {gl.email && (
               <Link
                 href={`/leads/global/${id}/send`}

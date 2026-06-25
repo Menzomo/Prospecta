@@ -8,6 +8,9 @@ import {
   getGlobalLeadById,
   updateGlobalLeadEmailAndPromote,
   markGlobalLeadInvalid,
+  approveGlobalLead,
+  rejectGlobalLead,
+  reprocessGlobalLead,
 } from '@/repositories/globalLeadRepository'
 
 const addEmailSchema = z.object({
@@ -82,5 +85,35 @@ export async function dismissGlobalLeadAction(leadId: string, _formData: FormDat
     console.log(`[dismissGlobalLeadAction] Admin ${user.email} dismissed lead ${leadId}`)
   }
 
+  revalidatePath('/admin')
+}
+
+async function requireAdmin() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (profile?.role !== 'admin') redirect('/dashboard')
+  return { supabase, user }
+}
+
+export async function approveGlobalLeadAction(leadId: string, _formData: FormData): Promise<void> {
+  const { supabase, user } = await requireAdmin()
+  const ok = await approveGlobalLead(supabase, leadId, user.id)
+  if (ok) console.log(`[approveGlobalLeadAction] Admin ${user.email} approved lead ${leadId}`)
+  revalidatePath('/admin')
+}
+
+export async function rejectGlobalLeadAction(leadId: string, _formData: FormData): Promise<void> {
+  const { supabase, user } = await requireAdmin()
+  const ok = await rejectGlobalLead(supabase, leadId, 'rejected_by_admin')
+  if (ok) console.log(`[rejectGlobalLeadAction] Admin ${user.email} rejected lead ${leadId}`)
+  revalidatePath('/admin')
+}
+
+export async function reprocessGlobalLeadAction(leadId: string, _formData: FormData): Promise<void> {
+  const { supabase, user } = await requireAdmin()
+  const ok = await reprocessGlobalLead(supabase, leadId)
+  if (ok) console.log(`[reprocessGlobalLeadAction] Admin ${user.email} reprocessed lead ${leadId}`)
   revalidatePath('/admin')
 }

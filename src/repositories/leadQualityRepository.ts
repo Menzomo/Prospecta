@@ -14,10 +14,14 @@ export type ManualReviewLead = {
 }
 
 export type LeadQualityOverview = {
-  email_found: number
-  website_only: number
-  manual_review: number
-  invalid: number
+  pending_enrichment: number
+  pending_review: number
+  active: number
+  rejected: number
+  complete: number
+  email_only: number
+  phone_only: number
+  incomplete: number
 }
 
 export async function getManualReviewQueue(
@@ -27,7 +31,7 @@ export async function getManualReviewQueue(
   let query = supabase
     .from('global_leads')
     .select('id, company_name, city, website, phone, email, lead_quality_status, category_id, created_at')
-    .in('lead_quality_status', ['manual_review', 'website_only'])
+    .eq('status', 'pending_review')
     .order('created_at', { ascending: false })
     .limit(200)
 
@@ -44,29 +48,26 @@ export async function getManualReviewQueue(
 export async function getLeadQualityOverview(
   supabase: SupabaseClient<Database>
 ): Promise<LeadQualityOverview> {
-  const [emailFound, websiteOnly, manualReview, invalid] = await Promise.all([
-    supabase
-      .from('global_leads')
-      .select('*', { count: 'exact', head: true })
-      .eq('lead_quality_status', 'email_found'),
-    supabase
-      .from('global_leads')
-      .select('*', { count: 'exact', head: true })
-      .eq('lead_quality_status', 'website_only'),
-    supabase
-      .from('global_leads')
-      .select('*', { count: 'exact', head: true })
-      .eq('lead_quality_status', 'manual_review'),
-    supabase
-      .from('global_leads')
-      .select('*', { count: 'exact', head: true })
-      .eq('lead_quality_status', 'invalid'),
-  ])
+  const [pendingEnrichment, pendingReview, active, rejected, complete, emailOnly, phoneOnly, incomplete] =
+    await Promise.all([
+      supabase.from('global_leads').select('*', { count: 'exact', head: true }).eq('status', 'pending_enrichment'),
+      supabase.from('global_leads').select('*', { count: 'exact', head: true }).eq('status', 'pending_review'),
+      supabase.from('global_leads').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+      supabase.from('global_leads').select('*', { count: 'exact', head: true }).eq('status', 'rejected'),
+      supabase.from('global_leads').select('*', { count: 'exact', head: true }).eq('status', 'active').eq('lead_quality_status', 'complete'),
+      supabase.from('global_leads').select('*', { count: 'exact', head: true }).eq('status', 'active').eq('lead_quality_status', 'email_only'),
+      supabase.from('global_leads').select('*', { count: 'exact', head: true }).eq('status', 'active').eq('lead_quality_status', 'phone_only'),
+      supabase.from('global_leads').select('*', { count: 'exact', head: true }).eq('lead_quality_status', 'incomplete'),
+    ])
 
   return {
-    email_found: emailFound.count ?? 0,
-    website_only: websiteOnly.count ?? 0,
-    manual_review: manualReview.count ?? 0,
-    invalid: invalid.count ?? 0,
+    pending_enrichment: pendingEnrichment.count ?? 0,
+    pending_review: pendingReview.count ?? 0,
+    active: active.count ?? 0,
+    rejected: rejected.count ?? 0,
+    complete: complete.count ?? 0,
+    email_only: emailOnly.count ?? 0,
+    phone_only: phoneOnly.count ?? 0,
+    incomplete: incomplete.count ?? 0,
   }
 }

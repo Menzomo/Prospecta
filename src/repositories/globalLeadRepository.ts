@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/types'
 import type { GlobalLead, CreateGlobalLeadDto } from '@/types/globalLeads'
+import { computeLeadQualityStatus } from '@/types/globalLeads'
 import { expandStateCode } from '@/utils/stateUtils'
 
 export type AvailableCity = { city: string; state: string | null }
@@ -20,7 +21,7 @@ export async function getAvailableCitiesForUser(
     .from('global_leads')
     .select('city, state')
     .eq('status', 'active')
-    .eq('lead_quality_status', 'email_found')
+    .in('lead_quality_status', ['complete', 'email_only', 'phone_only'])
     .not('city', 'is', null)
 
   if (excludeIds.length > 0) {
@@ -160,31 +161,51 @@ export async function findAvailableGlobalLeadsForUser(
     excludeIds = (existingLinks ?? []).map((l) => l.global_lead_id)
   }
 
-  let query = supabase
-    .from('global_leads')
-    .select('*')
-    .eq('category_id', categoryId)
-    .ilike('city', city)
-    .eq('status', 'active')
-    .eq('lead_quality_status', 'email_found')
-    .limit(limit)
+  // 70/30 split: complete leads take priority, partial fills the rest
+  const completeLimit = Math.ceil(limit * 0.7)
+  const partialLimit = limit - completeLimit
 
-  if (state) {
-    query = query.ilike('state', expandStateCode(state))
+  const buildCompleteQuery = () => {
+    let q = supabase
+      .from('global_leads')
+      .select('*')
+      .eq('category_id', categoryId)
+      .ilike('city', city)
+      .eq('status', 'active')
+      .eq('lead_quality_status', 'complete')
+      .limit(completeLimit)
+    if (state) q = q.ilike('state', expandStateCode(state))
+    if (excludeIds.length > 0) q = q.not('id', 'in', `(${excludeIds.join(',')})`)
+    return q
   }
 
-  if (excludeIds.length > 0) {
-    query = query.not('id', 'in', `(${excludeIds.join(',')})`)
+  const buildPartialQuery = () => {
+    let q = supabase
+      .from('global_leads')
+      .select('*')
+      .eq('category_id', categoryId)
+      .ilike('city', city)
+      .eq('status', 'active')
+      .in('lead_quality_status', ['email_only', 'phone_only'])
+      .limit(partialLimit)
+    if (state) q = q.ilike('state', expandStateCode(state))
+    if (excludeIds.length > 0) q = q.not('id', 'in', `(${excludeIds.join(',')})`)
+    return q
   }
 
-  const { data, error } = await query
+  const [completeResult, partialResult] = await Promise.all([
+    buildCompleteQuery(),
+    buildPartialQuery(),
+  ])
 
-  if (error) {
-    console.error('[globalLeadRepository.findAvailableGlobalLeadsForUser]', error.message)
-    return []
+  if (completeResult.error) {
+    console.error('[globalLeadRepository.findAvailableGlobalLeadsForUser] complete query:', completeResult.error.message)
+  }
+  if (partialResult.error) {
+    console.error('[globalLeadRepository.findAvailableGlobalLeadsForUser] partial query:', partialResult.error.message)
   }
 
-  const results = data ?? []
+  const results = [...(completeResult.data ?? []), ...(partialResult.data ?? [])]
 
   // Belt-and-suspenders: filter in memory so owned leads never leak through
   if (!skipExcludeOwned && excludeIds.length > 0) {
@@ -195,18 +216,108 @@ export async function findAvailableGlobalLeadsForUser(
   return results
 }
 
-export async function updateGlobalLeadEmailAndPromote(
+// Approve a lead: recomputes quality from current contact fields, sets status=active
+export async function approveGlobalLead(
   supabase: SupabaseClient<Database>,
   id: string,
-  email: string
+  approvedBy: string
+): Promise<boolean> {
+  const { data: current } = await supabase
+    .from('global_leads')
+    .select('email, phone')
+    .eq('id', id)
+    .single()
+
+  if (!current) return false
+
+  const qualityStatus = computeLeadQualityStatus(current.email, current.phone)
+  const now = new Date().toISOString()
+
+  const { error } = await supabase
+    .from('global_leads')
+    .update({
+      status: 'active',
+      lead_quality_status: qualityStatus,
+      approved_at: now,
+      approved_by: approvedBy,
+      rejection_reason: null,
+      updated_at: now,
+    })
+    .eq('id', id)
+
+  if (error) {
+    console.error('[globalLeadRepository.approveGlobalLead]', { code: error.code, message: error.message })
+    return false
+  }
+  return true
+}
+
+export async function rejectGlobalLead(
+  supabase: SupabaseClient<Database>,
+  id: string,
+  reason?: string | null
 ): Promise<boolean> {
   const { error } = await supabase
     .from('global_leads')
     .update({
-      email,
-      lead_quality_status: 'email_found',
-      status: 'active',
+      status: 'rejected',
+      rejection_reason: reason ?? null,
       updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+
+  if (error) {
+    console.error('[globalLeadRepository.rejectGlobalLead]', { code: error.code, message: error.message })
+    return false
+  }
+  return true
+}
+
+// Send back to enrichment queue for n8n to retry
+export async function reprocessGlobalLead(
+  supabase: SupabaseClient<Database>,
+  id: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('global_leads')
+    .update({
+      status: 'pending_enrichment',
+      rejection_reason: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+
+  if (error) {
+    console.error('[globalLeadRepository.reprocessGlobalLead]', { code: error.code, message: error.message })
+    return false
+  }
+  return true
+}
+
+export async function updateGlobalLeadEmailAndPromote(
+  supabase: SupabaseClient<Database>,
+  id: string,
+  email: string,
+  approvedBy?: string
+): Promise<boolean> {
+  const { data: current } = await supabase
+    .from('global_leads')
+    .select('phone')
+    .eq('id', id)
+    .single()
+
+  const qualityStatus = computeLeadQualityStatus(email, current?.phone ?? null)
+  const now = new Date().toISOString()
+
+  const { error } = await supabase
+    .from('global_leads')
+    .update({
+      email,
+      lead_quality_status: qualityStatus,
+      status: 'active',
+      approved_at: now,
+      approved_by: approvedBy ?? null,
+      updated_at: now,
     })
     .eq('id', id)
 
@@ -224,7 +335,7 @@ export async function updateGlobalLeadEmailAndPromote(
 export async function updateGlobalLeadStatus(
   supabase: SupabaseClient<Database>,
   id: string,
-  status: 'active' | 'hidden' | 'invalid'
+  status: 'active' | 'pending_review' | 'pending_enrichment' | 'rejected'
 ): Promise<boolean> {
   const { error } = await supabase
     .from('global_leads')
@@ -246,22 +357,5 @@ export async function markGlobalLeadInvalid(
   supabase: SupabaseClient<Database>,
   id: string
 ): Promise<boolean> {
-  const { error } = await supabase
-    .from('global_leads')
-    .update({
-      lead_quality_status: 'invalid',
-      status: 'invalid',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-
-  if (error) {
-    console.error('[globalLeadRepository.markGlobalLeadInvalid] Supabase error:', {
-      code: error.code,
-      message: error.message,
-    })
-    return false
-  }
-
-  return true
+  return rejectGlobalLead(supabase, id, 'dismissed_by_admin')
 }

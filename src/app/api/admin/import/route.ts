@@ -70,9 +70,10 @@ export async function POST(request: Request) {
     imported: 0,
     skipped_duplicate: 0,
     invalid: 0,
-    email_found: 0,
-    website_only: 0,
-    manual_review: 0,
+    complete: 0,
+    email_only: 0,
+    phone_only: 0,
+    incomplete: 0,
   }
 
   for (const row of rows) {
@@ -106,19 +107,21 @@ export async function POST(request: Request) {
       continue
     }
 
-    const qualityStatus = classifyLeadQuality({ email, website })
+    const phone = row.phone?.trim() || null
+    const qualityStatus = classifyLeadQuality({ email, phone, website })
 
     const created = await createGlobalLead(supabase, {
       company_name: companyName,
       email,
       website,
-      phone: row.phone?.trim() || null,
+      phone,
       city,
       state: row.state?.trim() || null,
       category_id,
-      provider_source: 'apify',
+      provider_source: 'manual',
       provider_external_id: null,
       lead_quality_status: qualityStatus,
+      status: qualityStatus === 'incomplete' ? 'rejected' : 'pending_review',
     })
 
     if (created) {

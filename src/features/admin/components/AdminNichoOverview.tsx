@@ -27,10 +27,10 @@ export function AdminNichoOverview({ stats, categories }: Props) {
               <tr className="border-b border-gray-100 bg-gray-50">
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Nicho</th>
                 <th className="px-4 py-3 text-right font-medium text-gray-600">Total</th>
-                <th className="px-4 py-3 text-right font-medium text-green-700">Email Found</th>
-                <th className="px-4 py-3 text-right font-medium text-blue-700">Website Only</th>
-                <th className="px-4 py-3 text-right font-medium text-yellow-700">Manual Review</th>
-                <th className="px-4 py-3 text-right font-medium text-red-700">Invalid</th>
+                <th className="px-4 py-3 text-right font-medium text-green-700">Ativos</th>
+                <th className="px-4 py-3 text-right font-medium text-yellow-700">Revisão</th>
+                <th className="px-4 py-3 text-right font-medium text-blue-700">Enriquecimento</th>
+                <th className="px-4 py-3 text-right font-medium text-red-700">Rejeitados</th>
               </tr>
             </thead>
             <tbody>
@@ -45,10 +45,10 @@ export function AdminNichoOverview({ stats, categories }: Props) {
                   >
                     <td className="px-4 py-3 font-medium text-gray-900">{name}</td>
                     <td className="px-4 py-3 text-right font-bold text-gray-900">{row.total}</td>
-                    <td className="px-4 py-3 text-right text-green-700">{row.email_found}</td>
-                    <td className="px-4 py-3 text-right text-blue-700">{row.website_only}</td>
-                    <td className="px-4 py-3 text-right text-yellow-700">{row.manual_review}</td>
-                    <td className="px-4 py-3 text-right text-red-700">{row.invalid}</td>
+                    <td className="px-4 py-3 text-right text-green-700">{row.active}</td>
+                    <td className="px-4 py-3 text-right text-yellow-700">{row.pending_review}</td>
+                    <td className="px-4 py-3 text-right text-blue-700">{row.pending_enrichment}</td>
+                    <td className="px-4 py-3 text-right text-red-700">{row.rejected}</td>
                   </tr>
                 )
               })}

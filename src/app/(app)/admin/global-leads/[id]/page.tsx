@@ -10,16 +10,17 @@ type Props = {
 }
 
 const QUALITY_BADGES: Record<string, { label: string; className: string }> = {
-  email_found: { label: 'Email Found', className: 'bg-green-50 text-green-700' },
-  website_only: { label: 'Website Only', className: 'bg-blue-50 text-blue-700' },
-  manual_review: { label: 'Manual Review', className: 'bg-yellow-50 text-yellow-700' },
-  invalid: { label: 'Invalid', className: 'bg-red-50 text-red-700' },
+  complete:   { label: 'Completo',    className: 'bg-green-50 text-green-700' },
+  email_only: { label: 'Só email',    className: 'bg-blue-50 text-blue-700' },
+  phone_only: { label: 'Só telefone', className: 'bg-purple-50 text-purple-700' },
+  incomplete: { label: 'Incompleto',  className: 'bg-red-50 text-red-700' },
 }
 
 const STATUS_BADGES: Record<string, string> = {
-  active: 'bg-green-50 text-green-700',
-  hidden: 'bg-gray-100 text-gray-500',
-  invalid: 'bg-red-50 text-red-700',
+  active:              'bg-green-50 text-green-700',
+  pending_review:      'bg-yellow-50 text-yellow-700',
+  pending_enrichment:  'bg-blue-50 text-blue-700',
+  rejected:            'bg-red-50 text-red-700',
 }
 
 export default async function AdminGlobalLeadDetailPage({ params }: Props) {
@@ -49,7 +50,7 @@ export default async function AdminGlobalLeadDetailPage({ params }: Props) {
 
   const category = categories.find((c) => c.id === lead.category_id)
   const quality = QUALITY_BADGES[lead.lead_quality_status] ?? { label: lead.lead_quality_status, className: 'bg-gray-100 text-gray-500' }
-  const needsEmail = lead.lead_quality_status !== 'email_found'
+  const needsEmail = !lead.email
 
   return (
     <>
@@ -150,8 +151,7 @@ export default async function AdminGlobalLeadDetailPage({ params }: Props) {
             </h2>
             {needsEmail && (
               <p className="mb-4 text-xs text-gray-500">
-                Ao salvar, o lead será promovido para <strong>email_found</strong> e ficará
-                disponível nas buscas dos usuários.
+                Ao salvar, o lead será promovido e ficará disponível nas buscas dos usuários.
               </p>
             )}
             <GlobalLeadEmailForm leadId={lead.id} currentEmail={lead.email} />

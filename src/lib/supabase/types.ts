@@ -380,6 +380,11 @@ export interface Database {
           status: string
           review_required: boolean
           lead_quality_status: string
+          last_enrichment_at: string | null
+          enrichment_attempts: number
+          approved_at: string | null
+          approved_by: string | null
+          rejection_reason: string | null
           created_at: string
           updated_at: string
         }
@@ -398,6 +403,11 @@ export interface Database {
           status?: string
           review_required?: boolean
           lead_quality_status?: string
+          last_enrichment_at?: string | null
+          enrichment_attempts?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          rejection_reason?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -415,6 +425,11 @@ export interface Database {
           status?: string
           review_required?: boolean
           lead_quality_status?: string
+          last_enrichment_at?: string | null
+          enrichment_attempts?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          rejection_reason?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -560,6 +575,204 @@ export interface Database {
           error_message?: string | null
           updated_at?: string
           finished_at?: string | null
+        }
+        Relationships: []
+      }
+      telephony_settings: {
+        Row: {
+          id: string
+          user_id: string
+          account_sid: string
+          auth_token_encrypted: string
+          api_key_sid: string | null
+          api_key_secret_encrypted: string | null
+          phone_number: string
+          twiml_app_sid: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          account_sid: string
+          auth_token_encrypted: string
+          api_key_sid?: string | null
+          api_key_secret_encrypted?: string | null
+          phone_number: string
+          twiml_app_sid?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          account_sid?: string
+          auth_token_encrypted?: string
+          api_key_sid?: string | null
+          api_key_secret_encrypted?: string | null
+          phone_number?: string
+          twiml_app_sid?: string | null
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      calls: {
+        Row: {
+          id: string
+          user_id: string
+          lead_id: string | null
+          user_lead_id: string | null
+          call_sid: string
+          to_number: string
+          from_number: string
+          direction: string
+          status: string
+          duration_seconds: number | null
+          created_at: string
+          ended_at: string | null
+          recording_sid: string | null
+          recording_url: string | null
+          recording_expires_at: string | null
+          recording_deleted_at: string | null
+          notes: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          lead_id?: string | null
+          user_lead_id?: string | null
+          call_sid: string
+          to_number: string
+          from_number: string
+          direction?: string
+          status?: string
+          duration_seconds?: number | null
+          created_at?: string
+          ended_at?: string | null
+          recording_sid?: string | null
+          recording_url?: string | null
+          recording_expires_at?: string | null
+          recording_deleted_at?: string | null
+          notes?: string | null
+        }
+        Update: {
+          status?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          recording_sid?: string | null
+          recording_url?: string | null
+          recording_expires_at?: string | null
+          recording_deleted_at?: string | null
+          notes?: string | null
+        }
+        Relationships: []
+      }
+      call_analyses: {
+        Row: {
+          id: string
+          call_id: string
+          user_id: string
+          status: string
+          transcript: string | null
+          summary: string | null
+          key_points: Json | null
+          objections: Json | null
+          suggested_status: string | null
+          suggested_followup_days: number | null
+          suggested_followup_notes: string | null
+          ai_model: string | null
+          processing_started_at: string | null
+          processing_completed_at: string | null
+          error_message: string | null
+          credits_used: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          call_id: string
+          user_id: string
+          status?: string
+          transcript?: string | null
+          summary?: string | null
+          key_points?: Json | null
+          objections?: Json | null
+          suggested_status?: string | null
+          suggested_followup_days?: number | null
+          suggested_followup_notes?: string | null
+          ai_model?: string | null
+          processing_started_at?: string | null
+          processing_completed_at?: string | null
+          error_message?: string | null
+          credits_used?: number
+          created_at?: string
+        }
+        Update: {
+          status?: string
+          transcript?: string | null
+          summary?: string | null
+          key_points?: Json | null
+          objections?: Json | null
+          suggested_status?: string | null
+          suggested_followup_days?: number | null
+          suggested_followup_notes?: string | null
+          ai_model?: string | null
+          processing_started_at?: string | null
+          processing_completed_at?: string | null
+          error_message?: string | null
+        }
+        Relationships: []
+      }
+      analysis_credits: {
+        Row: {
+          id: string
+          user_id: string
+          plan_name: string
+          credits_total: number
+          credits_used: number
+          period_start: string
+          period_end: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          plan_name?: string
+          credits_total?: number
+          credits_used?: number
+          period_start: string
+          period_end: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          credits_used?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_sync_status: {
+        Row: {
+          id: string
+          user_id: string
+          last_email_sync: string | null
+          last_call_sync: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          last_email_sync?: string | null
+          last_call_sync?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          last_email_sync?: string | null
+          last_call_sync?: string | null
+          updated_at?: string
         }
         Relationships: []
       }

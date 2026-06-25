@@ -2,16 +2,19 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCompanyProfileByUserId } from '@/repositories/companyProfileRepository'
 import { getGmailConnection, getGmailRequest } from '@/repositories/gmailRepository'
+import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
 import type { GmailRequestStatus } from '@/types/gmail'
 import { CompanyProfileForm } from '@/features/settings/components/CompanyProfileForm'
 import { GmailConnectionCard } from '@/features/gmail/components/GmailConnectionCard'
+import { TelephonySettingsForm } from '@/features/calls/components/TelephonySettingsForm'
 import { PageHeader } from '@/components/layout/PageHeader'
 
-type Section = 'empresa' | 'gmail' | 'idioma' | 'aparencia' | 'plano'
+type Section = 'empresa' | 'gmail' | 'telefonia' | 'idioma' | 'aparencia' | 'plano'
 
 const SECTIONS: { key: Section; label: string }[] = [
   { key: 'empresa',   label: 'Dados da Empresa' },
   { key: 'gmail',     label: 'Gmail' },
+  { key: 'telefonia', label: 'Telefonia' },
   { key: 'idioma',    label: 'Idioma' },
   { key: 'aparencia', label: 'Aparência' },
   { key: 'plano',     label: 'Assinatura' },
@@ -27,10 +30,11 @@ export default async function SettingsPage({ searchParams }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [company, gmailConnection, gmailRequest] = await Promise.all([
+  const [company, gmailConnection, gmailRequest, telephonySettings] = await Promise.all([
     getCompanyProfileByUserId(supabase, user.id),
     getGmailConnection(supabase, user.id),
     getGmailRequest(supabase, user.id),
+    getTelephonySettings(supabase, user.id),
   ])
 
   const gmailRequestStatus: GmailRequestStatus =
@@ -60,6 +64,21 @@ export default async function SettingsPage({ searchParams }: Props) {
             ) : (
               <p className="text-sm text-on-surface-muted">Perfil de empresa não encontrado.</p>
             )}
+          </div>
+        )}
+
+        {/* Telefonia */}
+        {section === 'telefonia' && (
+          <div>
+            <div className="mb-6">
+              <h2 className="text-base font-semibold text-on-surface font-[--font-heading]">Telefonia</h2>
+              <p className="mt-1 text-sm text-on-surface-muted">
+                Configure suas credenciais Twilio para realizar ligações diretamente pelo Prospecta.
+              </p>
+            </div>
+            <div className="rounded-xl border border-outline bg-surface-container p-6 shadow-card">
+              <TelephonySettingsForm initialData={telephonySettings} />
+            </div>
           </div>
         )}
 
