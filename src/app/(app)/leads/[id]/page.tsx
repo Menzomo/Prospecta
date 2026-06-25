@@ -57,7 +57,12 @@ export default async function LeadDetailPage({ params }: Props) {
 
           <div className="flex items-center gap-2">
             <LeadRepliesButton messages={emailMessages} threads={emailThreads} leadId={lead.id} />
-            <CallButton phone={lead.phone ?? null} hasSettings={telephonySettings !== null} />
+            <CallButton
+              phone={lead.phone ?? null}
+              hasSettings={telephonySettings !== null}
+              companyName={lead.company_name}
+              leadId={lead.id}
+            />
             <Link
               href={`/leads/${lead.id}/send`}
               className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark"

@@ -635,6 +635,12 @@ export interface Database {
           recording_url: string | null
           recording_expires_at: string | null
           recording_deleted_at: string | null
+          recording_status: string
+          transcription_status: string
+          analysis_status: string
+          analysis_requested_at: string | null
+          transcription_completed_at: string | null
+          analysis_completed_at: string | null
           notes: string | null
         }
         Insert: {
@@ -654,6 +660,12 @@ export interface Database {
           recording_url?: string | null
           recording_expires_at?: string | null
           recording_deleted_at?: string | null
+          recording_status?: string
+          transcription_status?: string
+          analysis_status?: string
+          analysis_requested_at?: string | null
+          transcription_completed_at?: string | null
+          analysis_completed_at?: string | null
           notes?: string | null
         }
         Update: {
@@ -664,6 +676,12 @@ export interface Database {
           recording_url?: string | null
           recording_expires_at?: string | null
           recording_deleted_at?: string | null
+          recording_status?: string
+          transcription_status?: string
+          analysis_status?: string
+          analysis_requested_at?: string | null
+          transcription_completed_at?: string | null
+          analysis_completed_at?: string | null
           notes?: string | null
         }
         Relationships: []

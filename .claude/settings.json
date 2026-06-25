@@ -6,7 +6,9 @@
       "Bash(node -e ' *)",
       "Bash(npm install *)",
       "Bash(git checkout *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(cd /tmp && npm install playwright --save 2>&1 | tail -3)",
+      "Read(//private/tmp/**)"
     ]
   }
 }

@@ -11,6 +11,7 @@ import { createProviderFromSettings } from '@/lib/telephony/factory'
 import { createCall, updateCallStatus } from '@/repositories/callRepository'
 import { createCallAnalysis } from '@/repositories/callAnalysisRepository'
 import { deductCredit, getCurrentPeriodCredits } from '@/repositories/analysisCreditRepository'
+import { CALL_EVENT, dispatchCallEvent } from '@/features/calls/events'
 
 // ── tipos de retorno ──────────────────────────────────────────────────────────
 
@@ -107,6 +108,7 @@ export async function handleOutboundCallWebhook(
   }
 
   const call = await createCall(adminSupabase, {
+    id:           request.clientCallId ?? undefined,
     user_id:      request.userId!,
     lead_id:      request.leadId,
     user_lead_id: request.userLeadId,
@@ -114,6 +116,15 @@ export async function handleOutboundCallWebhook(
     to_number:    request.toNumber,
     from_number:  loaded.phoneNumber,
   })
+
+  if (call) {
+    dispatchCallEvent({
+      type: CALL_EVENT.CALL_STARTED,
+      callId: call.id,
+      userId: request.userId!,
+      occurredAt: new Date().toISOString(),
+    })
+  }
 
   const twiml = provider.generateCallInstruction(
     request.toNumber,
@@ -153,8 +164,49 @@ export async function handleStatusCallbackWebhook(
   if (update.durationSeconds !== null) patch.duration_seconds = update.durationSeconds
   if (update.isTerminal) patch.ended_at = new Date().toISOString()
   if (update.recordingSid) patch.recording_sid = update.recordingSid
+  if (update.recordingCompleted) {
+    patch.recording_status = 'pending'  // aguarda cron de transferência (Fase 4)
+    if (update.recordingUrl) patch.recording_url = update.recordingUrl
+  }
 
   await updateCallStatus(adminSupabase, update.callSid, patch)
+
+  if (update.isTerminal && userId) {
+    // Busca o callId pelo call_sid para disparar o evento
+    const { data: call } = await adminSupabase
+      .from('calls')
+      .select('id')
+      .eq('call_sid', update.callSid)
+      .maybeSingle()
+
+    if (call) {
+      dispatchCallEvent({
+        type: CALL_EVENT.CALL_ENDED,
+        callId: call.id,
+        userId,
+        occurredAt: new Date().toISOString(),
+        payload: { status: update.status, durationSeconds: update.durationSeconds },
+      })
+    }
+  }
+
+  if (update.recordingCompleted && userId) {
+    const { data: call } = await adminSupabase
+      .from('calls')
+      .select('id')
+      .eq('call_sid', update.callSid)
+      .maybeSingle()
+
+    if (call) {
+      dispatchCallEvent({
+        type: CALL_EVENT.RECORDING_AVAILABLE,
+        callId: call.id,
+        userId,
+        occurredAt: new Date().toISOString(),
+        payload: { recordingSid: update.recordingSid, recordingUrl: update.recordingUrl },
+      })
+    }
+  }
 
   return { ok: true }
 }
@@ -190,6 +242,20 @@ export async function requestCallAnalysis(
 
   const analysis = await createCallAnalysis(supabase, callId, userId)
   if (!analysis) return { ok: false, error: 'Falha ao registrar análise.', status: 500 }
+
+  // Marca analysis_status = 'pending' na chamada para o n8n detectar
+  await supabase
+    .from('calls')
+    .update({ analysis_status: 'pending', analysis_requested_at: new Date().toISOString() })
+    .eq('id', callId)
+
+  dispatchCallEvent({
+    type: CALL_EVENT.ANALYSIS_STARTED,
+    callId,
+    userId,
+    occurredAt: new Date().toISOString(),
+    payload: { analysisId: analysis.id },
+  })
 
   const n8nUrl = process.env.N8N_CALL_ANALYSIS_WEBHOOK_URL
   if (n8nUrl) {

@@ -85,6 +85,17 @@ export async function POST(request: NextRequest, { params }: Props) {
     return Response.json({ error: 'Falha ao salvar análise.' }, { status: 500 })
   }
 
+  // Atualiza pipeline status na tabela calls
+  await supabase
+    .from('calls')
+    .update({
+      analysis_status:        hasError ? 'failed' : 'completed',
+      analysis_completed_at:  hasError ? null : now,
+      transcription_status:   validation.data.transcript ? 'completed' : 'none',
+      transcription_completed_at: validation.data.transcript ? now : null,
+    })
+    .eq('id', callId)
+
   return Response.json({ ok: true, status: hasError ? 'failed' : 'completed' })
 }
 

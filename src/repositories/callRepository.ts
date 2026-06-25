@@ -73,7 +73,14 @@ export async function getCallsByUserLeadId(
 export async function updateCallStatus(
   supabase: SupabaseClient<Database>,
   callSid: string,
-  update: { status: string; duration_seconds?: number; ended_at?: string; recording_sid?: string }
+  update: {
+    status: string
+    duration_seconds?: number
+    ended_at?: string
+    recording_sid?: string
+    recording_url?: string
+    recording_status?: string
+  }
 ): Promise<boolean> {
   const { error } = await supabase
     .from('calls')
@@ -95,11 +102,34 @@ export async function updateCallRecording(
 ): Promise<boolean> {
   const { error } = await supabase
     .from('calls')
-    .update({ recording_url: recordingUrl, recording_expires_at: recordingExpiresAt })
+    .update({
+      recording_url: recordingUrl,
+      recording_expires_at: recordingExpiresAt,
+      recording_status: 'transferred',
+    })
     .eq('id', callId)
 
   if (error) {
     console.error('[callRepository.updateCallRecording]', error.message)
+    return false
+  }
+  return true
+}
+
+export async function updateCallNotes(
+  supabase: SupabaseClient<Database>,
+  callId: string,
+  userId: string,
+  notes: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('calls')
+    .update({ notes })
+    .eq('id', callId)
+    .eq('user_id', userId)
+
+  if (error) {
+    console.error('[callRepository.updateCallNotes]', error.message)
     return false
   }
   return true

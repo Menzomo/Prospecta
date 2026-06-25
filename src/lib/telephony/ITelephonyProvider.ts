@@ -9,8 +9,9 @@ export interface AccessTokenResult {
 
 // Parâmetros extraídos do webhook que inicia uma chamada (equivalente ao /twiml do Twilio)
 export interface OutboundCallRequest {
+  clientCallId: string | null   // UUID gerado pelo browser para correlação imediata
   callSid: string
-  userId: string | null     // extraído da identidade gerada em generateAccessToken
+  userId: string | null         // extraído da identidade gerada em generateAccessToken
   toNumber: string
   leadId: string | null
   userLeadId: string | null
@@ -20,10 +21,12 @@ export interface OutboundCallRequest {
 export interface CallStatusUpdate {
   callSid: string
   userId: string | null
-  status: string            // normalizado para os valores de CALL_STATUSES
+  status: string                // normalizado para os valores de CALL_STATUSES
   durationSeconds: number | null
   recordingSid: string | null
-  isTerminal: boolean       // true quando a chamada não mudará mais de status
+  recordingUrl: string | null   // URL da gravação no provedor (antes da transferência)
+  recordingCompleted: boolean   // true quando a gravação está disponível para download
+  isTerminal: boolean           // true quando a chamada não mudará mais de status
 }
 
 export interface ITelephonyProvider {

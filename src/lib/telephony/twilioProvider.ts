@@ -93,11 +93,12 @@ export class TwilioProvider implements ITelephonyProvider {
 
   parseOutboundCallRequest(params: Record<string, string>): OutboundCallRequest {
     return {
-      callSid:     params['CallSid'] ?? '',
-      userId:      this.extractUserId(params['Caller'] ?? ''),
-      toNumber:    this.normalizeToE164(params['To'] ?? ''),
-      leadId:      params['callLeadId']     || null,
-      userLeadId:  params['callUserLeadId'] || null,
+      clientCallId: params['callId']         || null,
+      callSid:      params['CallSid']        ?? '',
+      userId:       this.extractUserId(params['Caller'] ?? ''),
+      toNumber:     this.normalizeToE164(params['To'] ?? ''),
+      leadId:       params['callLeadId']     || null,
+      userLeadId:   params['callUserLeadId'] || null,
     }
   }
 
@@ -106,13 +107,18 @@ export class TwilioProvider implements ITelephonyProvider {
     const status    = STATUS_MAP[rawStatus] ?? rawStatus
     const duration  = params['CallDuration'] ? parseInt(params['CallDuration'], 10) : null
 
+    // Twilio envia RecordingStatus='completed' quando a gravação está disponível
+    const recordingCompleted = params['RecordingStatus'] === 'completed'
+
     return {
-      callSid:         params['CallSid'] ?? '',
-      userId:          this.extractUserId(params['Caller'] ?? ''),
+      callSid:           params['CallSid'] ?? '',
+      userId:            this.extractUserId(params['Caller'] ?? ''),
       status,
-      durationSeconds: duration,
-      recordingSid:    params['RecordingSid'] || null,
-      isTerminal:      TERMINAL_STATUSES.has(status),
+      durationSeconds:   duration,
+      recordingSid:      params['RecordingSid']  || null,
+      recordingUrl:      params['RecordingUrl']  || null,
+      recordingCompleted,
+      isTerminal:        TERMINAL_STATUSES.has(status),
     }
   }
 
