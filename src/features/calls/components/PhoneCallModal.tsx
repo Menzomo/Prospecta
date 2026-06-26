@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { usePhoneCall } from '../hooks/usePhoneCall'
 import { CallTimer } from './CallTimer'
 import { CallStatusIndicator } from './CallStatusIndicator'
-import { saveCallNotesAction } from '../actions'
+import { saveCallNotesAction, getAnalysisCreditsAction } from '../actions'
 
 type Props = {
   phone: string
@@ -18,6 +18,10 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
   const [editablePhone, setEditablePhone] = useState(phone)
   const [notes, setNotes]                 = useState('')
   const [notesSaved, setNotesSaved]       = useState(false)
+  const [credits, setCredits]             = useState<number | null>(null)
+  const [analysisState, setAnalysisState] = useState<
+    'idle' | 'loading' | 'requested' | 'no_recording' | 'no_credits' | 'error' | 'ignored'
+  >('idle')
   const notesRef = useRef<HTMLTextAreaElement>(null)
 
   const { state, error, callId, connectedAt, endedAt, startCall, endCall, reset } = usePhoneCall({
@@ -30,15 +34,40 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
   const isBusy      = ['initializing', 'connecting', 'ringing', 'in-progress'].includes(state)
   const canStart    = state === 'idle' || state === 'error'
 
-  // Foca o campo de notas ao encerrar
+  // Ao encerrar: foca notas e busca créditos disponíveis
   useEffect(() => {
-    if (isEnded) notesRef.current?.focus()
+    if (!isEnded) return
+    notesRef.current?.focus()
+    getAnalysisCreditsAction().then(c => {
+      if (c) setCredits(c.credits_total - c.credits_used)
+    })
   }, [isEnded])
 
   function handleClose() {
     if (isBusy) return   // não fechar durante chamada ativa
     reset()
+    setAnalysisState('idle')
+    setCredits(null)
     onClose()
+  }
+
+  async function handleRequestAnalysis() {
+    if (!callId) return
+    setAnalysisState('loading')
+
+    const res = await fetch(`/api/calls/${callId}/request-analysis`, { method: 'POST' })
+    const data: { error?: string } = await res.json().catch(() => ({}))
+
+    if (res.ok) {
+      setAnalysisState('requested')
+      setCredits(prev => (prev !== null ? prev - 1 : null))
+    } else if (res.status === 402) {
+      setAnalysisState('no_credits')
+    } else if (res.status === 422 && data.error?.toLowerCase().includes('gravação')) {
+      setAnalysisState('no_recording')
+    } else {
+      setAnalysisState('error')
+    }
   }
 
   async function handleSaveNotes() {
@@ -175,6 +204,85 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
                 </div>
               </div>
 
+              {/* — Prompt de análise com IA — */}
+              {analysisState !== 'ignored' && (
+                <div className="rounded-xl border border-outline px-4 py-3">
+                  {(analysisState === 'idle' || analysisState === 'loading') && (
+                    <>
+                      <p className="text-sm font-medium text-on-surface">
+                        Analisar conversa com IA?
+                      </p>
+                      {credits !== null && (
+                        <p className="mt-0.5 text-xs text-on-surface-muted">
+                          {credits} crédito{credits !== 1 ? 's' : ''} disponível{credits !== 1 ? 'is' : ''}
+                        </p>
+                      )}
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          type="button"
+                          disabled={analysisState === 'loading' || credits === 0}
+                          onClick={handleRequestAnalysis}
+                          className="flex-1 cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {analysisState === 'loading' ? 'Solicitando…' : 'Analisar'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={analysisState === 'loading'}
+                          onClick={() => setAnalysisState('ignored')}
+                          className="flex-1 cursor-pointer rounded-lg border border-outline px-3 py-2 text-sm font-medium text-on-surface transition-colors hover:bg-surface-low disabled:opacity-50"
+                        >
+                          Ignorar
+                        </button>
+                      </div>
+                    </>
+                  )}
+
+                  {analysisState === 'requested' && (
+                    <p className="text-sm text-green-600">
+                      Análise iniciada. O resultado ficará disponível no histórico desta chamada.
+                    </p>
+                  )}
+
+                  {analysisState === 'no_recording' && (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-sm text-amber-600">
+                        Gravação ainda sendo processada. Tente novamente em alguns minutos.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setAnalysisState('idle')}
+                        className="self-start text-xs text-primary underline"
+                      >
+                        Tentar novamente
+                      </button>
+                    </div>
+                  )}
+
+                  {analysisState === 'no_credits' && (
+                    <p className="text-sm text-red-500">
+                      Sem créditos disponíveis para análise.
+                    </p>
+                  )}
+
+                  {analysisState === 'error' && (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-sm text-red-500">
+                        Erro ao solicitar análise. Tente novamente.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setAnalysisState('idle')}
+                        className="self-start text-xs text-primary underline"
+                      >
+                        Tentar novamente
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* — Notas — */}
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="call-notes" className="text-xs font-medium text-on-surface-muted">
                   Notas da ligação <span className="font-normal">(opcional)</span>

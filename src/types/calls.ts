@@ -17,15 +17,6 @@ export const CALL_STATUSES = [
 ] as const
 export type CallStatus = (typeof CALL_STATUSES)[number]
 
-export const RECORDING_STATUSES = ['none', 'pending', 'available', 'transferred', 'expired'] as const
-export type RecordingStatus = (typeof RECORDING_STATUSES)[number]
-
-export const TRANSCRIPTION_STATUSES = ['none', 'pending', 'processing', 'completed', 'failed'] as const
-export type TranscriptionStatus = (typeof TRANSCRIPTION_STATUSES)[number]
-
-export const ANALYSIS_STATUSES = ['none', 'pending', 'processing', 'completed', 'failed'] as const
-export type AnalysisStatus = (typeof ANALYSIS_STATUSES)[number]
-
 export const CALL_ANALYSIS_STATUSES = ['pending', 'processing', 'completed', 'failed'] as const
 export type CallAnalysisStatus = (typeof CALL_ANALYSIS_STATUSES)[number]
 

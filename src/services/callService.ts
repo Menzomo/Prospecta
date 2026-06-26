@@ -9,7 +9,7 @@ import type { ITelephonyProvider, AccessTokenResult } from '@/lib/telephony/ITel
 import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
 import { createProviderFromSettings } from '@/lib/telephony/factory'
 import { createCall, updateCallStatus } from '@/repositories/callRepository'
-import { createCallAnalysis } from '@/repositories/callAnalysisRepository'
+import { createCallAnalysis, getCallAnalysisByCallId } from '@/repositories/callAnalysisRepository'
 import { deductCredit, getCurrentPeriodCredits } from '@/repositories/analysisCreditRepository'
 import { CALL_EVENT, dispatchCallEvent } from '@/features/calls/events'
 
@@ -165,8 +165,12 @@ export async function handleStatusCallbackWebhook(
   if (update.isTerminal) patch.ended_at = new Date().toISOString()
   if (update.recordingSid) patch.recording_sid = update.recordingSid
   if (update.recordingCompleted) {
-    patch.recording_status = 'pending'  // aguarda cron de transferência (Fase 4)
-    if (update.recordingUrl) patch.recording_url = update.recordingUrl
+    // recording_url fica NULL até o cron (Fase 4) transferir para o Storage
+    // recording_expires_at = ended_at + 15 dias (CALLS_ROADMAP.md Phase 4.2)
+    const base = patch.ended_at ?? new Date().toISOString()
+    patch.recording_expires_at = new Date(
+      new Date(base).getTime() + 15 * 24 * 60 * 60 * 1000
+    ).toISOString()
   }
 
   await updateCallStatus(adminSupabase, update.callSid, patch)
@@ -213,6 +217,8 @@ export async function handleStatusCallbackWebhook(
 
 /**
  * Solicita análise de IA para uma chamada concluída (chamado por POST /api/calls/[id]/request-analysis).
+ * Gatilhado explicitamente pelo usuário — nunca chamado automaticamente.
+ * Fluxo: verifica créditos → debita → cria registro em call_analyses → dispara n8n.
  */
 export async function requestCallAnalysis(
   supabase: SupabaseClient<Database>,
@@ -226,8 +232,16 @@ export async function requestCallAnalysis(
   if (call.status !== 'completed') {
     return { ok: false, error: 'Chamada não concluída.', status: 422 }
   }
+
+  // recording_url é NULL até o cron (Fase 4) transferir para o Supabase Storage
   if (!call.recording_url) {
     return { ok: false, error: 'Gravação ainda não disponível. Aguarde e tente novamente.', status: 422 }
+  }
+
+  // Evita análise duplicada consultando call_analyses (tem UNIQUE constraint em call_id)
+  const existingAnalysis = await getCallAnalysisByCallId(supabase, callId, userId)
+  if (existingAnalysis) {
+    return { ok: false, error: 'Análise já solicitada ou concluída para esta chamada.', status: 422 }
   }
 
   const credits = await getCurrentPeriodCredits(supabase, userId)
@@ -243,12 +257,6 @@ export async function requestCallAnalysis(
   const analysis = await createCallAnalysis(supabase, callId, userId)
   if (!analysis) return { ok: false, error: 'Falha ao registrar análise.', status: 500 }
 
-  // Marca analysis_status = 'pending' na chamada para o n8n detectar
-  await supabase
-    .from('calls')
-    .update({ analysis_status: 'pending', analysis_requested_at: new Date().toISOString() })
-    .eq('id', callId)
-
   dispatchCallEvent({
     type: CALL_EVENT.ANALYSIS_STARTED,
     callId,
@@ -257,15 +265,20 @@ export async function requestCallAnalysis(
     payload: { analysisId: analysis.id },
   })
 
+  // Gera URL assinada (24h) para o n8n baixar a gravação do Storage privado
   const n8nUrl = process.env.N8N_CALL_ANALYSIS_WEBHOOK_URL
   if (n8nUrl) {
+    const { data: signed } = await supabase.storage
+      .from('call-recordings')
+      .createSignedUrl(call.recording_url, 86400)
+
     fetch(n8nUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         call_id:       callId,
         analysis_id:   analysis.id,
-        recording_url: call.recording_url,
+        recording_url: signed?.signedUrl ?? null,
         user_id:       userId,
       }),
     }).catch((err) => console.error('[callService] n8n webhook error:', err))

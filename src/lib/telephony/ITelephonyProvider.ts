@@ -59,4 +59,5 @@ export interface ITelephonyProvider {
    * em uma estrutura normalizada.
    */
   parseStatusCallback(params: Record<string, string>): CallStatusUpdate
+
 }

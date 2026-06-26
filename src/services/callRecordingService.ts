@@ -1,0 +1,156 @@
+// Fase 4: transferência e expiração de gravações.
+// transfer-recordings (5min): recording_sid IS NOT NULL AND recording_url IS NULL → baixa Twilio, sobe Storage, deleta Twilio.
+// expire-recordings (diário): recording_expires_at < NOW() AND recording_url IS NOT NULL → remove Storage, nula recording_url.
+
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/supabase/types'
+import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
+import { decryptCredential } from '@/lib/crypto/credentials'
+import { updateCallRecording } from '@/repositories/callRepository'
+
+const STORAGE_BUCKET = 'call-recordings'
+
+type PendingCall = {
+  id: string
+  user_id: string
+  recording_sid: string
+}
+
+export async function transferPendingRecordings(
+  adminSupabase: SupabaseClient<Database>
+): Promise<{ transferred: number; errors: number }> {
+  const { data: pendingCalls } = await adminSupabase
+    .from('calls')
+    .select('id, user_id, recording_sid')
+    .not('recording_sid', 'is', null)
+    .is('recording_url', null)
+    .limit(50)
+
+  if (!pendingCalls?.length) return { transferred: 0, errors: 0 }
+
+  let transferred = 0
+  let errors = 0
+
+  for (const call of pendingCalls as PendingCall[]) {
+    try {
+      await transferSingleRecording(adminSupabase, call)
+      transferred++
+    } catch (err) {
+      console.error('[callRecordingService] transfer failed', { callId: call.id, err })
+      errors++
+    }
+  }
+
+  return { transferred, errors }
+}
+
+async function transferSingleRecording(
+  adminSupabase: SupabaseClient<Database>,
+  call: PendingCall
+): Promise<void> {
+  const settings = await getTelephonySettings(adminSupabase, call.user_id)
+  if (!settings) throw new Error(`No telephony settings for user ${call.user_id}`)
+
+  const authToken = decryptCredential(settings.auth_token_encrypted)
+
+  // Constrói a URL de download do Twilio a partir de account_sid + recording_sid (sem SDK)
+  const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${settings.account_sid}/Recordings/${call.recording_sid}.mp3`
+  const auth = Buffer.from(`${settings.account_sid}:${authToken}`).toString('base64')
+
+  const response = await fetch(twilioUrl, { headers: { Authorization: `Basic ${auth}` } })
+  if (!response.ok) throw new Error(`Twilio download failed: HTTP ${response.status}`)
+
+  const audioBuffer = Buffer.from(await response.arrayBuffer())
+
+  const storagePath = `${call.user_id}/${call.id}.mp3`
+  const { error: uploadError } = await adminSupabase.storage
+    .from(STORAGE_BUCKET)
+    .upload(storagePath, audioBuffer, { contentType: 'audio/mpeg', upsert: true })
+
+  if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`)
+
+  const ok = await updateCallRecording(adminSupabase, call.id, storagePath)
+  if (!ok) throw new Error(`DB update failed for call ${call.id}`)
+
+  // Remove do Twilio após transferência bem-sucedida (evita custo de armazenamento)
+  // Não-fatal: a gravação já está no Storage; apenas loga se falhar.
+  try {
+    await deleteTwilioRecording(settings.account_sid, authToken, call.recording_sid)
+  } catch (err) {
+    console.warn('[callRecordingService] Twilio delete failed (non-fatal)', { callId: call.id, err })
+  }
+}
+
+// ── Expiração ─────────────────────────────────────────────────────────────────
+
+type ExpiredCall = {
+  id: string
+  recording_url: string
+}
+
+export async function expireOldRecordings(
+  adminSupabase: SupabaseClient<Database>
+): Promise<{ expired: number; errors: number }> {
+  const { data: expiredCalls } = await adminSupabase
+    .from('calls')
+    .select('id, recording_url')
+    .lt('recording_expires_at', new Date().toISOString())
+    .not('recording_url', 'is', null)
+    .limit(100)
+
+  if (!expiredCalls?.length) return { expired: 0, errors: 0 }
+
+  let expired = 0
+  let errors = 0
+
+  for (const call of expiredCalls as ExpiredCall[]) {
+    try {
+      await expireSingleRecording(adminSupabase, call)
+      expired++
+    } catch (err) {
+      console.error('[callRecordingService] expire failed', { callId: call.id, err })
+      errors++
+    }
+  }
+
+  return { expired, errors }
+}
+
+async function expireSingleRecording(
+  adminSupabase: SupabaseClient<Database>,
+  call: ExpiredCall
+): Promise<void> {
+  const { error: removeError } = await adminSupabase.storage
+    .from(STORAGE_BUCKET)
+    .remove([call.recording_url])
+
+  if (removeError) throw new Error(`Storage remove failed: ${removeError.message}`)
+
+  const { error: dbError } = await adminSupabase
+    .from('calls')
+    .update({ recording_url: null, recording_deleted_at: new Date().toISOString() })
+    .eq('id', call.id)
+
+  if (dbError) throw new Error(`DB update failed: ${dbError.message}`)
+}
+
+// ── Helpers internos ───────────────────────────────────────────────────────────
+
+async function deleteTwilioRecording(
+  accountSid: string,
+  authToken: string,
+  recordingSid: string
+): Promise<void> {
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Recordings/${recordingSid}`
+  const auth = Buffer.from(`${accountSid}:${authToken}`).toString('base64')
+
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: { Authorization: `Basic ${auth}` },
+  })
+
+  // 204 = sucesso, 404 = já deletado (idempotente — não é erro)
+  if (!response.ok && response.status !== 404) {
+    throw new Error(`HTTP ${response.status}`)
+  }
+}

@@ -78,8 +78,7 @@ export async function updateCallStatus(
     duration_seconds?: number
     ended_at?: string
     recording_sid?: string
-    recording_url?: string
-    recording_status?: string
+    recording_expires_at?: string
   }
 ): Promise<boolean> {
   const { error } = await supabase
@@ -97,17 +96,13 @@ export async function updateCallStatus(
 export async function updateCallRecording(
   supabase: SupabaseClient<Database>,
   callId: string,
-  recordingUrl: string,
-  recordingExpiresAt: string
+  storagePath: string
 ): Promise<boolean> {
   const { error } = await supabase
     .from('calls')
-    .update({
-      recording_url: recordingUrl,
-      recording_expires_at: recordingExpiresAt,
-      recording_status: 'transferred',
-    })
+    .update({ recording_url: storagePath })
     .eq('id', callId)
+    .is('recording_url', null)
 
   if (error) {
     console.error('[callRepository.updateCallRecording]', error.message)
