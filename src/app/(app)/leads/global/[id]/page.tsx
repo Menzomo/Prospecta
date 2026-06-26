@@ -66,7 +66,12 @@ export default async function UserLeadDetailPage({ params }: Props) {
           </div>
 
           <div className="flex items-center gap-2">
-            <CallButton phone={gl.phone ?? null} hasSettings={telephonySettings !== null} />
+            <CallButton
+              phone={gl.phone ?? null}
+              hasSettings={telephonySettings !== null}
+              companyName={gl.company_name}
+              userLeadId={data.id}
+            />
             {gl.email && (
               <Link
                 href={`/leads/global/${id}/send`}

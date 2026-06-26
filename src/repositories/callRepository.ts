@@ -73,7 +73,13 @@ export async function getCallsByUserLeadId(
 export async function updateCallStatus(
   supabase: SupabaseClient<Database>,
   callSid: string,
-  update: { status: string; duration_seconds?: number; ended_at?: string; recording_sid?: string }
+  update: {
+    status: string
+    duration_seconds?: number
+    ended_at?: string
+    recording_sid?: string
+    recording_expires_at?: string
+  }
 ): Promise<boolean> {
   const { error } = await supabase
     .from('calls')
@@ -90,16 +96,35 @@ export async function updateCallStatus(
 export async function updateCallRecording(
   supabase: SupabaseClient<Database>,
   callId: string,
-  recordingUrl: string,
-  recordingExpiresAt: string
+  storagePath: string
 ): Promise<boolean> {
   const { error } = await supabase
     .from('calls')
-    .update({ recording_url: recordingUrl, recording_expires_at: recordingExpiresAt })
+    .update({ recording_url: storagePath })
     .eq('id', callId)
+    .is('recording_url', null)
 
   if (error) {
     console.error('[callRepository.updateCallRecording]', error.message)
+    return false
+  }
+  return true
+}
+
+export async function updateCallNotes(
+  supabase: SupabaseClient<Database>,
+  callId: string,
+  userId: string,
+  notes: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('calls')
+    .update({ notes })
+    .eq('id', callId)
+    .eq('user_id', userId)
+
+  if (error) {
+    console.error('[callRepository.updateCallNotes]', error.message)
     return false
   }
   return true

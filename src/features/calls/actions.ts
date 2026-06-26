@@ -74,6 +74,18 @@ export async function saveTelephonySettingsAction(
   return { success: true }
 }
 
+// --- Save call notes ---
+
+export async function saveCallNotesAction(callId: string, notes: string): Promise<{ ok: boolean }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { ok: false }
+
+  const { updateCallNotes } = await import('@/repositories/callRepository')
+  const ok = await updateCallNotes(supabase, callId, user.id, notes)
+  return { ok }
+}
+
 // --- Get analysis credits ---
 
 export async function getAnalysisCreditsAction(): Promise<AnalysisCredits | null> {

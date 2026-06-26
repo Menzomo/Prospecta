@@ -1,0 +1,3 @@
+-- Intentionally empty: pipeline status columns (recording_status, transcription_status,
+-- analysis_status, etc.) were removed. Transfer state is derived from recording_url IS NULL;
+-- analysis state lives in the call_analyses table.

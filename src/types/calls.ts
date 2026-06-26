@@ -15,7 +15,6 @@ export const CALL_STATUSES = [
   'busy',
   'canceled',
 ] as const
-
 export type CallStatus = (typeof CALL_STATUSES)[number]
 
 export const CALL_ANALYSIS_STATUSES = ['pending', 'processing', 'completed', 'failed'] as const
@@ -31,6 +30,7 @@ export type UpsertTelephonySettingsDto = {
 }
 
 export type CreateCallDto = {
+  id?: string           // UUID gerado pelo browser para correlação imediata
   user_id: string
   lead_id: string | null
   user_lead_id: string | null

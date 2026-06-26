@@ -10,19 +10,27 @@
 
 ### 1. `telephony_settings`
 
-Armazena as credenciais Twilio de cada usuário. O Auth Token é sempre criptografado em repouso.
+Armazena as credenciais Twilio de cada usuário. Auth Token e API Key Secret são sempre criptografados em repouso.
+
+A autenticação pode usar dois modos:
+- **Account SID + Auth Token** — credencial principal; funciona sem API Key.
+- **Account SID + API Key SID + API Key Secret** *(recomendado)* — API Key pode ser revogada independentemente sem alterar o Auth Token. Preferida para geração de Access Tokens no browser.
+
+O campo `api_key_sid` e `api_key_secret_encrypted` são opcionais; quando ausentes, o sistema recai para o Auth Token.
 
 ```sql
 CREATE TABLE telephony_settings (
-  id                    uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id               uuid        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  account_sid           text        NOT NULL,
-  auth_token_encrypted  text        NOT NULL,   -- AES-256-GCM(auth_token, TELEPHONY_MASTER_KEY)
-  phone_number          text        NOT NULL,   -- Número Twilio em formato E.164 (+5511...)
-  twiml_app_sid         text,                  -- SID do TwiML App configurado no Twilio
-  is_active             boolean     NOT NULL DEFAULT true,
-  created_at            timestamptz NOT NULL DEFAULT now(),
-  updated_at            timestamptz NOT NULL DEFAULT now(),
+  id                          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id                     uuid        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  account_sid                 text        NOT NULL,
+  auth_token_encrypted        text        NOT NULL,   -- AES-256-GCM(auth_token, TELEPHONY_MASTER_KEY)
+  api_key_sid                 text,                  -- SID da API Key Twilio (opcional, preferida para Access Tokens)
+  api_key_secret_encrypted    text,                  -- AES-256-GCM(api_key_secret, TELEPHONY_MASTER_KEY)
+  phone_number                text        NOT NULL,   -- Número Twilio em formato E.164 (+5511...)
+  twiml_app_sid               text,                  -- SID do TwiML App configurado no Twilio
+  is_active                   boolean     NOT NULL DEFAULT true,
+  created_at                  timestamptz NOT NULL DEFAULT now(),
+  updated_at                  timestamptz NOT NULL DEFAULT now(),
 
   CONSTRAINT telephony_settings_user_unique UNIQUE (user_id),
   CONSTRAINT telephony_settings_phone_e164  CHECK (phone_number ~ '^\+[1-9]\d{7,14}$')

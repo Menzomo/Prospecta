@@ -24,6 +24,23 @@ export async function getCurrentPeriodCredits(
   return data
 }
 
+export async function deductCredit(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<boolean> {
+  const now = new Date().toISOString()
+
+  // UPDATE atômico: só decrementa se ainda há créditos disponíveis no período atual
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any).rpc('deduct_analysis_credit', { p_user_id: userId, p_now: now })
+
+  if (error) {
+    console.error('[analysisCreditRepository.deductCredit]', error.message)
+    return false
+  }
+  return data === true
+}
+
 export async function initializePeriodCredits(
   supabase: SupabaseClient<Database>,
   userId: string,
