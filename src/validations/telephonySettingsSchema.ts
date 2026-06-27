@@ -10,7 +10,8 @@ export const telephonySettingsSchema = z.object({
     .startsWith('AC', 'Account SID deve começar com AC'),
   auth_token: z
     .string()
-    .min(1, 'Auth Token é obrigatório'),
+    .optional()
+    .transform((v) => v || null),
   api_key_sid: z
     .string()
     .optional()

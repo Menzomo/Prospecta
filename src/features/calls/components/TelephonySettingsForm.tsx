@@ -46,12 +46,9 @@ export function TelephonySettingsForm({ initialData }: Props) {
           id="auth_token"
           name="auth_token"
           type="password"
-          placeholder={isConfigured ? '••••••••••••••••••••••••••••••••' : ''}
+          placeholder={isConfigured ? 'Deixe em branco para manter o atual' : 'Cole seu Auth Token aqui'}
           className="rounded-lg border border-outline px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
-        {isConfigured && (
-          <p className="text-xs text-on-surface-muted">Deixe em branco para manter o atual.</p>
-        )}
         {state?.errors?.auth_token && (
           <p className="text-xs text-red-500">{state.errors.auth_token[0]}</p>
         )}
@@ -83,7 +80,7 @@ export function TelephonySettingsForm({ initialData }: Props) {
             id="api_key_secret"
             name="api_key_secret"
             type="password"
-            placeholder={isConfigured && initialData?.api_key_secret_encrypted ? '••••••••••••••••' : ''}
+            placeholder={isConfigured && initialData?.api_key_secret_encrypted ? 'Deixe em branco para manter o atual' : ''}
             className="rounded-lg border border-outline px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
           {state?.errors?.api_key_secret && (
