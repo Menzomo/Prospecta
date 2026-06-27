@@ -5,6 +5,7 @@ import { getLeadsByUserId } from '@/repositories/leadRepository'
 import { getUserLeadsWithGlobalData } from '@/repositories/userLeadRepository'
 import { listLeadCategories } from '@/repositories/leadCategoryRepository'
 import { hideLeadAction, hideUserLeadAction } from '@/features/leads/actions'
+import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
 import type { LeadStatus } from '@/types/leads'
 import type { LeadCategory } from '@/types/globalLeads'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -33,11 +34,14 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
 
   if (!user) redirect('/login')
 
-  const [manualLeads, searchLeads, categories] = await Promise.all([
+  const [manualLeads, searchLeads, categories, telephonySettings] = await Promise.all([
     getLeadsByUserId(supabase, user.id),
     getUserLeadsWithGlobalData(supabase, user.id),
     listLeadCategories(supabase),
+    getTelephonySettings(supabase, user.id),
   ])
+
+  const hasSettings = telephonySettings !== null
 
   const categoryById = new Map<string, LeadCategory>(categories.map((c) => [c.id, c]))
   const categoryBySlug = new Map<string, LeadCategory>(categories.map((c) => [c.slug, c]))
@@ -162,28 +166,33 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
             {totalCount} {totalCount === 1 ? 'lead' : 'leads'}
           </p>
           <LeadsGrid
+            hasSettings={hasSettings}
             leads={[
               ...filteredSearchLeads.map((lead): LeadCardData => ({
                 key: `search-${lead.id}`,
                 company_name: lead.company_name,
                 email: lead.email ?? null,
+                phone: lead.phone ?? null,
                 city: lead.city ?? null,
                 category_name: lead.category_name ?? null,
                 status: lead.status as LeadStatus,
                 leadHref: `/leads/global/${lead.id}`,
                 sendHref: `/leads/global/${lead.id}/send`,
                 hideAction: hideUserLeadAction.bind(null, lead.id),
+                userLeadId: lead.id,
               })),
               ...filteredManualLeads.map((lead): LeadCardData => ({
                 key: `manual-${lead.id}`,
                 company_name: lead.company_name,
                 email: lead.email ?? null,
+                phone: lead.phone ?? null,
                 city: lead.city ?? null,
                 category_name: null,
                 status: lead.status as LeadStatus,
                 leadHref: `/leads/${lead.id}`,
                 sendHref: `/leads/${lead.id}/send`,
                 hideAction: hideLeadAction.bind(null, lead.id),
+                leadId: lead.id,
               })),
             ]}
           />

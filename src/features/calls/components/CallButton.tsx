@@ -9,9 +9,10 @@ type Props = {
   companyName: string
   leadId?: string | null
   userLeadId?: string | null
+  size?: 'sm' | 'md'
 }
 
-export function CallButton({ phone, hasSettings, companyName, leadId, userLeadId }: Props) {
+export function CallButton({ phone, hasSettings, companyName, leadId, userLeadId, size = 'md' }: Props) {
   const [isOpen, setIsOpen] = useState(false)
 
   const disabled = !phone || !hasSettings
@@ -29,7 +30,7 @@ export function CallButton({ phone, hasSettings, companyName, leadId, userLeadId
         disabled={disabled}
         title={getTitle()}
         onClick={() => setIsOpen(true)}
-        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+        className={`flex items-center gap-1.5 rounded-${size === 'sm' ? 'md' : 'lg'} px-3 py-1.5 ${size === 'sm' ? 'text-xs' : 'text-sm'} font-medium transition-colors ${
           disabled
             ? 'cursor-not-allowed border border-outline bg-surface-low text-on-surface-muted opacity-60'
             : 'cursor-pointer bg-primary text-white hover:bg-primary-dark'
