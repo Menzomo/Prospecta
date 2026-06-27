@@ -56,7 +56,15 @@ export async function generateToken(
   supabase: SupabaseClient<Database>,
   userId: string
 ): Promise<TokenResult> {
-  const loaded = await loadProvider(supabase, userId)
+  let loaded: Awaited<ReturnType<typeof loadProvider>>
+  try {
+    loaded = await loadProvider(supabase, userId)
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Falha ao carregar configurações de telefonia.'
+    console.error('[callService.generateToken] loadProvider error', err)
+    return { ok: false, error: msg, status: 500 }
+  }
+
   if (!loaded) {
     return { ok: false, error: 'Telefonia não configurada. Acesse Configurações → Telefonia.', status: 422 }
   }
