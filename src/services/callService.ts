@@ -301,7 +301,7 @@ export async function requestCallAnalysis(
       .from('call-recordings')
       .createSignedUrl(call.recording_url, 86400)
 
-    fetch(n8nUrl, {
+    await fetch(n8nUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
