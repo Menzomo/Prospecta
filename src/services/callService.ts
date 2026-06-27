@@ -9,7 +9,7 @@ import type { ITelephonyProvider, AccessTokenResult } from '@/lib/telephony/ITel
 import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
 import { createProviderFromSettings } from '@/lib/telephony/factory'
 import { createCall, updateCallStatus } from '@/repositories/callRepository'
-import { createCallAnalysis, getCallAnalysisByCallId } from '@/repositories/callAnalysisRepository'
+import { createCallAnalysis, getCallAnalysisByCallId, deleteCallAnalysisByCallId } from '@/repositories/callAnalysisRepository'
 import { deductCredit, getCurrentPeriodCredits } from '@/repositories/analysisCreditRepository'
 import { CALL_EVENT, dispatchCallEvent } from '@/features/calls/events'
 
@@ -314,6 +314,36 @@ export async function requestCallAnalysis(
   }
 
   return { ok: true, analysisId: analysis.id }
+}
+
+/**
+ * Exclui a análise existente e solicita nova (reanálise).
+ * Só permitido quando a análise anterior está completed ou failed.
+ */
+export async function reanalyzeCall(
+  supabase: SupabaseClient<Database>,
+  callId: string,
+  userId: string
+): Promise<RequestAnalysisResult> {
+  const { getCallById } = await import('@/repositories/callRepository')
+  const call = await getCallById(supabase, callId, userId)
+  if (!call) return { ok: false, error: 'Chamada não encontrada.', status: 404 }
+
+  if (!call.recording_url) {
+    return { ok: false, error: 'Gravação ainda não disponível.', status: 422 }
+  }
+
+  const existing = await getCallAnalysisByCallId(supabase, callId, userId)
+  if (existing && existing.status !== 'completed' && existing.status !== 'failed') {
+    return { ok: false, error: 'Análise em andamento. Aguarde antes de reanalisar.', status: 422 }
+  }
+
+  if (existing) {
+    await deleteCallAnalysisByCallId(supabase, callId, userId)
+  }
+
+  // Reutiliza o fluxo normal (já sem análise existente)
+  return requestCallAnalysis(supabase, callId, userId)
 }
 
 // ── handler interno para callback de gravação ─────────────────────────────────

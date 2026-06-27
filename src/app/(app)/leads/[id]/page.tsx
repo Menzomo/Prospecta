@@ -13,6 +13,7 @@ import { LeadRepliesButton } from '@/features/leads/components/LeadRepliesButton
 import { LeadFollowupSection } from '@/features/followups/components/LeadFollowupSection'
 import { CallButton } from '@/features/calls/components/CallButton'
 import { LeadCallsSection } from '@/features/calls/components/LeadCallsSection'
+import { LeadEmailsSection } from '@/features/email/components/LeadEmailsSection'
 import { LEAD_STATUS_LABELS } from '@/types/leads'
 import type { LeadStatus } from '@/types/leads'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -85,7 +86,8 @@ export default async function LeadDetailPage({ params }: Props) {
       </header>
 
       <main className="flex flex-1 justify-center p-6">
-        <div className="w-full max-w-lg space-y-6">
+        <div className="w-full max-w-5xl space-y-6">
+          {/* Status summary */}
           <div className="rounded-xl border border-outline bg-surface-container p-4 shadow-card">
             <div className="flex items-center justify-between">
               <div>
@@ -105,14 +107,22 @@ export default async function LeadDetailPage({ params }: Props) {
             </div>
           </div>
 
-          <div className="rounded-xl border border-outline bg-surface-container p-6 shadow-card">
-            <h2 className="mb-4 text-base font-semibold text-on-surface font-[--font-heading]">Editar dados</h2>
-            <LeadEditForm lead={lead} />
+          {/* Main grid: edit form + email/calls side by side */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* Left: edit form */}
+            <div className="rounded-xl border border-outline bg-surface-container p-6 shadow-card">
+              <h2 className="mb-4 text-base font-semibold text-on-surface font-[--font-heading]">Editar dados</h2>
+              <LeadEditForm lead={lead} />
+            </div>
+
+            {/* Right: emails + calls stacked */}
+            <div className="flex flex-col gap-4">
+              <LeadEmailsSection messages={emailMessages} threads={emailThreads} />
+              <LeadCallsSection calls={calls} leadId={lead.id} />
+            </div>
           </div>
 
           <LeadFollowupSection leadId={lead.id} followups={followups} />
-
-          <LeadCallsSection calls={calls} leadId={lead.id} />
 
           <LeadTimeline lead={lead} messages={emailMessages} followups={followups} threads={emailThreads} calls={calls} />
         </div>
