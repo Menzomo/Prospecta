@@ -4,6 +4,7 @@ import Link from 'next/link'
 import type { LeadStatus } from '@/types/leads'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Avatar } from '@/components/ui/Avatar'
+import { CallButton } from '@/features/calls/components/CallButton'
 
 const PAGE_SIZE = 12
 
@@ -11,15 +12,18 @@ export type LeadCardData = {
   key: string
   company_name: string
   email: string | null
+  phone: string | null
   city: string | null
   category_name: string | null
   status: LeadStatus
   leadHref: string
   sendHref: string
   hideAction: (_formData: FormData) => Promise<void>
+  leadId?: string | null
+  userLeadId?: string | null
 }
 
-export function LeadsGrid({ leads }: { leads: LeadCardData[] }) {
+export function LeadsGrid({ leads, hasSettings = false }: { leads: LeadCardData[]; hasSettings?: boolean }) {
   const [limit, setLimit] = useState(PAGE_SIZE)
   const visible = leads.slice(0, limit)
   const remaining = leads.length - limit
@@ -46,13 +50,23 @@ export function LeadsGrid({ leads }: { leads: LeadCardData[] }) {
               {lead.email && <p>{lead.email}</p>}
               {lead.city && <p>{lead.city}</p>}
             </div>
-            <div className="mt-4 flex items-center gap-1.5">
+            <div className="mt-4 flex flex-wrap items-center gap-1.5">
               <Link
                 href={lead.sendHref}
                 className="rounded-md bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
               >
                 Enviar email
               </Link>
+              {lead.phone && (
+                <CallButton
+                  phone={lead.phone}
+                  hasSettings={hasSettings}
+                  companyName={lead.company_name}
+                  leadId={lead.leadId}
+                  userLeadId={lead.userLeadId}
+                  size="sm"
+                />
+              )}
               <Link
                 href={lead.leadHref}
                 className="rounded-md border border-outline px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:bg-surface-low"

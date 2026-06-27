@@ -46,7 +46,7 @@ export function TelephonySettingsForm({ initialData }: Props) {
           id="auth_token"
           name="auth_token"
           type="password"
-          placeholder={isConfigured ? 'Deixe em branco para manter o atual' : 'Cole seu Auth Token aqui'}
+          placeholder={isConfigured ? '••••••••••••••••••••••••••••••••' : ''}
           className="rounded-lg border border-outline px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
         {state?.errors?.auth_token && (
