@@ -209,6 +209,15 @@ export async function handleStatusCallbackWebhook(
         occurredAt: new Date().toISOString(),
         payload: { recordingSid: update.recordingSid, recordingUrl: update.recordingUrl },
       })
+
+      if (update.recordingSid) {
+        const { transferSingleRecording } = await import('@/services/callRecordingService')
+        transferSingleRecording(adminSupabase, {
+          id: call.id,
+          user_id: userId,
+          recording_sid: update.recordingSid,
+        }).catch((err) => console.error('[callService] immediate recording transfer failed', err))
+      }
     }
   }
 
