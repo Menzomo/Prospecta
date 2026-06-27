@@ -63,7 +63,7 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
       setCredits(prev => (prev !== null ? prev - 1 : null))
     } else if (res.status === 402) {
       setAnalysisState('no_credits')
-    } else if (res.status === 422 && data.error?.toLowerCase().includes('gravação')) {
+    } else if (res.status === 422) {
       setAnalysisState('no_recording')
     } else {
       setAnalysisState('error')
@@ -204,8 +204,8 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
                 </div>
               </div>
 
-              {/* — Prompt de análise com IA — */}
-              {analysisState !== 'ignored' && (
+              {/* — Prompt de análise com IA — só se a chamada chegou a ser atendida */}
+              {analysisState !== 'ignored' && connectedAt !== null && (
                 <div className="rounded-xl border border-outline px-4 py-3">
                   {(analysisState === 'idle' || analysisState === 'loading') && (
                     <>
@@ -247,7 +247,7 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
                   {analysisState === 'no_recording' && (
                     <div className="flex flex-col gap-2">
                       <p className="text-sm text-amber-600">
-                        Gravação ainda sendo processada. Tente novamente em alguns minutos.
+                        Gravação ainda não disponível. Se a chamada foi atendida, aguarde alguns minutos e tente novamente.
                       </p>
                       <button
                         type="button"
