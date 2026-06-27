@@ -24,7 +24,7 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
   >('idle')
   const [recordingReady, setRecordingReady] = useState(false)
   const notesRef = useRef<HTMLTextAreaElement>(null)
-  const readyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const { state, error, callId, connectedAt, endedAt, startCall, endCall, reset } = usePhoneCall({
     leadId,
@@ -36,18 +36,26 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
   const isBusy      = ['initializing', 'connecting', 'ringing', 'in-progress'].includes(state)
   const canStart    = state === 'idle' || state === 'error'
 
-  // Ao encerrar: foca notas, busca créditos e inicia timer de 2min para gravação
+  // Ao encerrar: foca notas, busca créditos e inicia polling de gravação
   useEffect(() => {
     if (!isEnded) return
     notesRef.current?.focus()
     getAnalysisCreditsAction().then(c => {
       if (c) setCredits(c.credits_total - c.credits_used)
     })
-    if (connectedAt) {
-      readyTimerRef.current = setTimeout(() => setRecordingReady(true), 2 * 60 * 1000)
+    if (connectedAt && callId) {
+      pollRef.current = setInterval(async () => {
+        const res = await fetch(`/api/calls/${callId}/recording-ready`).catch(() => null)
+        if (!res?.ok) return
+        const data = await res.json().catch(() => ({}))
+        if (data.ready) {
+          setRecordingReady(true)
+          if (pollRef.current) clearInterval(pollRef.current)
+        }
+      }, 15_000)
     }
     return () => {
-      if (readyTimerRef.current) clearTimeout(readyTimerRef.current)
+      if (pollRef.current) clearInterval(pollRef.current)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEnded])
@@ -220,22 +228,15 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
                   {!recordingReady && analysisState === 'idle' && (
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
-                        <svg className="h-4 w-4 animate-spin text-on-surface-muted" viewBox="0 0 24 24" fill="none" aria-hidden>
+                        <svg className="h-4 w-4 shrink-0 animate-spin text-on-surface-muted" viewBox="0 0 24 24" fill="none" aria-hidden>
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                         </svg>
                         <p className="text-sm font-medium text-on-surface">Processando gravação…</p>
                       </div>
                       <p className="text-xs text-on-surface-muted">
-                        Isso leva alguns minutos. Você poderá solicitar a análise de IA em breve.
+                        Isso pode levar alguns minutos. A opção de análise de IA aparecerá assim que estiver pronta.
                       </p>
-                      <button
-                        type="button"
-                        onClick={() => setRecordingReady(true)}
-                        className="self-start text-xs text-primary underline"
-                      >
-                        Já faz alguns minutos? Tentar agora
-                      </button>
                     </div>
                   )}
 
