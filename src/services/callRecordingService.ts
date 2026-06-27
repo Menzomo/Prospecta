@@ -44,7 +44,7 @@ export async function transferPendingRecordings(
   return { transferred, errors }
 }
 
-async function transferSingleRecording(
+export async function transferSingleRecording(
   adminSupabase: SupabaseClient<Database>,
   call: PendingCall
 ): Promise<void> {
