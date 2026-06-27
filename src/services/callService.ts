@@ -253,12 +253,11 @@ export async function requestCallAnalysis(
   const call = await getCallById(supabase, callId, userId)
   if (!call) return { ok: false, error: 'Chamada não encontrada.', status: 404 }
 
-  if (call.status !== 'completed') {
-    return { ok: false, error: 'Chamada não concluída.', status: 422 }
-  }
-
-  // recording_url é NULL até o cron (Fase 4) transferir para o Supabase Storage
+  // Se não há gravação, verifica o status antes de dar uma mensagem precisa
   if (!call.recording_url) {
+    if (call.status !== 'completed') {
+      return { ok: false, error: 'Chamada não concluída.', status: 422 }
+    }
     return { ok: false, error: 'Gravação ainda não disponível. Aguarde e tente novamente.', status: 422 }
   }
 
@@ -326,7 +325,7 @@ async function handleRecordingCallback(
 ): Promise<void> {
   const { data: call } = await adminSupabase
     .from('calls')
-    .select('id, user_id, recording_sid')
+    .select('id, user_id, recording_sid, status')
     .eq('call_sid', callSid)
     .maybeSingle()
 
@@ -335,13 +334,11 @@ async function handleRecordingCallback(
     return
   }
 
-  // Salva o recording_sid se ainda não estiver salvo
-  if (!call.recording_sid) {
-    await adminSupabase
-      .from('calls')
-      .update({ recording_sid: recordingSid })
-      .eq('id', call.id)
-  }
+  // Atualiza recording_sid e marca chamada como completed (se ainda não estiver)
+  await adminSupabase.from('calls').update({
+    recording_sid: recordingSid,
+    ...(call.status !== 'completed' ? { status: 'completed', ended_at: new Date().toISOString() } : {}),
+  }).eq('id', call.id)
 
   // Transfere imediatamente para o Storage
   const { transferSingleRecording } = await import('@/services/callRecordingService')
