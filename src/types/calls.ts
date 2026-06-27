@@ -38,3 +38,7 @@ export type CreateCallDto = {
   to_number: string
   from_number: string
 }
+
+export type CallWithAnalysis = Call & {
+  call_analyses: CallAnalysis[]   // Supabase retorna array mesmo sendo relação 1:1
+}

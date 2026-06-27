@@ -145,6 +145,24 @@ export async function getRecentReplies(
     .slice(0, 5)
 }
 
+export async function getCallsThisMonthCount(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<number> {
+  const now = new Date()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+
+  const { count, error } = await supabase
+    .from('calls')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'completed')
+    .gte('created_at', startOfMonth)
+
+  if (error) return 0
+  return count ?? 0
+}
+
 export async function getNextFollowups(
   supabase: SupabaseClient<Database>,
   userId: string

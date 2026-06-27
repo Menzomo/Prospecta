@@ -241,51 +241,53 @@
 
 ## Fase 7 — Relatório e Integração CRM
 
+**Status:** ✅ Concluído  
 **Estimativa:** 3-4 dias  
 **Branch:** `feat/calls-crm`  
 **Prerequisito:** Fase 6
 
 ### 7.1 Componente de relatório de análise
-- [ ] `CallAnalysisReport.tsx` — exibe resultado da IA
+- [x] `CallAnalysisReport.tsx` — exibe resultado da IA
   - Resumo da conversa
   - Principais pontos (lista)
   - Objeções identificadas (lista com badge)
   - Sugestão de status (com botão "Aplicar")
   - Sugestão de próximo contato (com botão "Criar followup")
   - Transcrição completa (expansível/colapsável)
-- [ ] Loading state enquanto análise está processando (polling a cada 5s ou SSE)
-- [ ] Estado "Análise não solicitada" quando `call_analyses` não existe
+- [x] Loading state enquanto análise está processando (spinner + botão "Atualizar")
+- [x] Estado "Análise não solicitada" quando `call_analyses` não existe
 
 ### 7.2 Integração com Timeline
-- [ ] Adicionar eventos de ligação em `LeadTimeline.tsx`
+- [x] Adicionar eventos de ligação em `LeadTimeline.tsx`
   - `call_completed` — "Ligação realizada (X min)"
   - `call_analyzed` — "Análise de IA disponível"
-- [ ] Query no timeline server component: join com `calls`
+- [x] Query no timeline server component: join com `calls` via `getCallsWithAnalysisByLeadId`
 
 ### 7.3 Integração com Followups
-- [ ] No `CallAnalysisReport`, botão "Criar followup com sugestão da IA"
-- [ ] Pré-preenche `FollowupCreateForm` com dados da sugestão
-- [ ] Usuário confirma antes de criar
+- [x] No `CallAnalysisReport`, botão "Criar followup com sugestão da IA"
+- [x] Pré-preenche `FollowupCreateForm` com `defaultTitle`, `defaultNotes`, `defaultDaysFromNow`
+- [x] Usuário confirma antes de criar
 
 ### 7.4 Integração com Status
-- [ ] No `CallAnalysisReport`, botão "Aplicar status sugerido"
-- [ ] Chama `updateLeadStatus` / `updateUserLeadStatus` existente
-- [ ] IA nunca chama essas funções diretamente
+- [x] No `CallAnalysisReport`, botão "Aplicar status sugerido"
+- [x] `applyCallSuggestedStatusAction` em `calls/actions.ts` — trata `leadId` e `userLeadId`
+- [x] IA nunca chama essas funções diretamente
 
 ---
 
 ## Fase 8 — Dashboard e Métricas
 
+**Status:** ✅ Concluído (estrutura básica)  
 **Estimativa:** 2-3 dias  
 **Branch:** `feat/calls-dashboard`  
 **Prerequisito:** Fase 7
 
 > Implementar apenas estrutura básica. Métricas avançadas por canal são futuras.
 
-- [ ] Card "Ligações realizadas este mês" no dashboard
-- [ ] Card "Créditos de análise restantes"
-- [ ] Seção "Histórico de Ligações" na página do lead
-- [ ] Filtro por canal no painel de leads (email / ligação / todos)
+- [x] Card "Ligações realizadas este mês" no dashboard (`getCallsThisMonthCount`)
+- [x] Card "Créditos de análise restantes" com barra de progresso e badge "BAIXO" quando ≤ 2
+- [x] Seção "Histórico de Ligações" na página do lead (entregue na Fase 7 — `LeadCallsSection`)
+- [ ] Filtro por canal no painel de leads (email / ligação / todos) — futuro
 
 ---
 
@@ -300,8 +302,8 @@
 | 4 — Gravação | 2-3 dias | ✅ Concluído |
 | 5 — UI | 4-5 dias | ✅ Concluído |
 | 6 — IA | 3-4 dias | 🔄 Em andamento (código done; n8n + adapter pendentes) |
-| **7 — CRM** | **3-4 dias** | **⏳ Próxima** |
-| 8 — Dashboard | 2-3 dias | ⏳ Pendente |
+| **7 — CRM** | **3-4 dias** | **✅ Concluído** |
+| 8 — Dashboard | 2-3 dias | ✅ Concluído |
 
 **Total estimado: 6-8 semanas** de desenvolvimento a ~4h/dia (revisado após inclusão da Fase 0.5).
 
