@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { telephonySettingsSchema } from '@/validations/telephonySettingsSchema'
 import { encryptCredential } from '@/lib/crypto/credentials'
-import { upsertTelephonySettings } from '@/repositories/telephonySettingsRepository'
+import { getTelephonySettings, upsertTelephonySettings } from '@/repositories/telephonySettingsRepository'
 import { getCurrentPeriodCredits } from '@/repositories/analysisCreditRepository'
 import type { AnalysisCredits } from '@/types/calls'
 
@@ -47,13 +47,26 @@ export async function saveTelephonySettingsAction(
 
   const { account_sid, auth_token, api_key_sid, api_key_secret, phone_number, twiml_app_sid } = validation.data
 
+  // Se campos secretos vieram vazios, mantém os valores já criptografados no banco
+  const existing = (!auth_token || !api_key_secret)
+    ? await getTelephonySettings(supabase, user.id)
+    : null
+
+  if (!auth_token && !existing) {
+    return { errors: { auth_token: ['Auth Token é obrigatório no primeiro cadastro.'] } }
+  }
+
   let auth_token_encrypted: string
   let api_key_secret_encrypted: string | null = null
 
   try {
-    auth_token_encrypted = encryptCredential(auth_token)
+    auth_token_encrypted = auth_token
+      ? encryptCredential(auth_token)
+      : existing!.auth_token_encrypted
     if (api_key_secret) {
       api_key_secret_encrypted = encryptCredential(api_key_secret)
+    } else if (existing?.api_key_secret_encrypted) {
+      api_key_secret_encrypted = existing.api_key_secret_encrypted
     }
   } catch {
     return { error: 'Erro de configuração do servidor. Contate o suporte.' }
