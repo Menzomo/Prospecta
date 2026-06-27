@@ -32,7 +32,7 @@ export function CallButton({ phone, hasSettings, companyName, leadId, userLeadId
         className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
           disabled
             ? 'cursor-not-allowed border border-outline bg-surface-low text-on-surface-muted opacity-60'
-            : 'cursor-pointer border border-outline bg-surface-container text-on-surface hover:bg-surface-low'
+            : 'cursor-pointer bg-primary text-white hover:bg-primary-dark'
         }`}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
