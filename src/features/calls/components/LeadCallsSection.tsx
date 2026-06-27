@@ -88,7 +88,7 @@ export function LeadCallsSection({ calls, leadId, userLeadId }: Props) {
         <div className="border-t border-outline px-6 py-4">
           <div className="flex flex-col gap-3">
             {calls.map((call) => {
-              const analysis = call.call_analyses[0] ?? null
+              const analysis = (call.call_analyses ?? [])[0] ?? null
               const isOpen = expandedCallId === call.id
               const badge = analysis ? analysisBadge(analysis.status) : null
 

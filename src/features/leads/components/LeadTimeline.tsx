@@ -94,7 +94,7 @@ function buildTimeline(
           status: call.status,
         })
       }
-      const completedAnalysis = call.call_analyses.find(
+      const completedAnalysis = (call.call_analyses ?? []).find(
         (a) => a.status === 'completed' && a.processing_completed_at
       )
       if (completedAnalysis?.processing_completed_at) {
