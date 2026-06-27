@@ -38,3 +38,21 @@ export async function getCallAnalysisByCallId(
   }
   return data
 }
+
+export async function deleteCallAnalysisByCallId(
+  supabase: SupabaseClient<Database>,
+  callId: string,
+  userId: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('call_analyses')
+    .delete()
+    .eq('call_id', callId)
+    .eq('user_id', userId)
+
+  if (error) {
+    console.error('[callAnalysisRepository.deleteCallAnalysisByCallId]', error.message)
+    return false
+  }
+  return true
+}

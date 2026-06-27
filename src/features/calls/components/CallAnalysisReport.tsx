@@ -7,6 +7,36 @@ import type { LeadStatus } from '@/types/leads'
 import { applyCallSuggestedStatusAction } from '@/features/calls/actions'
 import { FollowupCreateForm } from '@/features/followups/components/FollowupCreateForm'
 
+type ReanalyzeButtonProps = {
+  state: 'idle' | 'loading' | 'done' | 'error'
+  onReanalyze: () => void
+  onReset: () => void
+}
+
+function ReanalyzeButton({ state, onReanalyze, onReset }: ReanalyzeButtonProps) {
+  if (state === 'done') {
+    return <p className="text-xs text-green-600">Reanálise solicitada. Atualize a página em alguns minutos.</p>
+  }
+  if (state === 'error') {
+    return (
+      <div className="flex items-center gap-2">
+        <p className="text-xs text-red-500">Erro ao solicitar reanálise.</p>
+        <button type="button" onClick={onReset} className="text-xs text-primary underline">Tentar novamente</button>
+      </div>
+    )
+  }
+  return (
+    <button
+      type="button"
+      onClick={onReanalyze}
+      disabled={state === 'loading'}
+      className="self-start text-xs text-on-surface-muted underline hover:text-on-surface disabled:opacity-60"
+    >
+      {state === 'loading' ? 'Solicitando…' : 'Reanalisar com IA'}
+    </button>
+  )
+}
+
 type Props = {
   analysis: CallAnalysis | null
   hasRecording: boolean
@@ -15,19 +45,58 @@ type Props = {
   userLeadId?: string | null
 }
 
-export function CallAnalysisReport({ analysis, hasRecording, callId: _callId, leadId, userLeadId }: Props) {
+export function CallAnalysisReport({ analysis, hasRecording, callId, leadId, userLeadId }: Props) {
   const [transcriptExpanded, setTranscriptExpanded] = useState(false)
   const [showFollowupForm, setShowFollowupForm] = useState(false)
   const [statusApplied, setStatusApplied] = useState(false)
   const [pending, startTransition] = useTransition()
+  const [requestState, setRequestState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
+  const [reanalyzeState, setReanalyzeState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
+
+  async function handleRequestAnalysis() {
+    setRequestState('loading')
+    const res = await fetch(`/api/calls/${callId}/request-analysis`, { method: 'POST' })
+    if (res.ok) setRequestState('done')
+    else setRequestState('error')
+  }
+
+  async function handleReanalyze() {
+    setReanalyzeState('loading')
+    const res = await fetch(`/api/calls/${callId}/reanalyze`, { method: 'POST' })
+    if (res.ok) setReanalyzeState('done')
+    else setReanalyzeState('error')
+  }
 
   if (!analysis) {
+    if (!hasRecording) {
+      return <p className="text-xs text-on-surface-muted">Nenhuma gravação disponível para esta chamada.</p>
+    }
     return (
-      <p className="text-xs text-on-surface-muted">
-        {hasRecording
-          ? 'Gravação disponível. Solicite análise ao abrir o modal de ligação.'
-          : 'Nenhuma análise solicitada para esta chamada.'}
-      </p>
+      <div className="flex flex-col gap-2">
+        {requestState === 'idle' && (
+          <button
+            type="button"
+            onClick={handleRequestAnalysis}
+            className="self-start cursor-pointer rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary-dark"
+          >
+            Solicitar análise de IA
+          </button>
+        )}
+        {requestState === 'loading' && (
+          <p className="text-xs text-on-surface-muted">Solicitando análise…</p>
+        )}
+        {requestState === 'done' && (
+          <p className="text-xs text-green-600">Análise solicitada. Recarregue a página em alguns minutos para ver o resultado.</p>
+        )}
+        {requestState === 'error' && (
+          <div className="flex flex-col gap-1">
+            <p className="text-xs text-red-500">Erro ao solicitar análise.</p>
+            <button type="button" onClick={() => setRequestState('idle')} className="self-start text-xs text-primary underline">
+              Tentar novamente
+            </button>
+          </div>
+        )}
+      </div>
     )
   }
 
@@ -55,9 +124,12 @@ export function CallAnalysisReport({ analysis, hasRecording, callId: _callId, le
 
   if (analysis.status === 'failed') {
     return (
-      <p className="text-xs text-red-500">
-        Falha na análise{analysis.error_message ? `: ${analysis.error_message}` : '.'}
-      </p>
+      <div className="flex flex-col gap-2">
+        <p className="text-xs text-red-500">
+          Falha na análise{analysis.error_message ? `: ${analysis.error_message}` : '.'}
+        </p>
+        <ReanalyzeButton state={reanalyzeState} onReanalyze={handleReanalyze} onReset={() => setReanalyzeState('idle')} />
+      </div>
     )
   }
 
@@ -181,6 +253,10 @@ export function CallAnalysisReport({ analysis, hasRecording, callId: _callId, le
           )}
         </div>
       )}
+
+      <div className="border-t border-outline pt-3">
+        <ReanalyzeButton state={reanalyzeState} onReanalyze={handleReanalyze} onReset={() => setReanalyzeState('idle')} />
+      </div>
     </div>
   )
 }
