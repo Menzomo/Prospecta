@@ -154,7 +154,14 @@ export async function handleStatusCallbackWebhook(
   signature: string
 ): Promise<StatusCallbackResult> {
   const userId = extractUserIdUnsafe(rawParams)
-  if (!userId) return { ok: true } // recording callback sem identidade — ignorar
+
+  // Callback de gravação: não tem Caller, mas tem RecordingStatus + CallSid
+  if (!userId) {
+    if (rawParams['RecordingStatus'] === 'completed' && rawParams['CallSid'] && rawParams['RecordingSid']) {
+      await handleRecordingCallback(adminSupabase, rawParams['CallSid'], rawParams['RecordingSid'])
+    }
+    return { ok: true }
+  }
 
   const loaded = await loadProvider(adminSupabase, userId)
   if (!loaded) return { ok: true }
@@ -308,6 +315,49 @@ export async function requestCallAnalysis(
   }
 
   return { ok: true, analysisId: analysis.id }
+}
+
+// ── handler interno para callback de gravação ─────────────────────────────────
+
+async function handleRecordingCallback(
+  adminSupabase: SupabaseClient<Database>,
+  callSid: string,
+  recordingSid: string
+): Promise<void> {
+  const { data: call } = await adminSupabase
+    .from('calls')
+    .select('id, user_id, recording_sid')
+    .eq('call_sid', callSid)
+    .maybeSingle()
+
+  if (!call) {
+    console.warn('[callService.handleRecordingCallback] call not found for callSid', callSid)
+    return
+  }
+
+  // Salva o recording_sid se ainda não estiver salvo
+  if (!call.recording_sid) {
+    await adminSupabase
+      .from('calls')
+      .update({ recording_sid: recordingSid })
+      .eq('id', call.id)
+  }
+
+  // Transfere imediatamente para o Storage
+  const { transferSingleRecording } = await import('@/services/callRecordingService')
+  transferSingleRecording(adminSupabase, {
+    id: call.id,
+    user_id: call.user_id,
+    recording_sid: recordingSid,
+  }).catch((err) => console.error('[callService] recording transfer failed', err))
+
+  dispatchCallEvent({
+    type: CALL_EVENT.RECORDING_AVAILABLE,
+    callId: call.id,
+    userId: call.user_id,
+    occurredAt: new Date().toISOString(),
+    payload: { recordingSid, recordingUrl: null },
+  })
 }
 
 // ── helpers internos (não exportados) ────────────────────────────────────────
