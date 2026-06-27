@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/types'
-import type { Call, CreateCallDto } from '@/types/calls'
+import type { Call, CallWithAnalysis, CreateCallDto } from '@/types/calls'
 
 export async function createCall(
   supabase: SupabaseClient<Database>,
@@ -68,6 +68,38 @@ export async function getCallsByUserLeadId(
 
   if (error) return []
   return data ?? []
+}
+
+export async function getCallsWithAnalysisByLeadId(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  leadId: string
+): Promise<CallWithAnalysis[]> {
+  const { data, error } = await supabase
+    .from('calls')
+    .select('*, call_analyses(*)')
+    .eq('user_id', userId)
+    .eq('lead_id', leadId)
+    .order('created_at', { ascending: false })
+
+  if (error) return []
+  return (data ?? []) as unknown as CallWithAnalysis[]
+}
+
+export async function getCallsWithAnalysisByUserLeadId(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  userLeadId: string
+): Promise<CallWithAnalysis[]> {
+  const { data, error } = await supabase
+    .from('calls')
+    .select('*, call_analyses(*)')
+    .eq('user_id', userId)
+    .eq('user_lead_id', userLeadId)
+    .order('created_at', { ascending: false })
+
+  if (error) return []
+  return (data ?? []) as unknown as CallWithAnalysis[]
 }
 
 export async function updateCallStatus(

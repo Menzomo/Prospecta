@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { telephonySettingsSchema } from '@/validations/telephonySettingsSchema'
 import { encryptCredential } from '@/lib/crypto/credentials'
@@ -84,6 +85,33 @@ export async function saveCallNotesAction(callId: string, notes: string): Promis
   const { updateCallNotes } = await import('@/repositories/callRepository')
   const ok = await updateCallNotes(supabase, callId, user.id, notes)
   return { ok }
+}
+
+// --- Apply AI-suggested lead status ---
+
+export async function applyCallSuggestedStatusAction(formData: FormData): Promise<void> {
+  const status = formData.get('status') as string | null
+  const leadId = formData.get('lead_id') as string | null
+  const userLeadId = formData.get('user_lead_id') as string | null
+
+  if (!status || (!leadId && !userLeadId)) return
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  if (leadId) {
+    const { updateLeadStatus } = await import('@/repositories/leadRepository')
+    await updateLeadStatus(supabase, user.id, leadId, status)
+    revalidatePath(`/leads/${leadId}`)
+  } else if (userLeadId) {
+    await supabase
+      .from('user_leads')
+      .update({ status })
+      .eq('id', userLeadId)
+      .eq('user_id', user.id)
+    revalidatePath(`/leads/global/${userLeadId}`)
+  }
 }
 
 // --- Get analysis credits ---

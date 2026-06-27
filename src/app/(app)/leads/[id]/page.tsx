@@ -5,12 +5,14 @@ import { getLeadById } from '@/repositories/leadRepository'
 import { getEmailMessagesByLeadId, getEmailThreadsByLeadId } from '@/repositories/emailRepository'
 import { getFollowupsByLeadId } from '@/repositories/followupRepository'
 import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
+import { getCallsWithAnalysisByLeadId } from '@/repositories/callRepository'
 import { hideLeadAction } from '@/features/leads/actions'
 import { LeadEditForm } from '@/features/leads/components/LeadEditForm'
 import { LeadTimeline } from '@/features/leads/components/LeadTimeline'
 import { LeadRepliesButton } from '@/features/leads/components/LeadRepliesButton'
 import { LeadFollowupSection } from '@/features/followups/components/LeadFollowupSection'
 import { CallButton } from '@/features/calls/components/CallButton'
+import { LeadCallsSection } from '@/features/calls/components/LeadCallsSection'
 import { LEAD_STATUS_LABELS } from '@/types/leads'
 import type { LeadStatus } from '@/types/leads'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -32,11 +34,12 @@ export default async function LeadDetailPage({ params }: Props) {
   const lead = await getLeadById(supabase, id)
   if (!lead) notFound()
 
-  const [emailMessages, followups, emailThreads, telephonySettings] = await Promise.all([
+  const [emailMessages, followups, emailThreads, telephonySettings, calls] = await Promise.all([
     getEmailMessagesByLeadId(supabase, user.id, id),
     getFollowupsByLeadId(supabase, user.id, id),
     getEmailThreadsByLeadId(supabase, user.id, id),
     getTelephonySettings(supabase, user.id),
+    getCallsWithAnalysisByLeadId(supabase, user.id, id),
   ])
 
   const status = lead.status as LeadStatus
@@ -109,7 +112,9 @@ export default async function LeadDetailPage({ params }: Props) {
 
           <LeadFollowupSection leadId={lead.id} followups={followups} />
 
-          <LeadTimeline lead={lead} messages={emailMessages} followups={followups} threads={emailThreads} />
+          <LeadCallsSection calls={calls} leadId={lead.id} />
+
+          <LeadTimeline lead={lead} messages={emailMessages} followups={followups} threads={emailThreads} calls={calls} />
         </div>
       </main>
     </>

@@ -7,6 +7,9 @@ import { createFollowupAction } from '@/features/followups/actions'
 type Props = {
   leadId?: string | null
   userLeadId?: string | null
+  defaultTitle?: string
+  defaultNotes?: string
+  defaultDaysFromNow?: number
 }
 
 // Converts "YYYY-MM-DDTHH:MM" from datetime-local to UTC ISO.
@@ -16,10 +19,17 @@ function localToUtcIso(localValue: string): string {
   return new Date(`${localValue}:00-03:00`).toISOString()
 }
 
-export function FollowupCreateForm({ leadId, userLeadId }: Props) {
+function daysFromNowLocal(days: number): string {
+  const d = new Date(Date.now() + days * 86400000)
+  return d.toISOString().slice(0, 16)
+}
+
+export function FollowupCreateForm({ leadId, userLeadId, defaultTitle, defaultNotes, defaultDaysFromNow }: Props) {
   const boundAction = createFollowupAction.bind(null, leadId ?? null, userLeadId ?? null)
   const [state, formAction, pending] = useActionState(boundAction, null)
-  const [dueAtLocal, setDueAtLocal] = useState('')
+  const [dueAtLocal, setDueAtLocal] = useState(() =>
+    defaultDaysFromNow ? daysFromNowLocal(defaultDaysFromNow) : ''
+  )
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -41,6 +51,7 @@ export function FollowupCreateForm({ leadId, userLeadId }: Props) {
           id="followup-title"
           name="title"
           type="text"
+          defaultValue={defaultTitle ?? ''}
           placeholder="Ex: Ligar para apresentar proposta"
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         />
@@ -73,6 +84,7 @@ export function FollowupCreateForm({ leadId, userLeadId }: Props) {
           id="followup-notes"
           name="notes"
           rows={2}
+          defaultValue={defaultNotes ?? ''}
           placeholder="Detalhes adicionais..."
           className="resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         />

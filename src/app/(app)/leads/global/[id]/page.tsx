@@ -4,7 +4,9 @@ import { createClient } from '@/lib/supabase/server'
 import { hideUserLeadAction, updateUserLeadStatusAction } from '@/features/leads/actions'
 import { getFollowupsByUserLeadId } from '@/repositories/followupRepository'
 import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
+import { getCallsWithAnalysisByUserLeadId } from '@/repositories/callRepository'
 import { LeadFollowupSection } from '@/features/followups/components/LeadFollowupSection'
+import { LeadCallsSection } from '@/features/calls/components/LeadCallsSection'
 import { MarkInboxRead } from '@/features/inbox/components/MarkInboxRead'
 import { CallButton } from '@/features/calls/components/CallButton'
 import { LEAD_STATUS_LABELS, LEAD_STATUSES } from '@/types/leads'
@@ -44,9 +46,10 @@ export default async function UserLeadDetailPage({ params }: Props) {
     state: string | null
   }
 
-  const [followups, telephonySettings] = await Promise.all([
+  const [followups, telephonySettings, calls] = await Promise.all([
     getFollowupsByUserLeadId(supabase, user.id, id),
     getTelephonySettings(supabase, user.id),
+    getCallsWithAnalysisByUserLeadId(supabase, user.id, id),
   ])
 
   const status = data.status as LeadStatus
@@ -175,6 +178,9 @@ export default async function UserLeadDetailPage({ params }: Props) {
 
           {/* Followups */}
           <LeadFollowupSection userLeadId={id} followups={followups} />
+
+          {/* Calls */}
+          <LeadCallsSection calls={calls} userLeadId={id} />
         </div>
       </main>
 

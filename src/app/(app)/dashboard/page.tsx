@@ -5,6 +5,7 @@ import { getSyncStatus, touchEmailSync } from '@/repositories/userSyncStatusRepo
 import { getDashboardData } from '@/features/dashboard/services/dashboardService'
 import { syncGmailForUser } from '@/services/gmailUserSyncService'
 import { DashboardKpis } from '@/features/dashboard/components/DashboardKpis'
+import { CallsKpis } from '@/features/dashboard/components/CallsKpis'
 import { RecentReplies } from '@/features/dashboard/components/RecentReplies'
 import { FollowUpList } from '@/features/dashboard/components/FollowUpList'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -43,6 +44,8 @@ export default async function DashboardPage() {
       />
 
       <DashboardKpis kpis={dashboard.kpis} />
+
+      <CallsKpis kpis={dashboard.callsKpis} />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* 2/3 — Atividade Recente */}

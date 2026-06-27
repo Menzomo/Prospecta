@@ -4,12 +4,15 @@ import { useState } from 'react'
 import type { Lead } from '@/types/leads'
 import type { EmailMessage, EmailThread } from '@/types/email'
 import type { Followup } from '@/types/followups'
+import type { CallWithAnalysis } from '@/types/calls'
 
 type LeadCreatedEvent = { id: string; type: 'lead_created'; timestamp: string }
 type EmailSentEvent = { id: string; type: 'email_sent'; timestamp: string; subject: string }
 type FollowupCreatedEvent = { id: string; type: 'followup_created'; timestamp: string; title: string; due_at: string }
 type FollowupCompletedEvent = { id: string; type: 'followup_completed'; timestamp: string; title: string }
 type ReplyReceivedEvent = { id: string; type: 'reply_received'; timestamp: string; subject: string; gmail_url: string | null }
+type CallCompletedEvent = { id: string; type: 'call_completed'; timestamp: string; duration_seconds: number | null; status: string }
+type CallAnalyzedEvent = { id: string; type: 'call_analyzed'; timestamp: string }
 
 type TimelineEvent =
   | LeadCreatedEvent
@@ -17,12 +20,32 @@ type TimelineEvent =
   | FollowupCreatedEvent
   | FollowupCompletedEvent
   | ReplyReceivedEvent
+  | CallCompletedEvent
+  | CallAnalyzedEvent
+
+const ENDED_STATUSES = ['completed', 'failed', 'no-answer', 'busy', 'canceled']
+
+const CALL_STATUS_LABELS: Record<string, string> = {
+  completed: 'Concluída',
+  failed: 'Falha',
+  'no-answer': 'Sem resposta',
+  busy: 'Ocupado',
+  canceled: 'Cancelada',
+}
+
+function formatDuration(seconds: number | null): string {
+  if (!seconds) return '—'
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return m > 0 ? `${m}min ${s}s` : `${s}s`
+}
 
 function buildTimeline(
   lead: Lead,
   messages: EmailMessage[],
   followups: Followup[],
-  threads: EmailThread[]
+  threads: EmailThread[],
+  calls: CallWithAnalysis[] = []
 ): TimelineEvent[] {
   const gmailIdMap = new Map(threads.map((t) => [t.id, t.gmail_thread_id]))
 
@@ -60,6 +83,29 @@ function buildTimeline(
         timestamp: f.completed_at!,
         title: f.title,
       })),
+    ...calls.flatMap((call): TimelineEvent[] => {
+      const evts: TimelineEvent[] = []
+      if (ENDED_STATUSES.includes(call.status)) {
+        evts.push({
+          id: `call_completed_${call.id}`,
+          type: 'call_completed',
+          timestamp: call.ended_at ?? call.created_at,
+          duration_seconds: call.duration_seconds,
+          status: call.status,
+        })
+      }
+      const completedAnalysis = call.call_analyses.find(
+        (a) => a.status === 'completed' && a.processing_completed_at
+      )
+      if (completedAnalysis?.processing_completed_at) {
+        evts.push({
+          id: `call_analyzed_${call.id}`,
+          type: 'call_analyzed',
+          timestamp: completedAnalysis.processing_completed_at,
+        })
+      }
+      return evts
+    }),
   ]
 
   return events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
@@ -87,6 +133,8 @@ function eventLabel(event: TimelineEvent): string {
     case 'reply_received': return 'Resposta recebida'
     case 'followup_created': return 'Acompanhamento criado'
     case 'followup_completed': return 'Acompanhamento concluído'
+    case 'call_completed': return 'Ligação realizada'
+    case 'call_analyzed': return 'Análise de IA disponível'
   }
 }
 
@@ -95,11 +143,12 @@ type Props = {
   messages: EmailMessage[]
   followups: Followup[]
   threads: EmailThread[]
+  calls?: CallWithAnalysis[]
 }
 
-export function LeadTimeline({ lead, messages, followups, threads }: Props) {
+export function LeadTimeline({ lead, messages, followups, threads, calls = [] }: Props) {
   const [expanded, setExpanded] = useState(false)
-  const events = buildTimeline(lead, messages, followups, threads)
+  const events = buildTimeline(lead, messages, followups, threads, calls)
 
   const lastEvent = events[0]
   const replyCount = events.filter((e) => e.type === 'reply_received').length
@@ -145,7 +194,12 @@ export function LeadTimeline({ lead, messages, followups, threads }: Props) {
                 return (
                   <div key={event.id} className="flex gap-3">
                     <div className="flex flex-col items-center">
-                      <div className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${event.type === 'reply_received' ? 'bg-blue-400' : 'bg-gray-300'}`} />
+                      <div className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
+                        event.type === 'reply_received' ? 'bg-blue-400'
+                          : event.type === 'call_completed' ? 'bg-green-400'
+                          : event.type === 'call_analyzed' ? 'bg-purple-400'
+                          : 'bg-gray-300'
+                      }`} />
                       {!isLast && <div className="mt-1 w-px flex-1 bg-gray-100" />}
                     </div>
 
@@ -201,6 +255,29 @@ export function LeadTimeline({ lead, messages, followups, threads }: Props) {
                           ) : (
                             <span className="mt-1 inline-block text-xs text-gray-400">Link do Gmail indisponível</span>
                           )}
+                        </>
+                      )}
+
+                      {event.type === 'call_completed' && (
+                        <>
+                          <p className="text-sm font-medium text-gray-800">
+                            {event.status === 'completed'
+                              ? 'Ligação realizada'
+                              : `Ligação (${CALL_STATUS_LABELS[event.status] ?? event.status})`}
+                          </p>
+                          <p className="mt-0.5 text-xs text-gray-400">{formatDateTime(event.timestamp)}</p>
+                          {event.duration_seconds != null && (
+                            <p className="mt-0.5 text-xs text-gray-500">
+                              Duração: {formatDuration(event.duration_seconds)}
+                            </p>
+                          )}
+                        </>
+                      )}
+
+                      {event.type === 'call_analyzed' && (
+                        <>
+                          <p className="text-sm font-medium text-purple-700">Análise de IA disponível</p>
+                          <p className="mt-0.5 text-xs text-gray-400">{formatDateTime(event.timestamp)}</p>
                         </>
                       )}
                     </div>
