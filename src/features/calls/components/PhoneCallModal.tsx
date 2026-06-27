@@ -22,7 +22,9 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
   const [analysisState, setAnalysisState] = useState<
     'idle' | 'loading' | 'requested' | 'no_recording' | 'no_credits' | 'error' | 'ignored'
   >('idle')
+  const [recordingReady, setRecordingReady] = useState(false)
   const notesRef = useRef<HTMLTextAreaElement>(null)
+  const readyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { state, error, callId, connectedAt, endedAt, startCall, endCall, reset } = usePhoneCall({
     leadId,
@@ -34,13 +36,20 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
   const isBusy      = ['initializing', 'connecting', 'ringing', 'in-progress'].includes(state)
   const canStart    = state === 'idle' || state === 'error'
 
-  // Ao encerrar: foca notas e busca créditos disponíveis
+  // Ao encerrar: foca notas, busca créditos e inicia timer de 2min para gravação
   useEffect(() => {
     if (!isEnded) return
     notesRef.current?.focus()
     getAnalysisCreditsAction().then(c => {
       if (c) setCredits(c.credits_total - c.credits_used)
     })
+    if (connectedAt) {
+      readyTimerRef.current = setTimeout(() => setRecordingReady(true), 2 * 60 * 1000)
+    }
+    return () => {
+      if (readyTimerRef.current) clearTimeout(readyTimerRef.current)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEnded])
 
   function handleClose() {
@@ -207,7 +216,31 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
               {/* — Prompt de análise com IA — só se a chamada chegou a ser atendida */}
               {analysisState !== 'ignored' && connectedAt !== null && (
                 <div className="rounded-xl border border-outline px-4 py-3">
-                  {(analysisState === 'idle' || analysisState === 'loading') && (
+                  {/* Processando gravação */}
+                  {!recordingReady && analysisState === 'idle' && (
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <svg className="h-4 w-4 animate-spin text-on-surface-muted" viewBox="0 0 24 24" fill="none" aria-hidden>
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                        </svg>
+                        <p className="text-sm font-medium text-on-surface">Processando gravação…</p>
+                      </div>
+                      <p className="text-xs text-on-surface-muted">
+                        Isso leva alguns minutos. Você poderá solicitar a análise de IA em breve.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setRecordingReady(true)}
+                        className="self-start text-xs text-primary underline"
+                      >
+                        Já faz alguns minutos? Tentar agora
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Pronta para análise */}
+                  {(recordingReady || analysisState === 'loading') && (analysisState === 'idle' || analysisState === 'loading') && (
                     <>
                       <p className="text-sm font-medium text-on-surface">
                         Analisar conversa com IA?
