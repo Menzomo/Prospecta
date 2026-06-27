@@ -57,7 +57,8 @@ export function LeadCallsSection({ calls, leadId, userLeadId }: Props) {
 
   const total = sorted.length
   const call = sorted[idx]
-  const analysis = (call.call_analyses ?? [])[0] ?? null
+  const analysesArr = Array.isArray(call.call_analyses) ? call.call_analyses : call.call_analyses ? [call.call_analyses] : []
+  const analysis = analysesArr[0] ?? null
 
   return (
     <div className="rounded-xl border border-outline bg-surface-container shadow-card">

@@ -40,5 +40,7 @@ export type CreateCallDto = {
 }
 
 export type CallWithAnalysis = Call & {
-  call_analyses: CallAnalysis[]   // Supabase retorna array mesmo sendo relação 1:1
+  // Supabase retorna objeto único (não array) quando há UNIQUE constraint em call_id,
+  // ou null quando não há análise. Normalize sempre com Array.isArray antes de usar.
+  call_analyses: CallAnalysis | CallAnalysis[] | null
 }
