@@ -143,7 +143,7 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) handleClose() }}
     >
-      <div className="relative w-full max-w-sm rounded-2xl border border-outline bg-surface-container shadow-xl">
+      <div className="relative flex max-h-[90vh] w-full max-w-sm flex-col rounded-2xl border border-outline bg-surface-container shadow-xl">
 
         {/* Cabeçalho */}
         <div className="flex items-center justify-between border-b border-outline px-5 py-4">
@@ -171,7 +171,7 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
         </div>
 
         {/* Corpo */}
-        <div className="flex flex-col gap-5 px-5 py-5">
+        <div className="flex flex-col gap-5 overflow-y-auto px-5 py-5">
 
           {/* — Tela: idle / error — número editável e botão iniciar */}
           {canStart && (
