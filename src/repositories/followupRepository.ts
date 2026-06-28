@@ -65,7 +65,7 @@ export async function getPendingFollowupsByUserId(
   // no_reply só aparece quando já vencido (due_at <= now); manuais passam sempre.
   const { data, error } = await supabase
     .from('followups')
-    .select('*, leads(company_name, last_reply_at), user_leads(global_leads(company_name))')
+    .select('*, leads(company_name, last_reply_at, status), user_leads(global_leads(company_name))')
     .eq('user_id', userId)
     .eq('status', 'pending')
     .or(`type.neq.no_reply,due_at.lte.${now}`)
