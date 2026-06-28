@@ -5,6 +5,10 @@ import { usePhoneCall } from '../hooks/usePhoneCall'
 import { CallTimer } from './CallTimer'
 import { CallStatusIndicator } from './CallStatusIndicator'
 import { saveCallNotesAction, getAnalysisCreditsAction } from '../actions'
+import { createClient } from '@/lib/supabase/client'
+import type { CallAnalysis } from '@/types/calls'
+
+const ANALYSIS_POLL_INTERVAL = 5000
 
 type Props = {
   phone: string
@@ -23,8 +27,11 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
     'idle' | 'loading' | 'requested' | 'no_recording' | 'no_credits' | 'error' | 'ignored'
   >('idle')
   const [recordingReady, setRecordingReady] = useState(false)
+  const [localAnalysis, setLocalAnalysis]   = useState<CallAnalysis | null>(null)
+  const [analysisPolling, setAnalysisPolling] = useState(false)
   const notesRef = useRef<HTMLTextAreaElement>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const analysisPollerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const { state, error, callId, connectedAt, endedAt, startCall, endCall, reset } = usePhoneCall({
     leadId,
@@ -60,6 +67,29 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEnded])
 
+  // Polling direto no Supabase para buscar a análise sem reload
+  useEffect(() => {
+    if (!analysisPolling || !callId) return
+    const supabase = createClient()
+
+    analysisPollerRef.current = setInterval(async () => {
+      const { data } = await supabase
+        .from('call_analyses')
+        .select('*')
+        .eq('call_id', callId)
+        .maybeSingle()
+
+      if (data?.status === 'completed' || data?.status === 'failed') {
+        setLocalAnalysis(data as CallAnalysis)
+        setAnalysisPolling(false)
+      }
+    }, ANALYSIS_POLL_INTERVAL)
+
+    return () => {
+      if (analysisPollerRef.current) clearInterval(analysisPollerRef.current)
+    }
+  }, [analysisPolling, callId])
+
   function handleClose() {
     if (isBusy) return   // não fechar durante chamada ativa
     reset()
@@ -78,6 +108,7 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
     if (res.ok) {
       setAnalysisState('requested')
       setCredits(prev => (prev !== null ? prev - 1 : null))
+      setAnalysisPolling(true)
     } else if (res.status === 402) {
       setAnalysisState('no_credits')
     } else if (res.status === 422) {
@@ -272,9 +303,59 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
                     </>
                   )}
 
-                  {analysisState === 'requested' && (
-                    <p className="text-sm text-green-600">
-                      Análise iniciada. O resultado ficará disponível no histórico desta chamada.
+                  {analysisState === 'requested' && !localAnalysis && (
+                    <div className="flex items-center gap-2">
+                      <div className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                      <p className="text-sm text-on-surface-muted">Processando análise…</p>
+                    </div>
+                  )}
+
+                  {localAnalysis?.status === 'completed' && (
+                    <div className="flex flex-col gap-3">
+                      <p className="text-sm font-semibold text-green-700">Análise concluída</p>
+
+                      {localAnalysis.summary && (
+                        <p className="text-xs text-on-surface-muted">{localAnalysis.summary}</p>
+                      )}
+
+                      {Array.isArray(localAnalysis.key_points) && (localAnalysis.key_points as string[]).length > 0 && (
+                        <div>
+                          <p className="mb-1 text-xs font-medium text-on-surface">Pontos principais</p>
+                          <ul className="space-y-0.5">
+                            {(localAnalysis.key_points as string[]).slice(0, 3).map((pt, i) => (
+                              <li key={i} className="flex gap-1.5 text-xs text-on-surface-muted">
+                                <span className="mt-0.5 shrink-0 text-primary">•</span>{pt}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {Array.isArray(localAnalysis.objections) && (localAnalysis.objections as string[]).length > 0 && (
+                        <div>
+                          <p className="mb-1 text-xs font-medium text-on-surface">Objeções</p>
+                          <div className="flex flex-wrap gap-1">
+                            {(localAnalysis.objections as string[]).map((obj, i) => (
+                              <span key={i} className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">{obj}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {(localAnalysis.suggested_followup_days || localAnalysis.suggested_followup_notes) && (
+                        <p className="text-xs text-on-surface-muted">
+                          Retorno sugerido em {localAnalysis.suggested_followup_days ?? 3} dia(s)
+                          {localAnalysis.suggested_followup_notes ? `: "${localAnalysis.suggested_followup_notes}"` : ''}
+                        </p>
+                      )}
+
+                      <p className="text-xs text-on-surface-muted">Veja a análise completa no histórico da ligação.</p>
+                    </div>
+                  )}
+
+                  {localAnalysis?.status === 'failed' && (
+                    <p className="text-sm text-red-500">
+                      Falha na análise{localAnalysis.error_message ? `: ${localAnalysis.error_message}` : '.'}
                     </p>
                   )}
 
