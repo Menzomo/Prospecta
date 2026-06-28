@@ -7,6 +7,7 @@ import { CallStatusIndicator } from './CallStatusIndicator'
 import { saveCallNotesAction, getAnalysisCreditsAction } from '../actions'
 import { createClient } from '@/lib/supabase/client'
 import type { CallAnalysis } from '@/types/calls'
+import { FollowupCreateForm } from '@/features/followups/components/FollowupCreateForm'
 
 const ANALYSIS_POLL_INTERVAL = 5000
 
@@ -27,8 +28,9 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
     'idle' | 'loading' | 'requested' | 'no_recording' | 'no_credits' | 'error' | 'ignored'
   >('idle')
   const [recordingReady, setRecordingReady] = useState(false)
-  const [localAnalysis, setLocalAnalysis]   = useState<CallAnalysis | null>(null)
+  const [localAnalysis, setLocalAnalysis]     = useState<CallAnalysis | null>(null)
   const [analysisPolling, setAnalysisPolling] = useState(false)
+  const [showFollowupForm, setShowFollowupForm] = useState(false)
   const notesRef = useRef<HTMLTextAreaElement>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const analysisPollerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -342,11 +344,29 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
                         </div>
                       )}
 
-                      {(localAnalysis.suggested_followup_days || localAnalysis.suggested_followup_notes) && (
-                        <p className="text-xs text-on-surface-muted">
-                          Retorno sugerido em {localAnalysis.suggested_followup_days ?? 3} dia(s)
-                          {localAnalysis.suggested_followup_notes ? `: "${localAnalysis.suggested_followup_notes}"` : ''}
-                        </p>
+                      {!showFollowupForm && (localAnalysis.suggested_followup_days || localAnalysis.suggested_followup_notes) && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-xs text-on-surface-muted">
+                            Retorno sugerido em {localAnalysis.suggested_followup_days ?? 3} dia(s)
+                            {localAnalysis.suggested_followup_notes ? `: "${localAnalysis.suggested_followup_notes}"` : ''}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setShowFollowupForm(true)}
+                            className="rounded-md border border-outline px-2.5 py-1 text-xs font-medium text-on-surface hover:bg-surface-low"
+                          >
+                            Criar acompanhamento
+                          </button>
+                        </div>
+                      )}
+
+                      {showFollowupForm && (
+                        <FollowupCreateForm
+                          leadId={leadId}
+                          userLeadId={userLeadId}
+                          defaultTitle={localAnalysis.suggested_followup_notes ?? 'Retorno da ligação'}
+                          defaultDaysFromNow={localAnalysis.suggested_followup_days ?? 3}
+                        />
                       )}
 
                       <p className="text-xs text-on-surface-muted">Veja a análise completa no histórico da ligação.</p>
