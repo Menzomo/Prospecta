@@ -678,6 +678,7 @@ export interface Database {
           summary: string | null
           key_points: Json | null
           objections: Json | null
+          conversion_strategies: Json | null
           suggested_status: string | null
           suggested_followup_days: number | null
           suggested_followup_notes: string | null
@@ -697,6 +698,7 @@ export interface Database {
           summary?: string | null
           key_points?: Json | null
           objections?: Json | null
+          conversion_strategies?: Json | null
           suggested_status?: string | null
           suggested_followup_days?: number | null
           suggested_followup_notes?: string | null
@@ -713,6 +715,7 @@ export interface Database {
           summary?: string | null
           key_points?: Json | null
           objections?: Json | null
+          conversion_strategies?: Json | null
           suggested_status?: string | null
           suggested_followup_days?: number | null
           suggested_followup_notes?: string | null

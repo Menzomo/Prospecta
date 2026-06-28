@@ -14,6 +14,7 @@ const analysisResultSchema = z.object({
   summary:                  z.string().nullable().optional(),
   key_points:               z.array(z.string()).nullable().optional(),
   objections:               z.array(z.string()).nullable().optional(),
+  conversion_strategies:    z.array(z.string()).nullable().optional(),
   suggested_status:         z.string().nullable().optional(),
   suggested_followup_days:  z.number().int().nullable().optional(),
   suggested_followup_notes: z.string().nullable().optional(),
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest, { params }: Props) {
   if (!analysis) return Response.json({ error: 'Análise não registrada.' }, { status: 404 })
 
   const {
-    transcript, summary, key_points, objections,
+    transcript, summary, key_points, objections, conversion_strategies,
     suggested_status, suggested_followup_days, suggested_followup_notes,
     ai_model, error_message,
   } = validation.data
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest, { params }: Props) {
       summary:                  summary ?? null,
       key_points:               key_points ?? null,
       objections:               objections ?? null,
+      conversion_strategies:    conversion_strategies ?? null,
       suggested_status:         suggested_status ?? null,
       suggested_followup_days:  suggested_followup_days ?? null,
       suggested_followup_notes: suggested_followup_notes ?? null,

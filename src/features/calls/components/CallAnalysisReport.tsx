@@ -212,6 +212,20 @@ export function CallAnalysisReport({ analysis, hasRecording, callId, leadId, use
         </div>
       )}
 
+      {Array.isArray(localAnalysis.conversion_strategies) && (localAnalysis.conversion_strategies as string[]).length > 0 && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+          <p className="text-xs font-semibold text-blue-800 mb-2">Como converter este lead</p>
+          <ul className="space-y-2">
+            {(localAnalysis.conversion_strategies as string[]).map((strategy, i) => (
+              <li key={i} className="flex gap-2 text-xs text-blue-900">
+                <span className="mt-0.5 shrink-0 font-bold text-blue-500">{i + 1}.</span>
+                {strategy}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {suggestedStatus && suggestedStatusLabel && !statusApplied && (
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-xs text-on-surface-muted">
