@@ -217,3 +217,29 @@ export async function getNextFollowups(
         '',
     }))
 }
+
+export async function getConvertedByEmailCount(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<number> {
+  const { count, error } = await supabase
+    .from('leads')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'convertido_email')
+  if (error) return 0
+  return count ?? 0
+}
+
+export async function getConvertedByPhoneCount(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<number> {
+  const { count, error } = await supabase
+    .from('leads')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('status', 'convertido_telefonia')
+  if (error) return 0
+  return count ?? 0
+}

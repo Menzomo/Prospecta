@@ -9,6 +9,8 @@ import {
   getCallsThisMonthCount,
   getRecentReplies,
   getNextFollowups,
+  getConvertedByEmailCount,
+  getConvertedByPhoneCount,
   type RecentReply,
   type NextFollowup,
 } from '../repositories/dashboardRepository'
@@ -22,6 +24,8 @@ export type DashboardKpis = {
   receivedReplies: number
   pendingFollowups: number
   interestedLeads: number
+  convertedByEmail: number
+  convertedByPhone: number
 }
 
 export type CallsKpis = {
@@ -51,6 +55,8 @@ export async function getDashboardData(
     analysisCredits,
     recentReplies,
     nextFollowups,
+    convertedByEmail,
+    convertedByPhone,
   ] = await Promise.all([
     getTotalLeads(supabase, userId),
     getSentEmailsCount(supabase, userId),
@@ -61,10 +67,12 @@ export async function getDashboardData(
     getCurrentPeriodCredits(supabase, userId),
     getRecentReplies(supabase, userId),
     getNextFollowups(supabase, userId),
+    getConvertedByEmailCount(supabase, userId),
+    getConvertedByPhoneCount(supabase, userId),
   ])
 
   return {
-    kpis: { totalLeads, sentEmails, receivedReplies, pendingFollowups, interestedLeads },
+    kpis: { totalLeads, sentEmails, receivedReplies, pendingFollowups, interestedLeads, convertedByEmail, convertedByPhone },
     callsKpis: {
       callsThisMonth,
       creditsUsed: analysisCredits?.credits_used ?? 0,
