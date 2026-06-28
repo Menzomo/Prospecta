@@ -1,22 +1,31 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect, useRef } from 'react'
 import type { CallAnalysis } from '@/types/calls'
 import { LEAD_STATUSES, LEAD_STATUS_LABELS } from '@/types/leads'
 import type { LeadStatus } from '@/types/leads'
 import { applyCallSuggestedStatusAction } from '@/features/calls/actions'
 import { FollowupCreateForm } from '@/features/followups/components/FollowupCreateForm'
+import { createClient } from '@/lib/supabase/client'
+
+const POLL_INTERVAL = 5000
+
+function ProcessingIndicator() {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      <p className="text-xs text-on-surface-muted">Processando análise...</p>
+    </div>
+  )
+}
 
 type ReanalyzeButtonProps = {
-  state: 'idle' | 'loading' | 'done' | 'error'
+  state: 'idle' | 'loading' | 'error'
   onReanalyze: () => void
   onReset: () => void
 }
 
 function ReanalyzeButton({ state, onReanalyze, onReset }: ReanalyzeButtonProps) {
-  if (state === 'done') {
-    return <p className="text-xs text-green-600">Reanálise solicitada. Atualize a página em alguns minutos.</p>
-  }
   if (state === 'error') {
     return (
       <div className="flex items-center gap-2">
@@ -46,28 +55,71 @@ type Props = {
 }
 
 export function CallAnalysisReport({ analysis, hasRecording, callId, leadId, userLeadId }: Props) {
+  const [localAnalysis, setLocalAnalysis] = useState<CallAnalysis | null>(analysis)
+  const [polling, setPolling] = useState(
+    () => analysis?.status === 'pending' || analysis?.status === 'processing'
+  )
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   const [transcriptExpanded, setTranscriptExpanded] = useState(false)
   const [showFollowupForm, setShowFollowupForm] = useState(false)
   const [statusApplied, setStatusApplied] = useState(false)
   const [pending, startTransition] = useTransition()
-  const [requestState, setRequestState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
-  const [reanalyzeState, setReanalyzeState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
+  const [requestState, setRequestState] = useState<'idle' | 'loading' | 'error'>('idle')
+  const [reanalyzeState, setReanalyzeState] = useState<'idle' | 'loading' | 'error'>('idle')
+
+  useEffect(() => {
+    if (!polling) return
+    const supabase = createClient()
+
+    intervalRef.current = setInterval(async () => {
+      const { data } = await supabase
+        .from('call_analyses')
+        .select('*')
+        .eq('call_id', callId)
+        .maybeSingle()
+
+      if (data) {
+        setLocalAnalysis(data as CallAnalysis)
+        if (data.status === 'completed' || data.status === 'failed') {
+          setPolling(false)
+        }
+      }
+    }, POLL_INTERVAL)
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+  }, [polling, callId])
 
   async function handleRequestAnalysis() {
     setRequestState('loading')
     const res = await fetch(`/api/calls/${callId}/request-analysis`, { method: 'POST' })
-    if (res.ok) setRequestState('done')
-    else setRequestState('error')
+    if (res.ok) {
+      setRequestState('idle')
+      setPolling(true)
+    } else {
+      setRequestState('error')
+    }
   }
 
   async function handleReanalyze() {
     setReanalyzeState('loading')
     const res = await fetch(`/api/calls/${callId}/reanalyze`, { method: 'POST' })
-    if (res.ok) setReanalyzeState('done')
-    else setReanalyzeState('error')
+    if (res.ok) {
+      setReanalyzeState('idle')
+      setLocalAnalysis(null)
+      setPolling(true)
+    } else {
+      setReanalyzeState('error')
+    }
   }
 
-  if (!analysis) {
+  if (polling) {
+    return <ProcessingIndicator />
+  }
+
+  if (!localAnalysis) {
     if (!hasRecording) {
       return <p className="text-xs text-on-surface-muted">Nenhuma gravação disponível para esta chamada.</p>
     }
@@ -85,9 +137,6 @@ export function CallAnalysisReport({ analysis, hasRecording, callId, leadId, use
         {requestState === 'loading' && (
           <p className="text-xs text-on-surface-muted">Solicitando análise…</p>
         )}
-        {requestState === 'done' && (
-          <p className="text-xs text-green-600">Análise solicitada. Recarregue a página em alguns minutos para ver o resultado.</p>
-        )}
         {requestState === 'error' && (
           <div className="flex flex-col gap-1">
             <p className="text-xs text-red-500">Erro ao solicitar análise.</p>
@@ -100,33 +149,11 @@ export function CallAnalysisReport({ analysis, hasRecording, callId, leadId, use
     )
   }
 
-  if (analysis.status === 'pending') {
-    return (
-      <p className="text-xs text-on-surface-muted">Análise na fila, aguardando processamento.</p>
-    )
-  }
-
-  if (analysis.status === 'processing') {
-    return (
-      <div className="flex items-center gap-2">
-        <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <p className="text-xs text-on-surface-muted">IA analisando a conversa...</p>
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          className="text-xs text-primary underline"
-        >
-          Atualizar
-        </button>
-      </div>
-    )
-  }
-
-  if (analysis.status === 'failed') {
+  if (localAnalysis.status === 'failed') {
     return (
       <div className="flex flex-col gap-2">
         <p className="text-xs text-red-500">
-          Falha na análise{analysis.error_message ? `: ${analysis.error_message}` : '.'}
+          Falha na análise{localAnalysis.error_message ? `: ${localAnalysis.error_message}` : '.'}
         </p>
         <ReanalyzeButton state={reanalyzeState} onReanalyze={handleReanalyze} onReset={() => setReanalyzeState('idle')} />
       </div>
@@ -134,8 +161,8 @@ export function CallAnalysisReport({ analysis, hasRecording, callId, leadId, use
   }
 
   // completed
-  const suggestedStatus = LEAD_STATUSES.includes(analysis.suggested_status as LeadStatus)
-    ? (analysis.suggested_status as LeadStatus)
+  const suggestedStatus = LEAD_STATUSES.includes(localAnalysis.suggested_status as LeadStatus)
+    ? (localAnalysis.suggested_status as LeadStatus)
     : null
   const suggestedStatusLabel = suggestedStatus ? LEAD_STATUS_LABELS[suggestedStatus] : null
 
@@ -148,18 +175,18 @@ export function CallAnalysisReport({ analysis, hasRecording, callId, leadId, use
 
   return (
     <div className="flex flex-col gap-3">
-      {analysis.summary && (
+      {localAnalysis.summary && (
         <div>
           <p className="text-xs font-medium text-on-surface mb-1">Resumo</p>
-          <p className="text-xs text-on-surface-muted">{analysis.summary}</p>
+          <p className="text-xs text-on-surface-muted">{localAnalysis.summary}</p>
         </div>
       )}
 
-      {Array.isArray(analysis.key_points) && (analysis.key_points as string[]).length > 0 && (
+      {Array.isArray(localAnalysis.key_points) && (localAnalysis.key_points as string[]).length > 0 && (
         <div>
           <p className="text-xs font-medium text-on-surface mb-1">Pontos principais</p>
           <ul className="space-y-1">
-            {(analysis.key_points as string[]).map((pt, i) => (
+            {(localAnalysis.key_points as string[]).map((pt, i) => (
               <li key={i} className="flex gap-1.5 text-xs text-on-surface-muted">
                 <span className="mt-0.5 shrink-0 text-primary">•</span>
                 {pt}
@@ -169,11 +196,11 @@ export function CallAnalysisReport({ analysis, hasRecording, callId, leadId, use
         </div>
       )}
 
-      {Array.isArray(analysis.objections) && (analysis.objections as string[]).length > 0 && (
+      {Array.isArray(localAnalysis.objections) && (localAnalysis.objections as string[]).length > 0 && (
         <div>
           <p className="text-xs font-medium text-on-surface mb-1">Objeções</p>
           <div className="flex flex-wrap gap-1.5">
-            {(analysis.objections as string[]).map((obj, i) => (
+            {(localAnalysis.objections as string[]).map((obj, i) => (
               <span
                 key={i}
                 className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700"
@@ -210,11 +237,11 @@ export function CallAnalysisReport({ analysis, hasRecording, callId, leadId, use
         <p className="text-xs font-medium text-green-600">Status atualizado.</p>
       )}
 
-      {!showFollowupForm && (analysis.suggested_followup_days || analysis.suggested_followup_notes) && (
+      {!showFollowupForm && (localAnalysis.suggested_followup_days || localAnalysis.suggested_followup_notes) && (
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-xs text-on-surface-muted">
-            Retorno sugerido em {analysis.suggested_followup_days ?? 3} dia(s)
-            {analysis.suggested_followup_notes ? `: "${analysis.suggested_followup_notes}"` : ''}
+            Retorno sugerido em {localAnalysis.suggested_followup_days ?? 3} dia(s)
+            {localAnalysis.suggested_followup_notes ? `: "${localAnalysis.suggested_followup_notes}"` : ''}
           </p>
           <button
             type="button"
@@ -231,13 +258,13 @@ export function CallAnalysisReport({ analysis, hasRecording, callId, leadId, use
           <FollowupCreateForm
             leadId={leadId}
             userLeadId={userLeadId}
-            defaultTitle={analysis.suggested_followup_notes ?? 'Retorno da ligação'}
-            defaultDaysFromNow={analysis.suggested_followup_days ?? 3}
+            defaultTitle={localAnalysis.suggested_followup_notes ?? 'Retorno da ligação'}
+            defaultDaysFromNow={localAnalysis.suggested_followup_days ?? 3}
           />
         </div>
       )}
 
-      {analysis.transcript && (
+      {localAnalysis.transcript && (
         <div>
           <button
             type="button"
@@ -248,7 +275,7 @@ export function CallAnalysisReport({ analysis, hasRecording, callId, leadId, use
           </button>
           {transcriptExpanded && (
             <p className="mt-2 max-h-48 overflow-y-auto rounded-lg bg-surface-low p-3 text-xs text-on-surface-muted whitespace-pre-wrap">
-              {analysis.transcript}
+              {localAnalysis.transcript}
             </p>
           )}
         </div>
