@@ -11,6 +11,8 @@ const STATUS_COLORS: Record<string, string> = {
   sem_interesse: 'bg-gray-100 text-gray-600',
   sem_resposta: 'bg-red-100 text-red-700',
   convertido: 'bg-emerald-100 text-emerald-700',
+  convertido_email: 'bg-emerald-100 text-emerald-700',
+  convertido_telefonia: 'bg-emerald-100 text-emerald-700',
 }
 
 type Props = {

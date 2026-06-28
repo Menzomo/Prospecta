@@ -1,9 +1,13 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useState, useActionState } from 'react'
 import { updateLeadAction } from '@/features/leads/actions'
 import { LEAD_STATUSES, LEAD_STATUS_LABELS } from '@/types/leads'
-import type { Lead } from '@/types/leads'
+import type { Lead, LeadStatus } from '@/types/leads'
+
+const SELECTABLE_STATUSES = LEAD_STATUSES.filter(
+  (s) => s !== 'convertido_email' && s !== 'convertido_telefonia'
+)
 
 type Props = {
   lead: Lead
@@ -12,6 +16,23 @@ type Props = {
 export function LeadEditForm({ lead }: Props) {
   const boundAction = updateLeadAction.bind(null, lead.id)
   const [state, formAction, pending] = useActionState(boundAction, null)
+  const [statusValue, setStatusValue] = useState<LeadStatus>(lead.status as LeadStatus)
+  const [showChannelPicker, setShowChannelPicker] = useState(false)
+
+  function handleStatusChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const val = e.target.value as LeadStatus
+    if (val === 'convertido') {
+      setShowChannelPicker(true)
+    } else {
+      setStatusValue(val)
+      setShowChannelPicker(false)
+    }
+  }
+
+  function pickChannel(channel: 'email' | 'telefonia') {
+    setStatusValue(channel === 'email' ? 'convertido_email' : 'convertido_telefonia')
+    setShowChannelPicker(false)
+  }
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -110,18 +131,48 @@ export function LeadEditForm({ lead }: Props) {
         <label htmlFor="status" className="text-sm font-medium text-gray-700">
           Status
         </label>
+        {/* hidden input carrega o valor real (pode ser convertido_email / convertido_telefonia) */}
+        <input type="hidden" name="status" value={statusValue} />
         <select
           id="status"
-          name="status"
-          defaultValue={lead.status}
+          value={showChannelPicker ? 'convertido' : statusValue}
+          onChange={handleStatusChange}
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
         >
-          {LEAD_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {LEAD_STATUS_LABELS[s]}
-            </option>
+          {SELECTABLE_STATUSES.map((s) => (
+            <option key={s} value={s}>{LEAD_STATUS_LABELS[s]}</option>
           ))}
+          {/* opções legíveis quando já estão setadas */}
+          {statusValue === 'convertido_email' && (
+            <option value="convertido_email">Convertido — Email</option>
+          )}
+          {statusValue === 'convertido_telefonia' && (
+            <option value="convertido_telefonia">Convertido — Telefonia</option>
+          )}
         </select>
+
+        {showChannelPicker && (
+          <div className="mt-1 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+            <p className="mb-2 text-xs font-medium text-emerald-800">Como foi a conversão?</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => pickChannel('email')}
+                className="flex-1 cursor-pointer rounded-lg border border-emerald-300 bg-white px-3 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
+              >
+                📧 Email
+              </button>
+              <button
+                type="button"
+                onClick={() => pickChannel('telefonia')}
+                className="flex-1 cursor-pointer rounded-lg border border-emerald-300 bg-white px-3 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
+              >
+                📞 Telefonia
+              </button>
+            </div>
+          </div>
+        )}
+
         {state?.errors?.status && (
           <p className="text-xs text-red-500">{state.errors.status[0]}</p>
         )}

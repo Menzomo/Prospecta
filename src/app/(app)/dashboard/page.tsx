@@ -47,15 +47,20 @@ export default async function DashboardPage() {
 
       <CallsKpis kpis={dashboard.callsKpis} />
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        {/* 2/3 — Atividade Recente */}
-        <div className="xl:col-span-2">
-          <RecentReplies replies={dashboard.recentReplies} />
-        </div>
+      <div className="flex flex-col gap-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-muted">
+          Email
+        </p>
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+          {/* 2/3 — Atividade Recente */}
+          <div className="xl:col-span-2">
+            <RecentReplies replies={dashboard.recentReplies} />
+          </div>
 
-        {/* 1/3 — Follow-ups */}
-        <div className="xl:col-span-1">
-          <FollowUpList followups={dashboard.nextFollowups} />
+          {/* 1/3 — Follow-ups */}
+          <div className="xl:col-span-1">
+            <FollowUpList followups={dashboard.nextFollowups} />
+          </div>
         </div>
       </div>
     </main>

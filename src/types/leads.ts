@@ -11,6 +11,8 @@ export const LEAD_STATUSES = [
   'sem_interesse',
   'sem_resposta',
   'convertido',
+  'convertido_email',
+  'convertido_telefonia',
 ] as const
 
 export type LeadStatus = (typeof LEAD_STATUSES)[number]
@@ -24,7 +26,11 @@ export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
   sem_interesse: 'Sem interesse',
   sem_resposta: 'Sem resposta',
   convertido: 'Convertido',
+  convertido_email: 'Convertido — Email',
+  convertido_telefonia: 'Convertido — Telefonia',
 }
+
+export const CONVERTED_STATUSES: LeadStatus[] = ['convertido', 'convertido_email', 'convertido_telefonia']
 
 export type CreateLeadDto = {
   company_name: string
