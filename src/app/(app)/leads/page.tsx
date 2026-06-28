@@ -9,8 +9,8 @@ import { getTelephonySettings } from '@/repositories/telephonySettingsRepository
 import type { LeadStatus } from '@/types/leads'
 import type { LeadCategory } from '@/types/globalLeads'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { LeadsGrid } from '@/features/leads/components/LeadsGrid'
 import type { LeadCardData } from '@/features/leads/components/LeadsGrid'
+import { LeadsTabs } from '@/features/leads/components/LeadsTabs'
 
 type SearchParams = Promise<{ category?: string; city?: string; search?: string }>
 
@@ -75,7 +75,38 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
         })
       : []
 
-  const totalCount = filteredSearchLeads.length + filteredManualLeads.length
+  const allLeads: LeadCardData[] = [
+    ...filteredSearchLeads.map((lead): LeadCardData => ({
+      key: `search-${lead.id}`,
+      company_name: lead.company_name,
+      email: lead.email ?? null,
+      phone: lead.phone ?? null,
+      city: lead.city ?? null,
+      category_name: lead.category_name ?? null,
+      status: lead.status as LeadStatus,
+      leadHref: `/leads/global/${lead.id}`,
+      sendHref: `/leads/global/${lead.id}/send`,
+      hideAction: hideUserLeadAction.bind(null, lead.id),
+      userLeadId: lead.id,
+    })),
+    ...filteredManualLeads.map((lead): LeadCardData => ({
+      key: `manual-${lead.id}`,
+      company_name: lead.company_name,
+      email: lead.email ?? null,
+      phone: lead.phone ?? null,
+      city: lead.city ?? null,
+      category_name: null,
+      status: lead.status as LeadStatus,
+      leadHref: `/leads/${lead.id}`,
+      sendHref: `/leads/${lead.id}/send`,
+      hideAction: hideLeadAction.bind(null, lead.id),
+      leadId: lead.id,
+    })),
+  ]
+
+  const newLeads       = allLeads.filter((l) => l.status === 'novo')
+  const contactedLeads = allLeads.filter((l) => l.status !== 'novo')
+  const totalCount     = allLeads.length
 
   return (
     <main className="flex flex-col gap-5 p-6">
@@ -161,42 +192,11 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
           ) : null}
         </div>
       ) : (
-        <>
-          <p className="text-xs text-on-surface-muted">
-            {totalCount} {totalCount === 1 ? 'lead' : 'leads'}
-          </p>
-          <LeadsGrid
-            hasSettings={hasSettings}
-            leads={[
-              ...filteredSearchLeads.map((lead): LeadCardData => ({
-                key: `search-${lead.id}`,
-                company_name: lead.company_name,
-                email: lead.email ?? null,
-                phone: lead.phone ?? null,
-                city: lead.city ?? null,
-                category_name: lead.category_name ?? null,
-                status: lead.status as LeadStatus,
-                leadHref: `/leads/global/${lead.id}`,
-                sendHref: `/leads/global/${lead.id}/send`,
-                hideAction: hideUserLeadAction.bind(null, lead.id),
-                userLeadId: lead.id,
-              })),
-              ...filteredManualLeads.map((lead): LeadCardData => ({
-                key: `manual-${lead.id}`,
-                company_name: lead.company_name,
-                email: lead.email ?? null,
-                phone: lead.phone ?? null,
-                city: lead.city ?? null,
-                category_name: null,
-                status: lead.status as LeadStatus,
-                leadHref: `/leads/${lead.id}`,
-                sendHref: `/leads/${lead.id}/send`,
-                hideAction: hideLeadAction.bind(null, lead.id),
-                leadId: lead.id,
-              })),
-            ]}
-          />
-        </>
+        <LeadsTabs
+          newLeads={newLeads}
+          contactedLeads={contactedLeads}
+          hasSettings={hasSettings}
+        />
       )}
     </main>
   )
