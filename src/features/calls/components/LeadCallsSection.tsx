@@ -112,8 +112,8 @@ export function LeadCallsSection({ calls, leadId, userLeadId }: Props) {
             </div>
           )}
 
-          {/* Call card */}
-          <div className="rounded-lg border border-outline bg-surface p-4 flex flex-col gap-4">
+          {/* Call card — key força remount ao navegar, resetando estado interno */}
+          <div key={call.id} className="rounded-lg border border-outline bg-surface p-4 flex flex-col gap-4">
             {/* Header info */}
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-medium text-on-surface">
