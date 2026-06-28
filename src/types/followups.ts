@@ -32,6 +32,6 @@ export type UpdateFollowupDto = {
 }
 
 export type FollowupWithLead = Followup & {
-  leads: { company_name: string; last_reply_at: string | null } | null
+  leads: { company_name: string; last_reply_at: string | null; status: string | null } | null
   user_leads: { global_leads: { company_name: string } | null } | null
 }

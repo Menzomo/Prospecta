@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getPendingFollowupsByUserId } from '@/repositories/followupRepository'
 import { completeFollowupAction } from '@/features/followups/actions'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { LEAD_STATUS_LABELS } from '@/types/leads'
+import type { LeadStatus } from '@/types/leads'
 
 function formatDueAt(value: string): string {
   return new Date(value).toLocaleString('pt-BR', {
@@ -18,6 +20,39 @@ function formatDueAt(value: string): string {
 
 function isOverdue(dueAt: string): boolean {
   return new Date(dueAt) < new Date()
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('')
+}
+
+const AVATAR_COLORS = [
+  'bg-blue-100 text-blue-700',
+  'bg-violet-100 text-violet-700',
+  'bg-emerald-100 text-emerald-700',
+  'bg-amber-100 text-amber-700',
+  'bg-rose-100 text-rose-700',
+  'bg-cyan-100 text-cyan-700',
+]
+
+function avatarColor(name: string): string {
+  let hash = 0
+  for (const c of name) hash = (hash * 31 + c.charCodeAt(0)) & 0xffff
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length]
+}
+
+const LEAD_STATUS_COLORS: Partial<Record<string, string>> = {
+  new:            'bg-gray-100 text-gray-600',
+  contacted:      'bg-blue-100 text-blue-700',
+  interested:     'bg-green-100 text-green-700',
+  not_interested: 'bg-red-100 text-red-600',
+  callback:       'bg-amber-100 text-amber-700',
+  converted:      'bg-emerald-100 text-emerald-700',
+  lost:           'bg-gray-100 text-gray-500',
 }
 
 export default async function FollowupsPage() {
@@ -43,7 +78,7 @@ export default async function FollowupsPage() {
       />
 
       <div className="flex justify-center">
-        <div className="w-full max-w-lg">
+        <div className="w-full max-w-2xl">
           {followups.length === 0 ? (
             <div className="rounded-xl border border-outline bg-surface-container p-8 text-center shadow-card">
               <p className="text-sm font-medium text-on-surface">Nenhum acompanhamento pendente.</p>
@@ -59,51 +94,76 @@ export default async function FollowupsPage() {
                   followup.leads?.company_name ??
                   (followup.user_leads?.global_leads as { company_name?: string } | null)?.company_name ??
                   'Lead'
+                const leadStatus = followup.leads?.status ?? null
                 const leadHref = followup.lead_id
                   ? `/leads/${followup.lead_id}`
                   : `/leads/global/${followup.user_lead_id}`
+
+                const initials = getInitials(leadName)
+                const colorClass = avatarColor(leadName)
+                const statusLabel = leadStatus && (LEAD_STATUS_LABELS as Record<string, string>)[leadStatus]
+                const statusColor = (leadStatus && LEAD_STATUS_COLORS[leadStatus]) ?? 'bg-gray-100 text-gray-500'
 
                 return (
                   <div
                     key={followup.id}
                     className="rounded-xl border border-outline bg-surface-container p-4 shadow-card"
                   >
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex gap-3">
+                      {/* Avatar */}
+                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${colorClass}`}>
+                        {initials}
+                      </div>
+
+                      {/* Conteúdo */}
                       <div className="min-w-0 flex-1">
-                        <Link
-                          href={leadHref}
-                          className="text-xs font-medium text-primary hover:underline"
-                        >
-                          {leadName}
-                        </Link>
-                        <div className="mt-1 flex items-center gap-1.5">
-                          <p className="truncate text-sm font-medium text-on-surface">
-                            {followup.title}
-                          </p>
+                        {/* Linha 1: nome + badges */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Link
+                            href={leadHref}
+                            className="text-sm font-semibold text-on-surface hover:text-primary hover:underline"
+                          >
+                            {leadName}
+                          </Link>
+
+                          {statusLabel && (
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColor}`}>
+                              {statusLabel}
+                            </span>
+                          )}
+
                           {followup.type === 'no_reply' ? (
                             overdue ? (
-                              <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
                                 Sem resposta
                               </span>
                             ) : (
-                              <span className="shrink-0 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
                                 Aguardando
                               </span>
                             )
                           ) : (
-                            <span className="shrink-0 rounded-full bg-surface-low px-2 py-0.5 text-xs text-on-surface-muted">
+                            <span className="rounded-full bg-surface-low px-2 py-0.5 text-xs text-on-surface-muted">
                               Manual
                             </span>
                           )}
                         </div>
-                        <p className={`mt-0.5 text-xs ${overdue ? 'font-medium text-red-500' : 'text-on-surface-muted'}`}>
-                          {overdue ? 'Atrasado · ' : ''}{formatDueAt(followup.due_at)}
-                        </p>
+
+                        {/* Linha 2: título */}
+                        <p className="mt-1 text-sm font-medium text-on-surface">{followup.title}</p>
+
+                        {/* Linha 3: descrição completa */}
                         {followup.notes && (
                           <p className="mt-1 text-xs text-on-surface-muted">{followup.notes}</p>
                         )}
+
+                        {/* Linha 4: data */}
+                        <p className={`mt-1.5 text-xs ${overdue ? 'font-medium text-red-500' : 'text-on-surface-muted'}`}>
+                          {overdue ? '⚠ Atrasado · ' : ''}{formatDueAt(followup.due_at)}
+                        </p>
                       </div>
 
+                      {/* Botão concluir */}
                       <form
                         action={completeFollowupAction.bind(
                           null,
@@ -111,10 +171,11 @@ export default async function FollowupsPage() {
                           followup.lead_id,
                           followup.user_lead_id ?? null
                         )}
+                        className="shrink-0 self-start"
                       >
                         <button
                           type="submit"
-                          className="shrink-0 cursor-pointer rounded-lg border border-outline px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700"
+                          className="cursor-pointer rounded-lg border border-outline px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700"
                         >
                           Concluir
                         </button>
