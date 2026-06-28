@@ -10,7 +10,7 @@ import type { LeadStatus } from '@/types/leads'
 import type { LeadCategory } from '@/types/globalLeads'
 import { PageHeader } from '@/components/layout/PageHeader'
 import type { LeadCardData } from '@/features/leads/components/LeadsGrid'
-import { LeadsTabs } from '@/features/leads/components/LeadsTabs'
+import { LeadsKanban } from '@/features/leads/components/LeadsKanban'
 
 type SearchParams = Promise<{ category?: string; city?: string; search?: string }>
 
@@ -104,9 +104,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
     })),
   ]
 
-  const newLeads       = allLeads.filter((l) => l.status === 'novo')
-  const contactedLeads = allLeads.filter((l) => l.status !== 'novo')
-  const totalCount     = allLeads.length
+  const totalCount = allLeads.length
 
   return (
     <main className="flex flex-col gap-5 p-6">
@@ -192,9 +190,8 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
           ) : null}
         </div>
       ) : (
-        <LeadsTabs
-          newLeads={newLeads}
-          contactedLeads={contactedLeads}
+        <LeadsKanban
+          leads={allLeads}
           hasSettings={hasSettings}
         />
       )}
