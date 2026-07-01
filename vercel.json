@@ -5,12 +5,8 @@
       "schedule": "0 9 * * *"
     },
     {
-      "path": "/api/cron/transfer-recordings",
+      "path": "/api/cron/process-recordings",
       "schedule": "0 2 * * *"
-    },
-    {
-      "path": "/api/cron/expire-recordings",
-      "schedule": "0 3 * * *"
     }
   ]
 }

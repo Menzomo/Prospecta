@@ -24,7 +24,7 @@ export async function transferPendingRecordings(
     .select('id, user_id, recording_sid')
     .not('recording_sid', 'is', null)
     .is('recording_url', null)
-    .limit(50)
+    .limit(3)
 
   if (!pendingCalls?.length) return { transferred: 0, errors: 0 }
 
@@ -96,7 +96,7 @@ export async function expireOldRecordings(
     .select('id, recording_url')
     .lt('recording_expires_at', new Date().toISOString())
     .not('recording_url', 'is', null)
-    .limit(100)
+    .limit(10)
 
   if (!expiredCalls?.length) return { expired: 0, errors: 0 }
 
