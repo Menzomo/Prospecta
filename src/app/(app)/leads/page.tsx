@@ -11,17 +11,9 @@ import type { LeadCategory } from '@/types/globalLeads'
 import { PageHeader } from '@/components/layout/PageHeader'
 import type { LeadCardData } from '@/features/leads/components/LeadsGrid'
 import { LeadsKanban } from '@/features/leads/components/LeadsKanban'
+import { LeadsFilterForm } from '@/features/leads/components/LeadsFilterForm'
 
 type SearchParams = Promise<{ category?: string; city?: string; search?: string }>
-
-function IconSearch() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.35-4.35" />
-    </svg>
-  )
-}
 
 
 export default async function LeadsPage({ searchParams }: { searchParams: SearchParams }) {
@@ -122,59 +114,12 @@ export default async function LeadsPage({ searchParams }: { searchParams: Search
       />
 
       {/* Filters */}
-      <form method="GET" action="/leads" className="flex flex-wrap items-center gap-2">
-        {/* Preserve active name search when applying category/city filters */}
-        {searchFilter && <input type="hidden" name="search" value={searchFilter} />}
-
-        <select
-          key={categoryFilter}
-          name="category"
-          defaultValue={categoryFilter}
-          className="rounded-lg border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-        >
-          <option value="all">Todos os nichos</option>
-          {categoriesInUse.map((cat) => (
-            <option key={cat.id} value={cat.slug}>{cat.name}</option>
-          ))}
-        </select>
-
-        <div className="relative">
-          <span className="pointer-events-none absolute inset-y-0 left-2.5 flex items-center text-on-surface-muted">
-            <IconSearch />
-          </span>
-          <input
-            key={cityFilter}
-            type="text"
-            name="city"
-            defaultValue={cityFilter}
-            placeholder="Filtrar por cidade..."
-            className="rounded-lg border border-outline bg-surface-container py-2 pl-8 pr-3 text-sm text-on-surface placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="cursor-pointer rounded-lg bg-surface-low border border-outline px-4 py-2 text-sm font-medium text-on-surface transition-colors hover:bg-outline"
-        >
-          Filtrar
-        </button>
-
-        {searchFilter && (
-          <span className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-            &ldquo;{searchFilter}&rdquo;
-            <Link href="/leads" aria-label="Limpar busca" className="hover:text-primary-dark">✕</Link>
-          </span>
-        )}
-
-        {(categoryFilter !== 'all' || cityFilter) && (
-          <Link
-            href={searchFilter ? `/leads?search=${encodeURIComponent(searchFilter)}` : '/leads'}
-            className="text-sm text-on-surface-muted hover:text-on-surface hover:underline"
-          >
-            Limpar filtros
-          </Link>
-        )}
-      </form>
+      <LeadsFilterForm
+        categories={categoriesInUse}
+        currentCategory={categoryFilter}
+        currentCity={cityFilter}
+        currentSearch={searchFilter}
+      />
 
       {totalCount === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center py-16 text-center">
