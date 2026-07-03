@@ -88,7 +88,7 @@ export function LeadsKanban({ leads, hasSettings }: Props) {
           </div>
 
           {/* Cards */}
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 overflow-y-auto" style={{ maxHeight: '70vh' }}>
             {col.leads.map((lead) => (
               <div
                 key={lead.key}
