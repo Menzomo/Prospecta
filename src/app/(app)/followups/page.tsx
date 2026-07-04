@@ -87,7 +87,7 @@ export default async function FollowupsPage() {
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 overflow-y-auto" style={{ maxHeight: '75vh' }}>
               {followups.map((followup) => {
                 const overdue = isOverdue(followup.due_at)
                 const leadName =
