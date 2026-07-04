@@ -174,7 +174,8 @@ export async function dismissNoReplyFollowupAction(
   if (leadId) {
     await updateLeadStatus(supabase, user.id, leadId, 'sem_resposta')
   } else if (userLeadId) {
-    await updateUserLead(supabase, userLeadId, { status: 'sem_resposta' })
+    const { data: ownedLead } = await supabase.from('user_leads').select('id').eq('id', userLeadId).eq('user_id', user.id).single()
+    if (ownedLead) await updateUserLead(supabase, userLeadId, { status: 'sem_resposta' })
   }
 
   revalidatePath('/dashboard')

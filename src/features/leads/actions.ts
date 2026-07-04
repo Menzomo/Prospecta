@@ -125,6 +125,9 @@ export async function updateLeadAction(
 
   if (!user) redirect('/login')
 
+  const { data: owned } = await supabase.from('leads').select('id').eq('id', id).eq('user_id', user.id).single()
+  if (!owned) return { error: 'Lead não encontrado.' }
+
   const lead = await updateLead(supabase, id, {
     company_name: validation.data.company_name,
     contact_name: validation.data.contact_name || null,
@@ -155,6 +158,9 @@ export async function hideLeadAction(id: string, _formData: FormData): Promise<v
 
   if (!user) redirect('/login')
 
+  const { data: owned } = await supabase.from('leads').select('id').eq('id', id).eq('user_id', user.id).single()
+  if (!owned) redirect('/leads')
+
   await hideLead(supabase, id)
   revalidatePath('/leads')
   redirect('/leads')
@@ -169,6 +175,9 @@ export async function hideUserLeadAction(id: string, _formData: FormData): Promi
   } = await supabase.auth.getUser()
 
   if (!user) redirect('/login')
+
+  const { data: owned } = await supabase.from('user_leads').select('id').eq('id', id).eq('user_id', user.id).single()
+  if (!owned) redirect('/leads')
 
   await hideUserLead(supabase, id)
   revalidatePath('/leads')

@@ -93,6 +93,9 @@ export async function updateTemplateAction(
 
   if (!user) redirect('/login')
 
+  const { data: owned } = await supabase.from('templates').select('id').eq('id', id).eq('user_id', user.id).single()
+  if (!owned) return { error: 'Template não encontrado.' }
+
   const result = await updateTemplateService(supabase, id, validation.data)
 
   if ('error' in result) {
@@ -114,6 +117,9 @@ export async function deleteTemplateAction(id: string, _formData: FormData): Pro
   } = await supabase.auth.getUser()
 
   if (!user) redirect('/login')
+
+  const { data: owned } = await supabase.from('templates').select('id').eq('id', id).eq('user_id', user.id).single()
+  if (!owned) redirect('/templates')
 
   await deleteTemplateService(supabase, id)
   revalidatePath('/templates')
