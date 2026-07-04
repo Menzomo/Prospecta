@@ -32,6 +32,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 const args = process.argv.slice(2)
 const emailArg = args[args.indexOf('--email') + 1]
 const shouldReset = args.includes('--reset')
+const deleteOnly = args.includes('--delete-only')
 
 if (!emailArg) {
   console.error('❌  Informe o email do usuário: npm run seed -- --email seu@email.com')
@@ -190,8 +191,8 @@ async function main() {
   }
   console.log(`✅  Usuário encontrado: ${user.email} (${user.id})`)
 
-  // 2. Reset seed data if requested
-  if (shouldReset) {
+  // 2. Reset/delete seed data if requested
+  if (shouldReset || deleteOnly) {
     console.log('🗑️   Removendo dados de seed anteriores...')
     await supabase.from('followups').delete().eq('user_id', user.id).eq('type', SEED_SOURCE)
     const { data: seedLeads } = await supabase.from('leads').select('id').eq('user_id', user.id).eq('source', SEED_SOURCE)
@@ -205,6 +206,7 @@ async function main() {
       await supabase.from('leads').delete().eq('user_id', user.id).eq('source', SEED_SOURCE)
     }
     console.log('✅  Dados removidos.')
+    if (deleteOnly) return
   }
 
   // 3. Insert leads

@@ -30,8 +30,13 @@ export default async function DashboardPage() {
   const isStale = Date.now() - lastSync > DASHBOARD_SYNC_WINDOW_MS
 
   if (isStale) {
-    await syncGmailForUser(supabase, user.id)
+    // Mark as synced immediately so concurrent/repeated navigations don't trigger duplicate syncs.
     await touchEmailSync(supabase, user.id)
+    // Run Gmail sync with a 3-second cap so slow Gmail responses never block the page render.
+    await Promise.race([
+      syncGmailForUser(supabase, user.id),
+      new Promise<void>((resolve) => setTimeout(resolve, 3000)),
+    ])
   }
 
   const dashboard = await getDashboardData(supabase, user.id)

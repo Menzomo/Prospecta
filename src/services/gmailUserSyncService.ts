@@ -20,32 +20,18 @@ export async function syncGmailForUser(
     getUserLeadIdsWithThreads(supabase, userId),
   ])
 
+  const args = { accessToken: connection.access_token, gmailEmail: connection.gmail_email, refreshToken: connection.refresh_token }
+
+  const results = await Promise.allSettled([
+    ...leadIds.map((leadId) => syncGmailRepliesForLead(supabase, { userId, leadId, userLeadId: null, ...args })),
+    ...userLeadIds.map((userLeadId) => syncGmailRepliesForLead(supabase, { userId, leadId: null, userLeadId, ...args })),
+  ])
+
   let totalSynced = 0
   let totalErrors = 0
-
-  for (const leadId of leadIds) {
-    const result = await syncGmailRepliesForLead(supabase, {
-      userId,
-      leadId,
-      accessToken: connection.access_token,
-      gmailEmail: connection.gmail_email,
-      refreshToken: connection.refresh_token,
-    })
-    totalSynced += result.synced
-    totalErrors += result.errors
-  }
-
-  for (const userLeadId of userLeadIds) {
-    const result = await syncGmailRepliesForLead(supabase, {
-      userId,
-      leadId: null,
-      userLeadId,
-      accessToken: connection.access_token,
-      gmailEmail: connection.gmail_email,
-      refreshToken: connection.refresh_token,
-    })
-    totalSynced += result.synced
-    totalErrors += result.errors
+  for (const r of results) {
+    if (r.status === 'fulfilled') { totalSynced += r.value.synced; totalErrors += r.value.errors }
+    else totalErrors++
   }
 
   return { synced: totalSynced, errors: totalErrors }
