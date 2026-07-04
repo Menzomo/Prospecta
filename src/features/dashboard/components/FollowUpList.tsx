@@ -47,7 +47,7 @@ export function FollowUpList({ followups }: Props) {
         </span>
       </div>
 
-      <ul className="divide-y divide-outline">
+      <ul className="divide-y divide-outline overflow-y-auto" style={{ maxHeight: '22rem' }}>
         {followups.map((f) => {
           const overdue = new Date(f.due_at) < new Date()
           const isNoReply = f.type === 'no_reply'
