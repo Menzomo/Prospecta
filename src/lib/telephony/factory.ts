@@ -5,6 +5,7 @@
 import type { TelephonySettings } from '@/types/calls'
 import { decryptCredential } from '@/lib/crypto/credentials'
 import { TwilioProvider } from './twilioProvider'
+import { TelnyxProvider } from './telnyxProvider'
 import type { ITelephonyProvider } from './ITelephonyProvider'
 
 export function createProviderFromSettings(settings: TelephonySettings): ITelephonyProvider {
@@ -32,4 +33,15 @@ export function createProviderFromSettings(settings: TelephonySettings): ITeleph
     twimlAppSid:  settings.twiml_app_sid,
     appUrl,
   })
+}
+
+/**
+ * Retorna um provider baseado na env var TELEPHONY_PROVIDER.
+ * Uso futuro: quando Telnyx for ativado no nível de plataforma (sem settings por usuário).
+ * Twilio exige credenciais por usuário — use createProviderFromSettings() para ele.
+ */
+export function getProviderByEnv(): ITelephonyProvider {
+  const provider = process.env.TELEPHONY_PROVIDER ?? 'twilio'
+  if (provider === 'telnyx') return new TelnyxProvider()
+  throw new Error('getProviderByEnv: twilio requer createProviderFromSettings(settings)')
 }

@@ -11,6 +11,7 @@ import { createProviderFromSettings } from '@/lib/telephony/factory'
 import { createCall, updateCallStatus } from '@/repositories/callRepository'
 import { createCallAnalysis, getCallAnalysisByCallId, deleteCallAnalysisByCallId } from '@/repositories/callAnalysisRepository'
 import { deductCredit, getCurrentPeriodCredits } from '@/repositories/analysisCreditRepository'
+import { debitWallet } from '@/repositories/walletRepository'
 import { CALL_EVENT, dispatchCallEvent } from '@/features/calls/events'
 
 // ── tipos de retorno ──────────────────────────────────────────────────────────
@@ -191,7 +192,7 @@ export async function handleStatusCallbackWebhook(
   await updateCallStatus(adminSupabase, update.callSid, patch)
 
   if (update.isTerminal && userId) {
-    // Busca o callId pelo call_sid para disparar o evento
+    // Busca o callId pelo call_sid para disparar o evento e para o débito
     const { data: call } = await adminSupabase
       .from('calls')
       .select('id')
@@ -206,6 +207,28 @@ export async function handleStatusCallbackWebhook(
         occurredAt: new Date().toISOString(),
         payload: { status: update.status, durationSeconds: update.durationSeconds },
       })
+
+      // Débito de ligação — apenas para chamadas completadas com duração real
+      const adminIds = (process.env.ADMIN_USER_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+      const isAdmin  = adminIds.includes(userId)
+
+      if (!isAdmin && update.status === 'completed' && update.durationSeconds && update.durationSeconds > 0) {
+        const minutos = Math.ceil(update.durationSeconds / 60)
+        const custo   = parseFloat((minutos * 0.15).toFixed(4))
+        try {
+          await debitWallet(
+            adminSupabase,
+            userId,
+            custo,
+            'call',
+            call.id,
+            `Ligação ${minutos} min`
+          )
+        } catch (err) {
+          // Não retornar erro para a Twilio — callback já aconteceu
+          console.error('[callService] débito de ligação falhou:', err)
+        }
+      }
     }
   }
 
