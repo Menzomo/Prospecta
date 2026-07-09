@@ -5,11 +5,12 @@ import type { CallAnalysis } from '@/types/calls'
 export async function createCallAnalysis(
   supabase: SupabaseClient<Database>,
   callId: string,
-  userId: string
+  userId: string,
+  costReais = 0
 ): Promise<CallAnalysis | null> {
   const { data, error } = await supabase
     .from('call_analyses')
-    .insert({ call_id: callId, user_id: userId, status: 'pending' })
+    .insert({ call_id: callId, user_id: userId, status: 'pending', credits_used: costReais })
     .select()
     .single()
 

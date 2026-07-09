@@ -10,8 +10,7 @@ import { getTelephonySettings } from '@/repositories/telephonySettingsRepository
 import { createProviderFromSettings } from '@/lib/telephony/factory'
 import { createCall, updateCallStatus } from '@/repositories/callRepository'
 import { createCallAnalysis, getCallAnalysisByCallId, deleteCallAnalysisByCallId } from '@/repositories/callAnalysisRepository'
-import { deductCredit, getCurrentPeriodCredits } from '@/repositories/analysisCreditRepository'
-import { debitWallet } from '@/repositories/walletRepository'
+import { debitWallet, getBalance } from '@/repositories/walletRepository'
 import { CALL_EVENT, dispatchCallEvent } from '@/features/calls/events'
 
 // ── tipos de retorno ──────────────────────────────────────────────────────────
@@ -30,7 +29,7 @@ export type StatusCallbackResult =
 
 export type RequestAnalysisResult =
   | { ok: true; analysisId: string }
-  | { ok: false; error: string; status: 402 | 404 | 422 | 500 }
+  | { ok: false; error: string; status: 402 | 404 | 422 | 500; custo?: number; balance?: number }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -290,23 +289,32 @@ export async function requestCallAnalysis(
     return { ok: false, error: 'Análise já solicitada ou concluída para esta chamada.', status: 422 }
   }
 
-  // Admin users (ADMIN_USER_IDS env var) têm créditos ilimitados para testes
+  // Admin users (ADMIN_USER_IDS env var) são isentos de cobrança
   const adminIds = (process.env.ADMIN_USER_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean)
-  const isAdmin = adminIds.includes(userId)
+  const isAdmin  = adminIds.includes(userId)
+
+  const duracao  = call.duration_seconds ?? 0
+  const minutos  = Math.ceil(duracao / 60) || 1
+  const custo    = parseFloat((minutos * 0.08).toFixed(4))
 
   if (!isAdmin) {
-    const credits = await getCurrentPeriodCredits(supabase, userId)
-    if (!credits || credits.credits_total - credits.credits_used <= 0) {
-      return { ok: false, error: 'Créditos de análise esgotados.', status: 402 }
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const adminSupabase = createAdminClient()
+
+    const balance = await getBalance(supabase, userId)
+    if (balance < custo) {
+      return { ok: false, error: 'Saldo insuficiente para analisar esta ligação.', status: 402, custo, balance }
     }
 
-    const deducted = await deductCredit(supabase, userId)
-    if (!deducted) {
-      return { ok: false, error: 'Créditos de análise esgotados.', status: 402 }
+    try {
+      await debitWallet(adminSupabase, userId, custo, 'analysis', callId, `Análise ${minutos} min`)
+    } catch {
+      const balanceAtual = await getBalance(supabase, userId)
+      return { ok: false, error: 'Saldo insuficiente para analisar esta ligação.', status: 402, custo, balance: balanceAtual }
     }
   }
 
-  const analysis = await createCallAnalysis(supabase, callId, userId)
+  const analysis = await createCallAnalysis(supabase, callId, userId, isAdmin ? 0 : custo)
   if (!analysis) return { ok: false, error: 'Falha ao registrar análise.', status: 500 }
 
   dispatchCallEvent({
