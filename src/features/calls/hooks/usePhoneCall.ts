@@ -2,11 +2,10 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 
-// Estados da chamada do ponto de vista do usuário
 export type PhoneCallState =
   | 'idle'          // pronto para iniciar
   | 'initializing'  // buscando token, configurando Device
-  | 'connecting'    // device.connect() chamado, aguardando Twilio
+  | 'connecting'    // connect() chamado, aguardando provedor
   | 'ringing'       // telefone do lead está tocando
   | 'in-progress'   // chamada ativa
   | 'ended'         // chamada encerrada normalmente
@@ -20,7 +19,7 @@ export interface UsePhoneCallOptions {
 export interface UsePhoneCallResult {
   state: PhoneCallState
   error: string | null
-  callId: string | null      // UUID do nosso banco (gerado pelo browser antes do connect)
+  callId: string | null
   connectedAt: Date | null
   endedAt: Date | null
   startCall: (toPhone: string) => Promise<void>
@@ -29,56 +28,42 @@ export interface UsePhoneCallResult {
 }
 
 export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): UsePhoneCallResult {
-  const [state, setState]           = useState<PhoneCallState>('idle')
-  const [error, setError]           = useState<string | null>(null)
-  const [callId, setCallId]         = useState<string | null>(null)
+  const [state, setState]             = useState<PhoneCallState>('idle')
+  const [error, setError]             = useState<string | null>(null)
+  const [callId, setCallId]           = useState<string | null>(null)
   const [connectedAt, setConnectedAt] = useState<Date | null>(null)
-  const [endedAt, setEndedAt]       = useState<Date | null>(null)
+  const [endedAt, setEndedAt]         = useState<Date | null>(null)
 
-  // Refs para o Device e Call do Twilio SDK (não causam re-render)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const deviceRef = useRef<any>(null)
+  const deviceRef   = useRef<any>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const callRef   = useRef<any>(null)
+  const callRef     = useRef<any>(null)
+  const providerRef = useRef<'twilio' | 'telnyx' | null>(null)
 
   const cleanup = useCallback(() => {
     callRef.current = null
     if (deviceRef.current) {
-      try { deviceRef.current.destroy() } catch { /* ignore */ }
+      try {
+        if (providerRef.current === 'telnyx') {
+          deviceRef.current.disconnect()
+        } else {
+          deviceRef.current.destroy()
+        }
+      } catch { /* ignore */ }
       deviceRef.current = null
     }
+    providerRef.current = null
   }, [])
 
-  // Limpa o Device quando o componente é desmontado
   useEffect(() => () => { cleanup() }, [cleanup])
 
-  const startCall = useCallback(async (toPhone: string) => {
-    setState('initializing')
-    setError(null)
-    setConnectedAt(null)
-    setEndedAt(null)
+  // ── Twilio ────────────────────────────────────────────────────────────────
 
-    // Gera o UUID aqui para correlação imediata com o registro do banco
-    const newCallId = crypto.randomUUID()
-    setCallId(newCallId)
-
-    // Busca token da nossa API (nunca diretamente do Twilio)
-    let token: string
-    try {
-      const res = await fetch('/api/calls/token', { method: 'POST' })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body.error ?? 'Falha ao obter token de telefonia.')
-      }
-      const data = await res.json()
-      token = data.token
-    } catch (err) {
-      setState('error')
-      setError(err instanceof Error ? err.message : 'Falha ao iniciar chamada.')
-      return
-    }
-
-    // Importação dinâmica — SDK é browser-only
+  const startCallTwilio = useCallback(async (
+    toPhone: string,
+    token: string,
+    newCallId: string
+  ) => {
     let DeviceClass: Awaited<typeof import('@twilio/voice-sdk')>['Device']
     try {
       const sdk = await import('@twilio/voice-sdk')
@@ -89,11 +74,11 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
       return
     }
 
-    // Inicializa o Device
     let device: InstanceType<typeof DeviceClass>
     try {
       device = new DeviceClass(token, { logLevel: 'warn' })
-      deviceRef.current = device
+      deviceRef.current  = device
+      providerRef.current = 'twilio'
       await device.register()
     } catch {
       setState('error')
@@ -104,7 +89,6 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
 
     setState('connecting')
 
-    // Conecta a chamada
     let call: Awaited<ReturnType<typeof device.connect>>
     try {
       call = await device.connect({
@@ -123,36 +107,14 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
       return
     }
 
-    // Eventos do ciclo de vida da chamada
-    call.on('ringing', () => setState('ringing'))
-
-    call.on('accept', () => {
-      setState('in-progress')
-      setConnectedAt(new Date())
-    })
-
-    call.on('disconnect', () => {
-      setState('ended')
-      setEndedAt(new Date())
-      cleanup()
-    })
-
-    call.on('cancel', () => {
-      setState('ended')
-      setEndedAt(new Date())
-      cleanup()
-    })
-
-    call.on('reject', () => {
-      setState('ended')
-      setEndedAt(new Date())
-      cleanup()
-    })
-
+    call.on('ringing',    () => setState('ringing'))
+    call.on('accept',     () => { setState('in-progress'); setConnectedAt(new Date()) })
+    call.on('disconnect', () => { setState('ended'); setEndedAt(new Date()); cleanup() })
+    call.on('cancel',     () => { setState('ended'); setEndedAt(new Date()); cleanup() })
+    call.on('reject',     () => { setState('ended'); setEndedAt(new Date()); cleanup() })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     call.on('error', (err: any) => {
       const message = err?.message ?? 'Erro durante a chamada.'
-      // Erros de microfone ou permissão negada
       if (err?.code === 31401 || message.toLowerCase().includes('microphone')) {
         setError('Permissão de microfone negada. Libere o acesso e tente novamente.')
       } else {
@@ -163,11 +125,130 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
     })
   }, [leadId, userLeadId, cleanup])
 
+  // ── Telnyx ────────────────────────────────────────────────────────────────
+
+  const startCallTelnyx = useCallback(async (
+    toPhone: string,
+    token: string,
+    newCallId: string,
+    identity: string,
+    phoneNumber: string
+  ) => {
+    let TelnyxRTC: Awaited<typeof import('@telnyx/webrtc')>['TelnyxRTC']
+    let NOTIFICATION_TYPE: Awaited<typeof import('@telnyx/webrtc')>['NOTIFICATION_TYPE']
+    try {
+      const sdk = await import('@telnyx/webrtc')
+      TelnyxRTC = sdk.TelnyxRTC
+      NOTIFICATION_TYPE = sdk.NOTIFICATION_TYPE
+    } catch {
+      setState('error')
+      setError('Falha ao carregar módulo de telefonia Telnyx.')
+      return
+    }
+
+    const rtcClient = new TelnyxRTC({ login_token: token })
+    deviceRef.current   = rtcClient
+    providerRef.current = 'telnyx'
+
+    // Aguarda o cliente estar pronto (autenticado no servidor Telnyx)
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(
+          () => reject(new Error('Tempo limite ao conectar com Telnyx')),
+          15_000
+        )
+
+        rtcClient.on('telnyx.ready', () => { clearTimeout(timeout); resolve() })
+        rtcClient.on('telnyx.error', (err: unknown) => {
+          clearTimeout(timeout)
+          reject(new Error((err as { message?: string })?.message ?? 'Erro ao conectar com Telnyx'))
+        })
+
+        rtcClient.connect().catch(reject)
+      })
+    } catch (err) {
+      setState('error')
+      setError(err instanceof Error ? err.message : 'Falha ao conectar com Telnyx.')
+      cleanup()
+      return
+    }
+
+    setState('connecting')
+
+    // SIP custom headers — aparecem no webhook TeXML como SipHeader_X-Prospecta*
+    const call = rtcClient.newCall({
+      destinationNumber: toPhone,
+      callerNumber: phoneNumber,
+      id: newCallId,
+      customHeaders: [
+        { name: 'X-ProspectaCallId',     value: newCallId },
+        { name: 'X-ProspectaUserId',     value: identity },
+        { name: 'X-ProspectaLeadId',     value: leadId     ?? '' },
+        { name: 'X-ProspectaUserLeadId', value: userLeadId ?? '' },
+      ],
+    })
+    callRef.current = call
+
+    // Estado de chamada via telnyx.notification (callUpdate)
+    rtcClient.on('telnyx.notification', (notification: { type: string; call?: { state: string } }) => {
+      if (notification.type !== NOTIFICATION_TYPE.callUpdate) return
+      const callState = notification.call?.state
+
+      if (callState === 'ringing') {
+        setState('ringing')
+      } else if (callState === 'active') {
+        setState('in-progress')
+        setConnectedAt(new Date())
+      } else if (callState === 'hangup' || callState === 'destroy') {
+        setState('ended')
+        setEndedAt(new Date())
+        cleanup()
+      }
+    })
+  }, [leadId, userLeadId, cleanup])
+
+  // ── startCall (ponto de entrada público) ──────────────────────────────────
+
+  const startCall = useCallback(async (toPhone: string) => {
+    setState('initializing')
+    setError(null)
+    setConnectedAt(null)
+    setEndedAt(null)
+
+    const newCallId = crypto.randomUUID()
+    setCallId(newCallId)
+
+    let tokenData: { token: string; identity: string; phoneNumber: string; provider: 'twilio' | 'telnyx' }
+    try {
+      const res = await fetch('/api/calls/token', { method: 'POST' })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? 'Falha ao obter token de telefonia.')
+      }
+      tokenData = await res.json()
+    } catch (err) {
+      setState('error')
+      setError(err instanceof Error ? err.message : 'Falha ao iniciar chamada.')
+      return
+    }
+
+    if (tokenData.provider === 'telnyx') {
+      await startCallTelnyx(toPhone, tokenData.token, newCallId, tokenData.identity, tokenData.phoneNumber)
+    } else {
+      await startCallTwilio(toPhone, tokenData.token, newCallId)
+    }
+  }, [startCallTwilio, startCallTelnyx])
+
   const endCall = useCallback(() => {
     if (callRef.current) {
-      try { callRef.current.disconnect() } catch { /* ignore */ }
+      try {
+        if (providerRef.current === 'telnyx') {
+          callRef.current.hangup()
+        } else {
+          callRef.current.disconnect()
+        }
+      } catch { /* ignore */ }
     }
-    // O evento 'disconnect' do SDK transicionará o estado para 'ended'
   }, [])
 
   const reset = useCallback(() => {

@@ -37,6 +37,15 @@ async function loadProvider(
   supabase: SupabaseClient<Database>,
   userId: string
 ): Promise<{ provider: ITelephonyProvider; phoneNumber: string } | null> {
+  // Telnyx é platform-level: uma conta para todos os usuários via env vars
+  if (process.env.TELEPHONY_PROVIDER === 'telnyx') {
+    const phoneNumber = process.env.TELNYX_PHONE_NUMBER ?? ''
+    if (!phoneNumber) return null
+    const { TelnyxProvider } = await import('@/lib/telephony/telnyxProvider')
+    return { provider: new TelnyxProvider(), phoneNumber }
+  }
+
+  // Twilio é per-user: configurações no banco por usuário
   const settings = await getTelephonySettings(supabase, userId)
   if (!settings || !settings.is_active) return null
   const provider = createProviderFromSettings(settings)
@@ -70,7 +79,7 @@ export async function generateToken(
   }
 
   try {
-    const data = loaded.provider.generateAccessToken(userId)
+    const data = await loaded.provider.generateAccessToken(userId)
     return { ok: true, data }
   } catch (err) {
     console.error('[callService.generateToken]', err)
@@ -88,7 +97,8 @@ export async function handleOutboundCallWebhook(
   adminSupabase: SupabaseClient<Database>,
   rawParams: Record<string, string>,
   webhookUrl: string,
-  signature: string
+  rawHeaders: Record<string, string>,
+  rawBody: string
 ): Promise<TwiMLResult> {
   // Precisamos do provider para validar a assinatura — mas ainda não sabemos o userId.
   // O userId vem dentro dos params após o parse. Para validar antes do parse:
@@ -106,7 +116,7 @@ export async function handleOutboundCallWebhook(
 
   const { provider } = loaded
 
-  if (!isDev() && !provider.validateWebhookSignature(signature, webhookUrl, rawParams)) {
+  if (!isDev() && !provider.validateWebhookSignature(rawHeaders, webhookUrl, rawBody, rawParams)) {
     return { ok: false, error: 'Assinatura inválida.', forbidden: true }
   }
 
@@ -151,11 +161,12 @@ export async function handleStatusCallbackWebhook(
   adminSupabase: SupabaseClient<Database>,
   rawParams: Record<string, string>,
   webhookUrl: string,
-  signature: string
+  rawHeaders: Record<string, string>,
+  rawBody: string
 ): Promise<StatusCallbackResult> {
   const userId = extractUserIdUnsafe(rawParams)
 
-  // Callback de gravação: não tem Caller, mas tem RecordingStatus + CallSid
+  // Callback de gravação: não tem Caller/userId, mas tem RecordingStatus + CallSid
   if (!userId) {
     if (rawParams['RecordingStatus'] === 'completed' && rawParams['CallSid'] && rawParams['RecordingSid']) {
       await handleRecordingCallback(adminSupabase, rawParams['CallSid'], rawParams['RecordingSid'])
@@ -168,7 +179,7 @@ export async function handleStatusCallbackWebhook(
 
   const { provider } = loaded
 
-  if (!isDev() && !provider.validateWebhookSignature(signature, webhookUrl, rawParams)) {
+  if (!isDev() && !provider.validateWebhookSignature(rawHeaders, webhookUrl, rawBody, rawParams)) {
     return { ok: false, forbidden: true }
   }
 
@@ -421,6 +432,10 @@ async function handleRecordingCallback(
 // ── helpers internos (não exportados) ────────────────────────────────────────
 
 function extractUserIdUnsafe(params: Record<string, string>): string | null {
+  // Telnyx: userId passado como SIP custom header pelo browser SDK
+  if (params['SipHeader_X-ProspectaUserId']) return params['SipHeader_X-ProspectaUserId']
+
+  // Twilio: codificado em Caller como "client:user_<uuid sem hifens>"
   const caller = params['Caller'] ?? ''
   const raw = caller.replace(/^client:/, '').replace(/^user_/, '')
   if (raw.length !== 32) return null
@@ -432,7 +447,8 @@ function parseOutboundCallParamsUnsafe(params: Record<string, string>) {
     callSid:    params['CallSid'] ?? '',
     userId:     extractUserIdUnsafe(params),
     toNumber:   params['To'] ?? '',
-    leadId:     params['callLeadId'] || null,
-    userLeadId: params['callUserLeadId'] || null,
+    // Suporta Telnyx (SipHeader_*) e Twilio (callLeadId/callUserLeadId)
+    leadId:     params['SipHeader_X-ProspectaLeadId']     || params['callLeadId']     || null,
+    userLeadId: params['SipHeader_X-ProspectaUserLeadId'] || params['callUserLeadId'] || null,
   }
 }

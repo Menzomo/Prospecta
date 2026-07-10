@@ -5,6 +5,7 @@ export interface AccessTokenResult {
   token: string
   identity: string
   phoneNumber: string
+  provider: 'twilio' | 'telnyx'
 }
 
 // Parâmetros extraídos do webhook que inicia uma chamada (equivalente ao /twiml do Twilio)
@@ -34,19 +35,25 @@ export interface ITelephonyProvider {
    * Gera token de curta duração (≈1h) para o SDK browser inicializar.
    * O userId é codificado na identidade para ser recuperado nos callbacks.
    */
-  generateAccessToken(userId: string): AccessTokenResult
+  generateAccessToken(userId: string): Promise<AccessTokenResult>
 
   /**
-   * Gera a instrução (TwiML, SDP, etc.) que conecta a chamada ao destinatário.
+   * Gera a instrução (TwiML/TeXML) que conecta a chamada ao destinatário.
    * O callId é passado de volta pelo provedor no status callback para correlação.
    */
   generateCallInstruction(to: string, callId: string, record: boolean): string
 
   /**
    * Valida que o webhook veio realmente deste provedor (não de terceiros).
-   * Retorna true se a assinatura for válida.
+   * Recebe os headers HTTP, URL, body bruto e params parsed para suportar
+   * validação por HMAC (Twilio) ou Ed25519 (Telnyx).
    */
-  validateWebhookSignature(signature: string, url: string, params: Record<string, string>): boolean
+  validateWebhookSignature(
+    headers: Record<string, string>,
+    url: string,
+    rawBody: string,
+    params: Record<string, string>
+  ): boolean
 
   /**
    * Transforma os parâmetros brutos do webhook de início de chamada
