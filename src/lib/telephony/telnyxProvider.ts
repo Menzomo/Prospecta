@@ -132,11 +132,14 @@ export class TelnyxProvider implements ITelephonyProvider {
    * (X-Prospecta*) que o Telnyx repassa como SipHeader_X-Prospecta* no webhook.
    */
   parseOutboundCallRequest(params: Record<string, string>): OutboundCallRequest {
+    // O número do cliente vem em X-ProspectaTargetPhone (browser chama nosso número,
+    // TeXML webhook recebe e usa esse header para o <Dial> ao PSTN)
+    const targetPhone = params['SipHeader_X-ProspectaTargetPhone'] || params['To'] || ''
     return {
       clientCallId: params['SipHeader_X-ProspectaCallId']     || null,
       callSid:      params['CallSid']                          ?? '',
       userId:       params['SipHeader_X-ProspectaUserId']     || null,
-      toNumber:     this.normalizeToE164(params['To']         ?? ''),
+      toNumber:     this.normalizeToE164(targetPhone),
       leadId:       params['SipHeader_X-ProspectaLeadId']     || null,
       userLeadId:   params['SipHeader_X-ProspectaUserLeadId'] || null,
     }
