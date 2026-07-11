@@ -15,7 +15,10 @@ export async function POST(_request: NextRequest, { params }: Props) {
 
   const result = await requestCallAnalysis(supabase, callId, user.id)
 
-  if (!result.ok) return Response.json({ error: result.error }, { status: result.status })
+  if (!result.ok) return Response.json(
+    { error: result.error, custo: result.custo, balance: result.balance },
+    { status: result.status }
+  )
 
   return Response.json({ ok: true, analysis_id: result.analysisId })
 }

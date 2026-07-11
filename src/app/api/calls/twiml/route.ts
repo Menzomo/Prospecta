@@ -7,15 +7,17 @@ export const dynamic = 'force-dynamic'
 const XML_HEADERS = { 'Content-Type': 'text/xml' }
 
 export async function POST(request: NextRequest) {
-  const formData = await request.formData()
-  const params = Object.fromEntries(formData) as Record<string, string>
+  const rawBody = await request.text()
+  const params  = Object.fromEntries(new URLSearchParams(rawBody)) as Record<string, string>
 
-  const signature = request.headers.get('x-twilio-signature') ?? ''
-  const appUrl    = process.env.NEXT_PUBLIC_APP_URL ?? ''
+  const headers: Record<string, string> = {}
+  request.headers.forEach((value, key) => { headers[key] = value })
+
+  const appUrl     = process.env.NEXT_PUBLIC_APP_URL ?? ''
   const webhookUrl = `${appUrl}/api/calls/twiml`
 
   const supabase = createAdminClient()
-  const result   = await handleOutboundCallWebhook(supabase, params, webhookUrl, signature)
+  const result   = await handleOutboundCallWebhook(supabase, params, webhookUrl, headers, rawBody)
 
   if (!result.ok) {
     if (result.forbidden) return new Response('Forbidden', { status: 403 })

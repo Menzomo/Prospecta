@@ -67,6 +67,7 @@ export function CallAnalysisReport({ analysis, hasRecording, callId, leadId, use
   const [pending, startTransition] = useTransition()
   const [requestState, setRequestState] = useState<'idle' | 'loading' | 'error'>('idle')
   const [reanalyzeState, setReanalyzeState] = useState<'idle' | 'loading' | 'error'>('idle')
+  const [insufficientBalance, setInsufficientBalance] = useState<{ custo: number; balance: number } | null>(null)
 
   useEffect(() => {
     if (!polling) return
@@ -94,10 +95,19 @@ export function CallAnalysisReport({ analysis, hasRecording, callId, leadId, use
 
   async function handleRequestAnalysis() {
     setRequestState('loading')
+    setInsufficientBalance(null)
     const res = await fetch(`/api/calls/${callId}/request-analysis`, { method: 'POST' })
     if (res.ok) {
       setRequestState('idle')
       setPolling(true)
+    } else if (res.status === 402) {
+      const body = await res.json()
+      if (body.custo !== undefined) {
+        setInsufficientBalance({ custo: Number(body.custo), balance: Number(body.balance ?? 0) })
+        setRequestState('idle')
+      } else {
+        setRequestState('error')
+      }
     } else {
       setRequestState('error')
     }
@@ -123,6 +133,45 @@ export function CallAnalysisReport({ analysis, hasRecording, callId, leadId, use
     if (!hasRecording) {
       return <p className="text-xs text-on-surface-muted">Nenhuma gravação disponível para esta chamada.</p>
     }
+
+    if (insufficientBalance) {
+      const saldoApos = insufficientBalance.balance - insufficientBalance.custo
+      return (
+        <div className="flex flex-col gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+          <div className="flex flex-col gap-1">
+            <p className="text-xs font-semibold text-amber-800">Saldo insuficiente para análise</p>
+            <p className="text-xs text-amber-700">
+              Esta análise consumirá{' '}
+              <span className="font-semibold">
+                R$ {insufficientBalance.custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </span>
+            </p>
+            <p className="text-xs text-amber-600">
+              Saldo atual: R$ {insufficientBalance.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              {saldoApos < 0 && (
+                <> · Faltam R$ {Math.abs(saldoApos).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</>
+              )}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <a
+              href="/settings?section=plano"
+              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary-dark"
+            >
+              Recarregar saldo
+            </a>
+            <button
+              type="button"
+              onClick={() => setInsufficientBalance(null)}
+              className="text-xs text-amber-700 underline"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="flex flex-col gap-2">
         {requestState === 'idle' && (

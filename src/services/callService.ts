@@ -10,7 +10,7 @@ import { getTelephonySettings } from '@/repositories/telephonySettingsRepository
 import { createProviderFromSettings } from '@/lib/telephony/factory'
 import { createCall, updateCallStatus } from '@/repositories/callRepository'
 import { createCallAnalysis, getCallAnalysisByCallId, deleteCallAnalysisByCallId } from '@/repositories/callAnalysisRepository'
-import { deductCredit, getCurrentPeriodCredits } from '@/repositories/analysisCreditRepository'
+import { debitWallet, getBalance } from '@/repositories/walletRepository'
 import { CALL_EVENT, dispatchCallEvent } from '@/features/calls/events'
 
 // ── tipos de retorno ──────────────────────────────────────────────────────────
@@ -29,7 +29,7 @@ export type StatusCallbackResult =
 
 export type RequestAnalysisResult =
   | { ok: true; analysisId: string }
-  | { ok: false; error: string; status: 402 | 404 | 422 | 500 }
+  | { ok: false; error: string; status: 402 | 404 | 422 | 500; custo?: number; balance?: number }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -37,6 +37,15 @@ async function loadProvider(
   supabase: SupabaseClient<Database>,
   userId: string
 ): Promise<{ provider: ITelephonyProvider; phoneNumber: string } | null> {
+  // Telnyx é platform-level: uma conta para todos os usuários via env vars
+  if (process.env.TELEPHONY_PROVIDER === 'telnyx') {
+    const phoneNumber = process.env.TELNYX_PHONE_NUMBER ?? ''
+    if (!phoneNumber) return null
+    const { TelnyxProvider } = await import('@/lib/telephony/telnyxProvider')
+    return { provider: new TelnyxProvider(), phoneNumber }
+  }
+
+  // Twilio é per-user: configurações no banco por usuário
   const settings = await getTelephonySettings(supabase, userId)
   if (!settings || !settings.is_active) return null
   const provider = createProviderFromSettings(settings)
@@ -70,7 +79,7 @@ export async function generateToken(
   }
 
   try {
-    const data = loaded.provider.generateAccessToken(userId)
+    const data = await loaded.provider.generateAccessToken(userId)
     return { ok: true, data }
   } catch (err) {
     console.error('[callService.generateToken]', err)
@@ -88,7 +97,8 @@ export async function handleOutboundCallWebhook(
   adminSupabase: SupabaseClient<Database>,
   rawParams: Record<string, string>,
   webhookUrl: string,
-  signature: string
+  rawHeaders: Record<string, string>,
+  rawBody: string
 ): Promise<TwiMLResult> {
   // Precisamos do provider para validar a assinatura — mas ainda não sabemos o userId.
   // O userId vem dentro dos params após o parse. Para validar antes do parse:
@@ -106,7 +116,7 @@ export async function handleOutboundCallWebhook(
 
   const { provider } = loaded
 
-  if (!isDev() && !provider.validateWebhookSignature(signature, webhookUrl, rawParams)) {
+  if (!isDev() && !provider.validateWebhookSignature(rawHeaders, webhookUrl, rawBody, rawParams)) {
     return { ok: false, error: 'Assinatura inválida.', forbidden: true }
   }
 
@@ -151,11 +161,12 @@ export async function handleStatusCallbackWebhook(
   adminSupabase: SupabaseClient<Database>,
   rawParams: Record<string, string>,
   webhookUrl: string,
-  signature: string
+  rawHeaders: Record<string, string>,
+  rawBody: string
 ): Promise<StatusCallbackResult> {
   const userId = extractUserIdUnsafe(rawParams)
 
-  // Callback de gravação: não tem Caller, mas tem RecordingStatus + CallSid
+  // Callback de gravação: não tem Caller/userId, mas tem RecordingStatus + CallSid
   if (!userId) {
     if (rawParams['RecordingStatus'] === 'completed' && rawParams['CallSid'] && rawParams['RecordingSid']) {
       await handleRecordingCallback(adminSupabase, rawParams['CallSid'], rawParams['RecordingSid'])
@@ -168,7 +179,7 @@ export async function handleStatusCallbackWebhook(
 
   const { provider } = loaded
 
-  if (!isDev() && !provider.validateWebhookSignature(signature, webhookUrl, rawParams)) {
+  if (!isDev() && !provider.validateWebhookSignature(rawHeaders, webhookUrl, rawBody, rawParams)) {
     return { ok: false, forbidden: true }
   }
 
@@ -191,7 +202,7 @@ export async function handleStatusCallbackWebhook(
   await updateCallStatus(adminSupabase, update.callSid, patch)
 
   if (update.isTerminal && userId) {
-    // Busca o callId pelo call_sid para disparar o evento
+    // Busca o callId pelo call_sid para disparar o evento e para o débito
     const { data: call } = await adminSupabase
       .from('calls')
       .select('id')
@@ -206,6 +217,28 @@ export async function handleStatusCallbackWebhook(
         occurredAt: new Date().toISOString(),
         payload: { status: update.status, durationSeconds: update.durationSeconds },
       })
+
+      // Débito de ligação — apenas para chamadas completadas com duração real
+      const adminIds = (process.env.ADMIN_USER_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+      const isAdmin  = adminIds.includes(userId)
+
+      if (!isAdmin && update.status === 'completed' && update.durationSeconds && update.durationSeconds > 0) {
+        const minutos = Math.ceil(update.durationSeconds / 60)
+        const custo   = parseFloat((minutos * 0.15).toFixed(4))
+        try {
+          await debitWallet(
+            adminSupabase,
+            userId,
+            custo,
+            'call',
+            call.id,
+            `Ligação ${minutos} min`
+          )
+        } catch (err) {
+          // Não retornar erro para a Twilio — callback já aconteceu
+          console.error('[callService] débito de ligação falhou:', err)
+        }
+      }
     }
   }
 
@@ -267,23 +300,32 @@ export async function requestCallAnalysis(
     return { ok: false, error: 'Análise já solicitada ou concluída para esta chamada.', status: 422 }
   }
 
-  // Admin users (ADMIN_USER_IDS env var) têm créditos ilimitados para testes
+  // Admin users (ADMIN_USER_IDS env var) são isentos de cobrança
   const adminIds = (process.env.ADMIN_USER_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean)
-  const isAdmin = adminIds.includes(userId)
+  const isAdmin  = adminIds.includes(userId)
+
+  const duracao  = call.duration_seconds ?? 0
+  const minutos  = Math.ceil(duracao / 60) || 1
+  const custo    = parseFloat((minutos * 0.08).toFixed(4))
 
   if (!isAdmin) {
-    const credits = await getCurrentPeriodCredits(supabase, userId)
-    if (!credits || credits.credits_total - credits.credits_used <= 0) {
-      return { ok: false, error: 'Créditos de análise esgotados.', status: 402 }
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const adminSupabase = createAdminClient()
+
+    const balance = await getBalance(supabase, userId)
+    if (balance < custo) {
+      return { ok: false, error: 'Saldo insuficiente para analisar esta ligação.', status: 402, custo, balance }
     }
 
-    const deducted = await deductCredit(supabase, userId)
-    if (!deducted) {
-      return { ok: false, error: 'Créditos de análise esgotados.', status: 402 }
+    try {
+      await debitWallet(adminSupabase, userId, custo, 'analysis', callId, `Análise ${minutos} min`)
+    } catch {
+      const balanceAtual = await getBalance(supabase, userId)
+      return { ok: false, error: 'Saldo insuficiente para analisar esta ligação.', status: 402, custo, balance: balanceAtual }
     }
   }
 
-  const analysis = await createCallAnalysis(supabase, callId, userId)
+  const analysis = await createCallAnalysis(supabase, callId, userId, isAdmin ? 0 : custo)
   if (!analysis) return { ok: false, error: 'Falha ao registrar análise.', status: 500 }
 
   dispatchCallEvent({
@@ -390,6 +432,10 @@ async function handleRecordingCallback(
 // ── helpers internos (não exportados) ────────────────────────────────────────
 
 function extractUserIdUnsafe(params: Record<string, string>): string | null {
+  // Telnyx: userId passado como SIP custom header pelo browser SDK
+  if (params['SipHeader_X-ProspectaUserId']) return params['SipHeader_X-ProspectaUserId']
+
+  // Twilio: codificado em Caller como "client:user_<uuid sem hifens>"
   const caller = params['Caller'] ?? ''
   const raw = caller.replace(/^client:/, '').replace(/^user_/, '')
   if (raw.length !== 32) return null
@@ -401,7 +447,8 @@ function parseOutboundCallParamsUnsafe(params: Record<string, string>) {
     callSid:    params['CallSid'] ?? '',
     userId:     extractUserIdUnsafe(params),
     toNumber:   params['To'] ?? '',
-    leadId:     params['callLeadId'] || null,
-    userLeadId: params['callUserLeadId'] || null,
+    // Suporta Telnyx (SipHeader_*) e Twilio (callLeadId/callUserLeadId)
+    leadId:     params['SipHeader_X-ProspectaLeadId']     || params['callLeadId']     || null,
+    userLeadId: params['SipHeader_X-ProspectaUserLeadId'] || params['callUserLeadId'] || null,
   }
 }

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { logoutAction } from '@/features/auth/actions'
+import { createClient } from '@/lib/supabase/client'
 
 type NavItem = {
   href: string
@@ -89,7 +90,7 @@ function IconClose() {
   )
 }
 
-const SETTINGS_SUB_ITEMS = [
+const ALL_SETTINGS_SUB_ITEMS = [
   { section: 'empresa',   label: 'Dados da Empresa' },
   { section: 'gmail',     label: 'Gmail' },
   { section: 'telefonia', label: 'Telefonia' },
@@ -124,14 +125,20 @@ function NavLinks({
   pathname,
   inSettings,
   currentSection,
+  hideTelefonia,
   onLinkClick,
 }: {
   items: NavItem[]
   pathname: string
   inSettings: boolean
   currentSection: string
+  hideTelefonia?: boolean
   onLinkClick?: () => void
 }) {
+  const settingsSubItems = hideTelefonia
+    ? ALL_SETTINGS_SUB_ITEMS.filter((s) => s.section !== 'telefonia')
+    : ALL_SETTINGS_SUB_ITEMS
+
   return (
     <>
       {items.map((item) => {
@@ -156,7 +163,7 @@ function NavLinks({
 
             {isSettings && inSettings && (
               <div className="mb-1 mt-0.5 space-y-0.5 pl-9">
-                {SETTINGS_SUB_ITEMS.map((sub) => (
+                {settingsSubItems.map((sub) => (
                   <Link
                     key={sub.section}
                     href={`/settings?section=${sub.section}`}
@@ -176,6 +183,61 @@ function NavLinks({
         )
       })}
     </>
+  )
+}
+
+const SALDO_MINIMO = 0.15
+const POLL_INTERVAL_MS = 30_000
+
+function formatBRL(value: number): string {
+  return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function SidebarBalance() {
+  const [balance, setBalance] = useState<number | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+
+    async function fetchBalance() {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
+        .from('wallet_balances')
+        .select('balance')
+        .maybeSingle()
+      // Trata ausência de registro como saldo zero (usuário novo sem transações)
+      setBalance(data ? Number(data.balance) : 0)
+    }
+
+    fetchBalance()
+    const id = setInterval(fetchBalance, POLL_INTERVAL_MS)
+    return () => clearInterval(id)
+  }, [])
+
+  if (balance === null) return null
+
+  const insufficient = balance < SALDO_MINIMO
+
+  return (
+    <div className={`mx-3 mb-3 rounded-lg border px-3 py-2.5 ${insufficient ? 'border-red-500/30 bg-red-500/10' : 'border-white/10 bg-white/5'}`}>
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <p className="text-xs text-white/40">Saldo</p>
+          <p className={`text-sm font-semibold ${insufficient ? 'text-red-400' : 'text-white'}`}>
+            R$ {formatBRL(balance)}
+          </p>
+          {insufficient && (
+            <p className="mt-0.5 text-xs text-red-400/80">Saldo insuficiente</p>
+          )}
+        </div>
+        <Link
+          href="/settings?section=plano"
+          className="shrink-0 rounded-md bg-primary/20 px-2.5 py-1 text-xs font-medium text-blue-300 transition-colors hover:bg-primary/30"
+        >
+          Recarregar →
+        </Link>
+      </div>
+    </div>
   )
 }
 
@@ -206,9 +268,10 @@ function SidebarFooter({ userEmail }: { userEmail?: string | null }) {
 interface SidebarProps {
   isAdmin?: boolean
   userEmail?: string | null
+  hideTelefonia?: boolean
 }
 
-export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
+export function Sidebar({ isAdmin = false, userEmail, hideTelefonia = false }: SidebarProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [open, setOpen] = useState(false)
@@ -240,6 +303,7 @@ export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
             pathname={pathname}
             inSettings={inSettings}
             currentSection={currentSection}
+            hideTelefonia={hideTelefonia}
           />
         </nav>
 
@@ -253,6 +317,9 @@ export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
             Adicionar Leads
           </Link>
         </div>
+
+        {/* Wallet balance widget — oculto para admins */}
+        {!isAdmin && <SidebarBalance />}
 
         <SidebarFooter userEmail={userEmail} />
       </aside>
@@ -304,6 +371,7 @@ export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
             pathname={pathname}
             inSettings={inSettings}
             currentSection={currentSection}
+            hideTelefonia={hideTelefonia}
             onLinkClick={() => setOpen(false)}
           />
         </nav>
@@ -318,6 +386,8 @@ export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
             Adicionar Leads
           </Link>
         </div>
+
+        {!isAdmin && <SidebarBalance />}
 
         <SidebarFooter userEmail={userEmail} />
       </div>

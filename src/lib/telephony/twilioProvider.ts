@@ -37,7 +37,7 @@ type Config = {
 export class TwilioProvider implements ITelephonyProvider {
   constructor(private readonly cfg: Config) {}
 
-  generateAccessToken(userId: string): AccessTokenResult {
+  async generateAccessToken(userId: string): Promise<AccessTokenResult> {
     const { AccessToken } = twilio.jwt
     const { VoiceGrant } = AccessToken
 
@@ -59,7 +59,7 @@ export class TwilioProvider implements ITelephonyProvider {
     })
     token.addGrant(grant)
 
-    return { token: token.toJwt(), identity, phoneNumber: this.cfg.phoneNumber }
+    return { token: token.toJwt(), identity, phoneNumber: this.cfg.phoneNumber, provider: 'twilio' }
   }
 
   generateCallInstruction(to: string, callId: string, record: boolean): string {
@@ -84,10 +84,12 @@ export class TwilioProvider implements ITelephonyProvider {
   }
 
   validateWebhookSignature(
-    signature: string,
+    headers: Record<string, string>,
     url: string,
+    _rawBody: string,
     params: Record<string, string>
   ): boolean {
+    const signature = headers['x-twilio-signature'] ?? ''
     return twilio.validateRequest(this.cfg.authToken, signature, url, params)
   }
 

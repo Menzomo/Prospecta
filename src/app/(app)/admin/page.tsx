@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import {
   getGlobalLeadsForAdmin,
   getCategoriesForAdmin,
@@ -9,6 +10,7 @@ import {
   getStockByCategory,
   getStockByUserAndCategory,
   getGmailRequests,
+  getAdminUserWallets,
 } from '@/repositories/adminRepository'
 import { AdminGlobalLeads } from '@/features/admin/components/AdminGlobalLeads'
 import { AdminCategories } from '@/features/admin/components/AdminCategories'
@@ -20,8 +22,29 @@ import { AdminLeadQualityOverview } from '@/features/admin/components/AdminLeadQ
 import { AdminStockOverview } from '@/features/admin/components/AdminStockOverview'
 import { AdminUserStockOverview } from '@/features/admin/components/AdminUserStockOverview'
 import { AdminGmailRequests } from '@/features/admin/components/AdminGmailRequests'
+import { AdminWalletOverview } from '@/features/admin/components/AdminWalletOverview'
 
 type SearchParams = Promise<{ category?: string; city?: string; reviewNiche?: string }>
+
+async function fetchTelnyxBalance() {
+  if (process.env.TELEPHONY_PROVIDER !== 'telnyx') return null
+  const apiKey = process.env.TELNYX_API_KEY
+  if (!apiKey) return null
+  try {
+    const Telnyx = (await import('telnyx')).default
+    const client = new Telnyx({ apiKey })
+    const resp = await client.balance.retrieve()
+    const d = resp.data
+    if (!d) return null
+    return {
+      balance: d.balance ?? '0',
+      available_credit: d.available_credit ?? '0',
+      currency: d.currency ?? 'USD',
+    }
+  } catch {
+    return null
+  }
+}
 
 export default async function AdminPage({ searchParams }: { searchParams: SearchParams }) {
   const { category: categoryFilter = '', city: cityFilter = '', reviewNiche = '' } = await searchParams
@@ -41,6 +64,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
 
   if (profile?.role !== 'admin') redirect('/dashboard')
 
+  const adminSupabase = createAdminClient()
+
   // Load categories first to resolve slug → id for filtering
   const categories = await getCategoriesForAdmin(supabase)
   const categoryBySlug = new Map(categories.map((c) => [c.slug, c]))
@@ -51,7 +76,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
     ? (categoryBySlug.get(reviewNiche)?.id ?? undefined)
     : undefined
 
-  const [leads, users, reviewQueue, overview, nichoStats, stock, userStock, gmailRequests] = await Promise.all([
+  const [leads, users, reviewQueue, overview, nichoStats, stock, userStock, gmailRequests, wallets, telnyxBalance] = await Promise.all([
     getGlobalLeadsForAdmin(supabase, {
       categoryId: activeCategoryId,
       city: cityFilter || undefined,
@@ -63,6 +88,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
     getStockByCategory(supabase),
     getStockByUserAndCategory(supabase),
     getGmailRequests(supabase),
+    getAdminUserWallets(adminSupabase),
+    fetchTelnyxBalance(),
   ])
 
   return (
@@ -89,6 +116,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
 
       <main className="flex-1 p-6">
         <div className="mx-auto max-w-6xl flex flex-col gap-10">
+          {/* Créditos e Saldos */}
+          <AdminWalletOverview telnyxBalance={telnyxBalance} wallets={wallets} />
+
           {/* Solicitações Gmail */}
           <AdminGmailRequests requests={gmailRequests} />
 
