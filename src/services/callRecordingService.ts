@@ -48,19 +48,25 @@ export async function transferSingleRecording(
   adminSupabase: SupabaseClient<Database>,
   call: PendingCall
 ): Promise<void> {
-  const settings = await getTelephonySettings(adminSupabase, call.user_id)
-  if (!settings) throw new Error(`No telephony settings for user ${call.user_id}`)
+  const isTelnyx = process.env.TELEPHONY_PROVIDER === 'telnyx'
 
-  const authToken = decryptCredential(settings.auth_token_encrypted)
+  let audioBuffer: Buffer
+  let twilioAccountSid: string | undefined
+  let twilioAuthToken: string | undefined
 
-  // Constrói a URL de download do Twilio a partir de account_sid + recording_sid (sem SDK)
-  const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${settings.account_sid}/Recordings/${call.recording_sid}.mp3`
-  const auth = Buffer.from(`${settings.account_sid}:${authToken}`).toString('base64')
-
-  const response = await fetch(twilioUrl, { headers: { Authorization: `Basic ${auth}` } })
-  if (!response.ok) throw new Error(`Twilio download failed: HTTP ${response.status}`)
-
-  const audioBuffer = Buffer.from(await response.arrayBuffer())
+  if (isTelnyx) {
+    audioBuffer = await downloadTelnyxRecording(call.recording_sid)
+  } else {
+    const settings = await getTelephonySettings(adminSupabase, call.user_id)
+    if (!settings) throw new Error(`No telephony settings for user ${call.user_id}`)
+    twilioAccountSid = settings.account_sid
+    twilioAuthToken = decryptCredential(settings.auth_token_encrypted)
+    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Recordings/${call.recording_sid}.mp3`
+    const auth = Buffer.from(`${twilioAccountSid}:${twilioAuthToken}`).toString('base64')
+    const response = await fetch(twilioUrl, { headers: { Authorization: `Basic ${auth}` } })
+    if (!response.ok) throw new Error(`Twilio download failed: HTTP ${response.status}`)
+    audioBuffer = Buffer.from(await response.arrayBuffer())
+  }
 
   const storagePath = `${call.user_id}/${call.id}.mp3`
   const { error: uploadError } = await adminSupabase.storage
@@ -72,12 +78,16 @@ export async function transferSingleRecording(
   const ok = await updateCallRecording(adminSupabase, call.id, storagePath)
   if (!ok) throw new Error(`DB update failed for call ${call.id}`)
 
-  // Remove do Twilio após transferência bem-sucedida (evita custo de armazenamento)
+  // Remove do provider após transferência bem-sucedida (evita custo de armazenamento)
   // Não-fatal: a gravação já está no Storage; apenas loga se falhar.
   try {
-    await deleteTwilioRecording(settings.account_sid, authToken, call.recording_sid)
+    if (isTelnyx) {
+      await deleteTelnyxRecording(call.recording_sid)
+    } else if (twilioAccountSid && twilioAuthToken) {
+      await deleteTwilioRecording(twilioAccountSid, twilioAuthToken, call.recording_sid)
+    }
   } catch (err) {
-    console.warn('[callRecordingService] Twilio delete failed (non-fatal)', { callId: call.id, err })
+    console.warn('[callRecordingService] provider delete failed (non-fatal)', { callId: call.id, err })
   }
 }
 
@@ -135,6 +145,29 @@ async function expireSingleRecording(
 }
 
 // ── Helpers internos ───────────────────────────────────────────────────────────
+
+async function downloadTelnyxRecording(recordingId: string): Promise<Buffer> {
+  const apiKey = process.env.TELNYX_API_KEY
+  if (!apiKey) throw new Error('TELNYX_API_KEY not set')
+  const response = await fetch(`https://api.telnyx.com/v2/recordings/${recordingId}/download`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  })
+  if (!response.ok) throw new Error(`Telnyx download failed: HTTP ${response.status}`)
+  return Buffer.from(await response.arrayBuffer())
+}
+
+async function deleteTelnyxRecording(recordingId: string): Promise<void> {
+  const apiKey = process.env.TELNYX_API_KEY
+  if (!apiKey) throw new Error('TELNYX_API_KEY not set')
+  const response = await fetch(`https://api.telnyx.com/v2/recordings/${recordingId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${apiKey}` },
+  })
+  // 200/204 = sucesso, 404 = já deletado (idempotente)
+  if (!response.ok && response.status !== 404) {
+    throw new Error(`HTTP ${response.status}`)
+  }
+}
 
 async function deleteTwilioRecording(
   accountSid: string,
