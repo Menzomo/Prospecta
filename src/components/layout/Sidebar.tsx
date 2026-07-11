@@ -94,6 +94,7 @@ const ALL_SETTINGS_SUB_ITEMS = [
   { section: 'empresa',   label: 'Dados da Empresa' },
   { section: 'gmail',     label: 'Gmail' },
   { section: 'telefonia', label: 'Telefonia' },
+  { section: 'carteira',  label: 'Carteira' },
   { section: 'idioma',    label: 'Idioma' },
   { section: 'aparencia', label: 'Aparência' },
   { section: 'plano',     label: 'Assinatura' },
@@ -231,7 +232,7 @@ function SidebarBalance() {
           )}
         </div>
         <Link
-          href="/settings?section=plano"
+          href="/settings?section=carteira"
           className="shrink-0 rounded-md bg-primary/20 px-2.5 py-1 text-xs font-medium text-blue-300 transition-colors hover:bg-primary/30"
         >
           Recarregar →
@@ -319,7 +320,7 @@ export function Sidebar({ isAdmin = false, userEmail, hideTelefonia = false }: S
         </div>
 
         {/* Wallet balance widget — oculto para admins */}
-        {!isAdmin && <SidebarBalance />}
+        <SidebarBalance />
 
         <SidebarFooter userEmail={userEmail} />
       </aside>
@@ -387,7 +388,7 @@ export function Sidebar({ isAdmin = false, userEmail, hideTelefonia = false }: S
           </Link>
         </div>
 
-        {!isAdmin && <SidebarBalance />}
+        <SidebarBalance />
 
         <SidebarFooter userEmail={userEmail} />
       </div>

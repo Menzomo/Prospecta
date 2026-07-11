@@ -3,22 +3,122 @@ import { createClient } from '@/lib/supabase/server'
 import { getCompanyProfileByUserId } from '@/repositories/companyProfileRepository'
 import { getGmailConnection, getGmailRequest } from '@/repositories/gmailRepository'
 import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
+import { getBalance, getTransactions } from '@/repositories/walletRepository'
 import type { GmailRequestStatus } from '@/types/gmail'
+import type { WalletTransaction } from '@/repositories/walletRepository'
 import { CompanyProfileForm } from '@/features/settings/components/CompanyProfileForm'
 import { GmailConnectionCard } from '@/features/gmail/components/GmailConnectionCard'
 import { TelephonySettingsForm } from '@/features/calls/components/TelephonySettingsForm'
 import { PageHeader } from '@/components/layout/PageHeader'
 
-type Section = 'empresa' | 'gmail' | 'telefonia' | 'idioma' | 'aparencia' | 'plano'
+type Section = 'empresa' | 'gmail' | 'telefonia' | 'carteira' | 'idioma' | 'aparencia' | 'plano'
 
 const SECTIONS: { key: Section; label: string }[] = [
   { key: 'empresa',   label: 'Dados da Empresa' },
   { key: 'gmail',     label: 'Gmail' },
   { key: 'telefonia', label: 'Telefonia' },
+  { key: 'carteira',  label: 'Carteira' },
   { key: 'idioma',    label: 'Idioma' },
   { key: 'aparencia', label: 'Aparência' },
   { key: 'plano',     label: 'Assinatura' },
 ]
+
+function formatBRL(n: number) {
+  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+const TX_LABELS: Record<string, string> = {
+  recharge:       'Recarga',
+  bonus:          'Bônus',
+  welcome:        'Bônus boas-vindas',
+  call:           'Ligação',
+  analysis:       'Análise de IA',
+  leads_purchase: 'Compra de leads',
+}
+
+const TX_CREDITS = new Set(['recharge', 'bonus', 'welcome'])
+
+function WalletSection({ balance, transactions }: { balance: number; transactions: WalletTransaction[] }) {
+  const insufficient = balance < 0.15
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="mb-2">
+        <h2 className="text-base font-semibold text-on-surface font-[--font-heading]">Carteira</h2>
+        <p className="mt-1 text-sm text-on-surface-muted">Seus créditos para ligações e análises de IA.</p>
+      </div>
+
+      {/* Saldo atual */}
+      <div className={`rounded-xl border p-6 shadow-card ${insufficient ? 'border-red-300 bg-red-50' : 'border-outline bg-surface-container'}`}>
+        <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-muted">Saldo atual</p>
+        <p className={`mt-1 text-3xl font-bold ${insufficient ? 'text-red-600' : 'text-on-surface'}`}>
+          R$ {formatBRL(balance)}
+        </p>
+        {insufficient && (
+          <p className="mt-1 text-sm text-red-500">Saldo insuficiente — recarregue para continuar fazendo ligações.</p>
+        )}
+      </div>
+
+      {/* Recarga */}
+      <div className="rounded-xl border border-outline bg-surface-container p-6 shadow-card">
+        <p className="text-sm font-semibold text-on-surface">Recarregar créditos</p>
+        <p className="mt-1 text-sm text-on-surface-muted">Pagamento por PIX disponível em breve.</p>
+        <button
+          disabled
+          className="mt-4 w-full cursor-not-allowed rounded-lg bg-surface-low px-4 py-2.5 text-sm font-medium text-on-surface-muted"
+        >
+          PIX — Em breve
+        </button>
+      </div>
+
+      {/* Extrato */}
+      {transactions.length > 0 && (
+        <div className="rounded-xl border border-outline bg-surface-container shadow-card overflow-hidden">
+          <div className="border-b border-outline px-5 py-4">
+            <p className="text-sm font-semibold text-on-surface">Extrato</p>
+          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-outline/50 bg-surface-low">
+                <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-muted">Descrição</th>
+                <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-on-surface-muted">Valor</th>
+                <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-on-surface-muted hidden sm:table-cell">Saldo após</th>
+                <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-on-surface-muted hidden sm:table-cell">Data</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-outline/30">
+              {transactions.map((tx) => {
+                const isCredit = TX_CREDITS.has(tx.type)
+                return (
+                  <tr key={tx.id} className="hover:bg-surface-low/50">
+                    <td className="px-4 py-3 text-on-surface">
+                      <span className="font-medium">{TX_LABELS[tx.type] ?? tx.type}</span>
+                      {tx.description && (
+                        <span className="ml-1.5 text-xs text-on-surface-muted">{tx.description}</span>
+                      )}
+                    </td>
+                    <td className={`px-4 py-3 text-right font-semibold tabular-nums ${isCredit ? 'text-green-600' : 'text-red-500'}`}>
+                      {isCredit ? '+' : '-'}R$ {formatBRL(tx.amount)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-on-surface-muted tabular-nums hidden sm:table-cell">
+                      R$ {formatBRL(tx.balance_after)}
+                    </td>
+                    <td className="px-4 py-3 text-right text-on-surface-muted hidden sm:table-cell">
+                      {new Date(tx.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {transactions.length === 0 && (
+        <p className="text-center text-sm text-on-surface-muted py-4">Nenhuma movimentação ainda.</p>
+      )}
+    </div>
+  )
+}
 
 type Props = { searchParams: Promise<{ section?: string }> }
 
@@ -30,11 +130,13 @@ export default async function SettingsPage({ searchParams }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [company, gmailConnection, gmailRequest, telephonySettings] = await Promise.all([
+  const [company, gmailConnection, gmailRequest, telephonySettings, walletBalance, walletTransactions] = await Promise.all([
     getCompanyProfileByUserId(supabase, user.id),
     getGmailConnection(supabase, user.id),
     getGmailRequest(supabase, user.id),
     getTelephonySettings(supabase, user.id),
+    section === 'carteira' ? getBalance(supabase, user.id) : Promise.resolve(0),
+    section === 'carteira' ? getTransactions(supabase, user.id, 30) : Promise.resolve([]),
   ])
 
   const gmailRequestStatus: GmailRequestStatus =
@@ -98,6 +200,11 @@ export default async function SettingsPage({ searchParams }: Props) {
               </div>
             )}
           </div>
+        )}
+
+        {/* Carteira */}
+        {section === 'carteira' && (
+          <WalletSection balance={walletBalance} transactions={walletTransactions} />
         )}
 
         {/* Gmail */}
