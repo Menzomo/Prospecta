@@ -175,9 +175,10 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
 
     setState('connecting')
 
-    // SIP custom headers — aparecem no webhook TeXML como SipHeader_X-Prospecta*
+    // O browser liga para o nosso número Telnyx — o TeXML webhook recebe a chamada
+    // e lê X-ProspectaTargetPhone para saber para qual número PSTN fazer o Dial.
     const call = rtcClient.newCall({
-      destinationNumber: toPhone,
+      destinationNumber: phoneNumber,
       callerNumber: phoneNumber,
       id: newCallId,
       customHeaders: [
@@ -185,6 +186,7 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
         { name: 'X-ProspectaUserId',     value: identity },
         { name: 'X-ProspectaLeadId',     value: leadId     ?? '' },
         { name: 'X-ProspectaUserLeadId', value: userLeadId ?? '' },
+        { name: 'X-ProspectaTargetPhone', value: toPhone },
       ],
     })
     callRef.current = call
