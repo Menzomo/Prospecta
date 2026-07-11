@@ -54,8 +54,14 @@ export class TelnyxProvider implements ITelephonyProvider {
     const credId = credResp.data?.id
     if (!credId) throw new Error('Telnyx: falha ao criar credencial de telefonia')
 
-    // createToken retorna diretamente o JWT como string
-    const token = await client.telephonyCredentials.createToken(credId)
+    const tokenRaw = await client.telephonyCredentials.createToken(credId)
+    // O SDK pode retornar a string diretamente ou envolta em { data: string }
+    const token: string = typeof tokenRaw === 'string'
+      ? tokenRaw
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      : (tokenRaw as any)?.data ?? (tokenRaw as any)?.token ?? String(tokenRaw)
+
+    console.log('[TelnyxProvider] token gerado, tipo:', typeof tokenRaw, 'credId:', credId)
 
     return { token, identity: userId, phoneNumber, provider: 'telnyx' }
   }

@@ -82,8 +82,9 @@ export async function generateToken(
     const data = await loaded.provider.generateAccessToken(userId)
     return { ok: true, data }
   } catch (err) {
-    console.error('[callService.generateToken]', err)
-    return { ok: false, error: 'Falha ao gerar token de telefonia.', status: 500 }
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[callService.generateToken] erro:', msg)
+    return { ok: false, error: `Falha ao gerar token de telefonia: ${msg}`, status: 500 }
   }
 }
 
