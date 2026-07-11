@@ -1,9 +1,10 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
+import { useRef, useState, useEffect, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { suggestLeadNames } from '@/features/search/suggestActions'
+import { createClient } from '@/lib/supabase/client'
 
 function IconSearch() {
   return (
@@ -20,6 +21,53 @@ function IconBell() {
       <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
       <path d="M13.73 21a2 2 0 0 1-3.46 0" />
     </svg>
+  )
+}
+
+function IconWallet() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <path d="M16 12h2" />
+    </svg>
+  )
+}
+
+function formatBRL(n: number) {
+  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function BalanceChip() {
+  const [balance, setBalance] = useState<number | null>(null)
+
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = createClient() as any
+    async function fetch() {
+      const { data } = await supabase.from('wallet_balances').select('balance').maybeSingle()
+      setBalance(data ? Number(data.balance) : 0)
+    }
+    fetch()
+    const id = setInterval(fetch, 30_000)
+    return () => clearInterval(id)
+  }, [])
+
+  if (balance === null) return null
+
+  const insufficient = balance < 0.15
+
+  return (
+    <Link
+      href="/settings?section=carteira"
+      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+        insufficient
+          ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
+          : 'border-outline bg-surface-low text-on-surface hover:bg-surface-container'
+      }`}
+    >
+      <IconWallet />
+      R$ {formatBRL(balance)}
+    </Link>
   )
 }
 
@@ -125,6 +173,8 @@ export function Topbar({ userEmail }: TopbarProps) {
           </div>
         )}
       </div>
+
+      <BalanceChip />
 
       <div className="ml-auto flex items-center gap-1">
         {/* Bell */}
