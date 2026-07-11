@@ -284,3 +284,38 @@ export async function getGmailRequests(
   if (error) return []
   return (data ?? []).filter((r) => r.gmail_request_email !== null) as AdminGmailRequest[]
 }
+
+export type AdminUserWallet = {
+  user_id: string
+  email: string
+  balance: number
+  updated_at: string | null
+}
+
+/**
+ * Lista todos os usuários com seus saldos de carteira.
+ * Requer cliente com service role (sem RLS) para ler wallet_balances de todos os usuários.
+ */
+export async function getAdminUserWallets(
+  adminSupabase: SupabaseClient<Database>
+): Promise<AdminUserWallet[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db = adminSupabase as any
+  const [{ data: profiles }, { data: balancesRaw }] = await Promise.all([
+    adminSupabase.from('profiles').select('id, email').order('created_at', { ascending: false }),
+    db.from('wallet_balances').select('user_id, balance, updated_at'),
+  ])
+
+  const balances = (balancesRaw ?? []) as { user_id: string; balance: string | number; updated_at: string | null }[]
+
+  const balanceMap = new Map(
+    balances.map((b) => [b.user_id, { balance: Number(b.balance), updated_at: b.updated_at }])
+  )
+
+  return (profiles ?? []).map((p) => ({
+    user_id: p.id,
+    email: p.email ?? '—',
+    balance: balanceMap.get(p.id)?.balance ?? 0,
+    updated_at: balanceMap.get(p.id)?.updated_at ?? null,
+  })).sort((a, b) => b.balance - a.balance)
+}

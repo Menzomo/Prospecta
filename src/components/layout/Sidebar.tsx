@@ -90,7 +90,7 @@ function IconClose() {
   )
 }
 
-const SETTINGS_SUB_ITEMS = [
+const ALL_SETTINGS_SUB_ITEMS = [
   { section: 'empresa',   label: 'Dados da Empresa' },
   { section: 'gmail',     label: 'Gmail' },
   { section: 'telefonia', label: 'Telefonia' },
@@ -125,14 +125,20 @@ function NavLinks({
   pathname,
   inSettings,
   currentSection,
+  hideTelefonia,
   onLinkClick,
 }: {
   items: NavItem[]
   pathname: string
   inSettings: boolean
   currentSection: string
+  hideTelefonia?: boolean
   onLinkClick?: () => void
 }) {
+  const settingsSubItems = hideTelefonia
+    ? ALL_SETTINGS_SUB_ITEMS.filter((s) => s.section !== 'telefonia')
+    : ALL_SETTINGS_SUB_ITEMS
+
   return (
     <>
       {items.map((item) => {
@@ -157,7 +163,7 @@ function NavLinks({
 
             {isSettings && inSettings && (
               <div className="mb-1 mt-0.5 space-y-0.5 pl-9">
-                {SETTINGS_SUB_ITEMS.map((sub) => (
+                {settingsSubItems.map((sub) => (
                   <Link
                     key={sub.section}
                     href={`/settings?section=${sub.section}`}
@@ -199,7 +205,8 @@ function SidebarBalance() {
         .from('wallet_balances')
         .select('balance')
         .maybeSingle()
-      if (data) setBalance(Number(data.balance))
+      // Trata ausência de registro como saldo zero (usuário novo sem transações)
+      setBalance(data ? Number(data.balance) : 0)
     }
 
     fetchBalance()
@@ -261,9 +268,10 @@ function SidebarFooter({ userEmail }: { userEmail?: string | null }) {
 interface SidebarProps {
   isAdmin?: boolean
   userEmail?: string | null
+  hideTelefonia?: boolean
 }
 
-export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
+export function Sidebar({ isAdmin = false, userEmail, hideTelefonia = false }: SidebarProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [open, setOpen] = useState(false)
@@ -295,6 +303,7 @@ export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
             pathname={pathname}
             inSettings={inSettings}
             currentSection={currentSection}
+            hideTelefonia={hideTelefonia}
           />
         </nav>
 
@@ -362,6 +371,7 @@ export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
             pathname={pathname}
             inSettings={inSettings}
             currentSection={currentSection}
+            hideTelefonia={hideTelefonia}
             onLinkClick={() => setOpen(false)}
           />
         </nav>
