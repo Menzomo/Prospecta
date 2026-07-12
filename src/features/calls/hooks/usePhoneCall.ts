@@ -150,9 +150,10 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
     deviceRef.current   = rtcClient
     providerRef.current = 'telnyx'
 
-    // Pede permissão de microfone explicitamente antes de conectar
+    // Captura microfone explicitamente — stream passado direto ao SDK via localStream
+    let localStream: MediaStream
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
     } catch {
       setState('error')
       setError('Permissão de microfone negada. Libere o acesso ao microfone e tente novamente.')
@@ -192,6 +193,7 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
       destinationNumber: toPhone,
       callerNumber: phoneNumber,
       id: newCallId,
+      localStream,
       audio: true,
       video: false,
       customHeaders: [
@@ -254,18 +256,22 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
   }, [startCallTwilio, startCallTelnyx])
 
   const endCall = useCallback(() => {
+    // Captura refs antes de qualquer state update (evita race condition com cleanup())
+    const currentCall     = callRef.current
+    const currentProvider = providerRef.current
+
     // Atualiza o estado imediatamente para a UI responder
     setState('ended')
     setEndedAt(new Date())
 
     // Deferred: hangup + cleanup no próximo tick para não bloquear o render
     setTimeout(() => {
-      if (callRef.current) {
+      if (currentCall) {
         try {
-          if (providerRef.current === 'telnyx') {
-            callRef.current.hangup()
+          if (currentProvider === 'telnyx') {
+            currentCall.hangup()
           } else {
-            callRef.current.disconnect()
+            currentCall.disconnect()
           }
         } catch { /* ignore */ }
       }
