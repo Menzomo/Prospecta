@@ -161,7 +161,10 @@ export class TelnyxProvider implements ITelephonyProvider {
   parseStatusCallback(params: Record<string, string>): CallStatusUpdate {
     const rawStatus = params['CallStatus'] ?? ''
     const status    = STATUS_MAP[rawStatus] ?? rawStatus
-    const duration  = params['CallDuration'] ? parseInt(params['CallDuration'], 10) : null
+    // Telnyx combina call+recording em um callback — CallDuration pode estar ausente;
+    // usa RecordingDuration como proxy quando CallDuration não vem
+    const durationStr = params['CallDuration'] ?? params['RecordingDuration']
+    const duration  = durationStr ? parseInt(durationStr, 10) : null
 
     const recordingCompleted = params['RecordingStatus'] === 'completed'
 

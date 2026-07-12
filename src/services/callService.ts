@@ -271,11 +271,17 @@ export async function handleStatusCallbackWebhook(
 
       if (update.recordingSid) {
         const { transferSingleRecording } = await import('@/services/callRecordingService')
-        transferSingleRecording(adminSupabase, {
-          id: call.id,
-          user_id: userId,
-          recording_sid: update.recordingSid,
-        }).catch((err) => console.error('[callService] immediate recording transfer failed', err))
+        // await garante que o download/upload completa antes da Vercel encerrar o processo
+        try {
+          await transferSingleRecording(adminSupabase, {
+            id: call.id,
+            user_id: userId,
+            recording_sid: update.recordingSid,
+          })
+        } catch (err) {
+          console.error('[callService] immediate recording transfer failed', err)
+          // não-fatal: o cron fará retry
+        }
       }
     }
   }
@@ -425,11 +431,15 @@ async function handleRecordingCallback(
 
   // Transfere imediatamente para o Storage
   const { transferSingleRecording } = await import('@/services/callRecordingService')
-  transferSingleRecording(adminSupabase, {
-    id: call.id,
-    user_id: call.user_id,
-    recording_sid: recordingSid,
-  }).catch((err) => console.error('[callService] recording transfer failed', err))
+  try {
+    await transferSingleRecording(adminSupabase, {
+      id: call.id,
+      user_id: call.user_id,
+      recording_sid: recordingSid,
+    })
+  } catch (err) {
+    console.error('[callService] recording transfer failed', err)
+  }
 
   dispatchCallEvent({
     type: CALL_EVENT.RECORDING_AVAILABLE,
