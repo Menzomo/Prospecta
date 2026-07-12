@@ -251,6 +251,7 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
     setEndedAt(null)
 
     const newCallId = crypto.randomUUID()
+    callIdRef.current = newCallId
     setCallId(newCallId)
 
     let tokenData: { token: string; identity: string; phoneNumber: string; provider: 'twilio' | 'telnyx' }
@@ -274,22 +275,31 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
     }
   }, [startCallTwilio, startCallTelnyx])
 
+  const callIdRef = useRef<string | null>(null)
+
   const endCall = useCallback(() => {
-    // Captura refs antes de qualquer state update (evita race condition com cleanup())
     const currentCall     = callRef.current
     const currentProvider = providerRef.current
+    const currentCallId   = callIdRef.current
 
-    // Atualiza o estado imediatamente para a UI responder
     setState('ended')
     setEndedAt(new Date())
 
-    // Deferred async: aguarda hangup antes de fechar o WebSocket (cleanup destroi a conexão)
-    // Sem await o BYE pode ser cancelado antes de ser enviado ao Telnyx
-    setTimeout(async () => {
+    setTimeout(() => {
+      // Encerramento server-side via Telnyx Call Control API (caminho confiável)
+      if (currentCallId) {
+        fetch('/api/calls/hangup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ callId: currentCallId }),
+        }).catch(() => {})
+      }
+
+      // BYE WebRTC — fire-and-forget (não await para não travar a thread)
       if (currentCall) {
         try {
           if (currentProvider === 'telnyx') {
-            await currentCall.hangup()
+            currentCall.hangup().catch?.(() => {})
           } else {
             currentCall.disconnect()
           }
