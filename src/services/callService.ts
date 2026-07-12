@@ -277,6 +277,7 @@ export async function handleStatusCallbackWebhook(
             id: call.id,
             user_id: userId,
             recording_sid: update.recordingSid,
+            recording_url: update.recordingUrl,
           })
         } catch (err) {
           console.error('[callService] immediate recording transfer failed', err)
