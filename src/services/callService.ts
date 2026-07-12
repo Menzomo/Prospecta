@@ -165,9 +165,19 @@ export async function handleStatusCallbackWebhook(
   rawHeaders: Record<string, string>,
   rawBody: string
 ): Promise<StatusCallbackResult> {
-  const userId = extractUserIdUnsafe(rawParams)
+  let userId = extractUserIdUnsafe(rawParams)
 
-  // Callback de gravação: não tem Caller/userId, mas tem RecordingStatus + CallSid
+  // Telnyx status/recording callbacks não incluem SipHeader_* — busca userId pelo CallSid
+  if (!userId && rawParams['CallSid']) {
+    const { data: callRow } = await adminSupabase
+      .from('calls')
+      .select('user_id')
+      .eq('call_sid', rawParams['CallSid'])
+      .maybeSingle()
+    userId = callRow?.user_id ?? null
+  }
+
+  // Callback de gravação sem userId identificado
   if (!userId) {
     if (rawParams['RecordingStatus'] === 'completed' && rawParams['CallSid'] && rawParams['RecordingSid']) {
       await handleRecordingCallback(adminSupabase, rawParams['CallSid'], rawParams['RecordingSid'])

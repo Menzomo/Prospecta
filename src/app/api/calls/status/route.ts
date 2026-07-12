@@ -8,6 +8,15 @@ export async function POST(request: NextRequest) {
   const rawBody = await request.text()
   const params  = Object.fromEntries(new URLSearchParams(rawBody)) as Record<string, string>
 
+  console.log('[status] params:', JSON.stringify({
+    CallSid: params['CallSid'],
+    CallStatus: params['CallStatus'],
+    CallDuration: params['CallDuration'],
+    RecordingStatus: params['RecordingStatus'],
+    RecordingSid: params['RecordingSid'],
+    userId: params['SipHeader_X-ProspectaUserId'] ?? '(ausente)',
+  }))
+
   const headers: Record<string, string> = {}
   request.headers.forEach((value, key) => { headers[key] = value })
 
