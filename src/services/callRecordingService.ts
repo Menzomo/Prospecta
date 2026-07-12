@@ -14,6 +14,7 @@ type PendingCall = {
   id: string
   user_id: string
   recording_sid: string
+  recording_url?: string | null  // URL pré-assinada do Telnyx (expira em ~10min)
 }
 
 export async function transferPendingRecordings(
@@ -55,7 +56,15 @@ export async function transferSingleRecording(
   let twilioAuthToken: string | undefined
 
   if (isTelnyx) {
-    audioBuffer = await downloadTelnyxRecording(call.recording_sid)
+    if (call.recording_url) {
+      // URL pré-assinada do callback — download direto (sem auth, expira em ~10min)
+      const res = await fetch(call.recording_url)
+      if (!res.ok) throw new Error(`Telnyx direct download failed: HTTP ${res.status}`)
+      audioBuffer = Buffer.from(await res.arrayBuffer())
+    } else {
+      // Fallback para cron job: tenta via API Telnyx (RecordingSid de chamadas TeXML dá 404)
+      audioBuffer = await downloadTelnyxRecording(call.recording_sid)
+    }
   } else {
     const settings = await getTelephonySettings(adminSupabase, call.user_id)
     if (!settings) throw new Error(`No telephony settings for user ${call.user_id}`)
