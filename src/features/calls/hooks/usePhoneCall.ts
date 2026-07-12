@@ -150,6 +150,16 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
     deviceRef.current   = rtcClient
     providerRef.current = 'telnyx'
 
+    // Pede permissão de microfone explicitamente antes de conectar
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+    } catch {
+      setState('error')
+      setError('Permissão de microfone negada. Libere o acesso ao microfone e tente novamente.')
+      cleanup()
+      return
+    }
+
     // Aguarda o cliente estar pronto (autenticado no servidor Telnyx)
     try {
       await new Promise<void>((resolve, reject) => {
@@ -182,6 +192,8 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
       destinationNumber: toPhone,
       callerNumber: phoneNumber,
       id: newCallId,
+      audio: true,
+      video: false,
       customHeaders: [
         { name: 'X-ProspectaCallId',     value: newCallId },
         { name: 'X-ProspectaUserId',     value: identity },
