@@ -52,17 +52,42 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
     getAnalysisCreditsAction().then(c => {
       if (c) setCredits(c.credits_total - c.credits_used)
     })
-    if (connectedAt && callId) {
-      pollRef.current = setInterval(async () => {
-        const res = await fetch(`/api/calls/${callId}/recording-ready`).catch(() => null)
-        if (!res?.ok) return
-        const data = await res.json().catch(() => ({}))
-        if (data.ready) {
-          setRecordingReady(true)
-          if (pollRef.current) clearInterval(pollRef.current)
-        }
-      }, 15_000)
+    if (!connectedAt || !callId) return
+
+    let attempts = 0
+    const MAX_ATTEMPTS = 20 // 20 × 15s = 5 min
+
+    const checkRecording = async () => {
+      const res = await fetch(`/api/calls/${callId}/recording-ready`).catch(() => null)
+      if (!res?.ok) return
+      const data: { ready: boolean; hasRecordingSid: boolean } = await res.json().catch(() => ({}))
+
+      if (data.ready) {
+        setRecordingReady(true)
+        if (pollRef.current) clearInterval(pollRef.current)
+        return
+      }
+
+      attempts++
+
+      // Após 2 tentativas (~30s) sem recording_sid: lead não atendeu, sem gravação
+      if (attempts >= 2 && !data.hasRecordingSid) {
+        if (pollRef.current) clearInterval(pollRef.current)
+        setAnalysisState('no_recording')
+        return
+      }
+
+      // Timeout geral: 5 minutos sem gravação pronta
+      if (attempts >= MAX_ATTEMPTS) {
+        if (pollRef.current) clearInterval(pollRef.current)
+        setAnalysisState('no_recording')
+      }
     }
+
+    // Check imediato + polling a cada 15s
+    checkRecording()
+    pollRef.current = setInterval(checkRecording, 15_000)
+
     return () => {
       if (pollRef.current) clearInterval(pollRef.current)
     }
@@ -105,7 +130,7 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
     setAnalysisState('loading')
 
     const res = await fetch(`/api/calls/${callId}/request-analysis`, { method: 'POST' })
-    const data: { error?: string } = await res.json().catch(() => ({}))
+    await res.json().catch(() => ({}))
 
     if (res.ok) {
       setAnalysisState('requested')
@@ -223,7 +248,7 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
           {isActive && connectedAt && (
             <div className="flex flex-col items-center gap-5 py-2">
               <CallTimer startedAt={connectedAt} />
-              <p className="text-xs text-on-surface-muted">Ligação em andamento • gravando</p>
+              <p className="text-xs text-on-surface-muted">Ligação em andamento</p>
               <button
                 type="button"
                 onClick={endCall}
