@@ -242,20 +242,23 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
   }, [startCallTwilio, startCallTelnyx])
 
   const endCall = useCallback(() => {
-    if (callRef.current) {
-      try {
-        if (providerRef.current === 'telnyx') {
-          callRef.current.hangup()
-        } else {
-          callRef.current.disconnect()
-        }
-      } catch { /* ignore */ }
-    }
-    // Força reset do estado — a notificação de encerramento do Telnyx
-    // pode não chegar se a conexão WebSocket já caiu no servidor
+    // Atualiza o estado imediatamente para a UI responder
     setState('ended')
     setEndedAt(new Date())
-    cleanup()
+
+    // Deferred: hangup + cleanup no próximo tick para não bloquear o render
+    setTimeout(() => {
+      if (callRef.current) {
+        try {
+          if (providerRef.current === 'telnyx') {
+            callRef.current.hangup()
+          } else {
+            callRef.current.disconnect()
+          }
+        } catch { /* ignore */ }
+      }
+      cleanup()
+    }, 0)
   }, [cleanup])
 
   const reset = useCallback(() => {
