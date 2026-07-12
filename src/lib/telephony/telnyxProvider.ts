@@ -72,7 +72,7 @@ export class TelnyxProvider implements ITelephonyProvider {
    */
   generateCallInstruction(to: string, callId: string, record: boolean): string {
     const appUrl      = process.env.NEXT_PUBLIC_APP_URL ?? ''
-    const phoneNumber = process.env.TELNYX_CALLER_ID ?? process.env.TELNYX_PHONE_NUMBER ?? ''
+    const phoneNumber = process.env.TELNYX_PHONE_NUMBER ?? ''
     const toE164      = this.normalizeToE164(to)
 
     const recordPart = record
