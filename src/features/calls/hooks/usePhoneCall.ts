@@ -39,9 +39,14 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const callRef     = useRef<any>(null)
   const providerRef = useRef<'twilio' | 'telnyx' | null>(null)
+  const audioRef    = useRef<HTMLAudioElement | null>(null)
 
   const cleanup = useCallback(() => {
     callRef.current = null
+    if (audioRef.current) {
+      audioRef.current.srcObject = null
+      audioRef.current = null
+    }
     if (deviceRef.current) {
       try {
         if (providerRef.current === 'telnyx') {
@@ -206,7 +211,8 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
     callRef.current = call
 
     // Estado de chamada via telnyx.notification (callUpdate)
-    rtcClient.on('telnyx.notification', (notification: { type: string; call?: { state: string } }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rtcClient.on('telnyx.notification', (notification: { type: string; call?: any }) => {
       if (notification.type !== NOTIFICATION_TYPE.callUpdate) return
       const callState = notification.call?.state
 
@@ -215,6 +221,19 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
       } else if (callState === 'active') {
         setState('in-progress')
         setConnectedAt(new Date())
+        // Anexa o stream remoto a um elemento <audio> para o usuário ouvir o lead
+        try {
+          const remoteStream: MediaStream | undefined =
+            notification.call?.remoteStream ?? callRef.current?.remoteStream
+          if (remoteStream) {
+            if (audioRef.current) audioRef.current.srcObject = null
+            const audio = new Audio()
+            audio.srcObject = remoteStream
+            audio.autoplay = true
+            audioRef.current = audio
+            audio.play().catch(() => { /* política de autoplay — usuário já interagiu */ })
+          }
+        } catch { /* ignore */ }
       } else if (callState === 'hangup' || callState === 'destroy') {
         setState('ended')
         setEndedAt(new Date())
@@ -264,12 +283,13 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
     setState('ended')
     setEndedAt(new Date())
 
-    // Deferred: hangup + cleanup no próximo tick para não bloquear o render
-    setTimeout(() => {
+    // Deferred async: aguarda hangup antes de fechar o WebSocket (cleanup destroi a conexão)
+    // Sem await o BYE pode ser cancelado antes de ser enviado ao Telnyx
+    setTimeout(async () => {
       if (currentCall) {
         try {
           if (currentProvider === 'telnyx') {
-            currentCall.hangup()
+            await currentCall.hangup()
           } else {
             currentCall.disconnect()
           }
