@@ -14,10 +14,13 @@ export async function GET(
 
   const { data } = await supabase
     .from('calls')
-    .select('recording_url')
+    .select('recording_url, recording_sid')
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle()
 
-  return Response.json({ ready: !!data?.recording_url })
+  return Response.json({
+    ready:          !!data?.recording_url,
+    hasRecordingSid: !!data?.recording_sid,
+  })
 }
