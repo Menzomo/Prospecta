@@ -3,7 +3,7 @@ import { updateSession } from '@/lib/supabase/middleware'
 
 const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password', '/auth/callback', '/api/gmail/callback']
 
-const BYPASS_PREFIXES = ['/api/cron/']
+const BYPASS_PREFIXES = ['/api/cron/', '/api/calls/']
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
