@@ -102,11 +102,16 @@ export class TelnyxProvider implements ITelephonyProvider {
   ): boolean {
     const signature = headers['telnyx-signature-ed25519-signature']
 
-    // Webhooks TeXML (SIP parking) não incluem Ed25519 — valida por ConnectionId
     if (!signature) {
       const connectionId = params['ConnectionId']
       const expectedId   = process.env.TELNYX_APP_ID
-      return !expectedId || connectionId === expectedId
+
+      // TeXML parking webhooks: têm ConnectionId no payload
+      if (connectionId) return !expectedId || connectionId === expectedId
+
+      // Recording/status callbacks TeXML: sem ConnectionId e sem Ed25519
+      // Telnyx não assina esses callbacks — validamos pelo conteúdo (CallSid verificado no DB)
+      return true
     }
 
     // Webhooks Voice API — valida com Ed25519
