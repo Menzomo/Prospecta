@@ -14,7 +14,10 @@ export async function POST(request: NextRequest) {
     CallDuration: params['CallDuration'],
     RecordingStatus: params['RecordingStatus'],
     RecordingSid: params['RecordingSid'],
+    RecordingUrl: params['RecordingUrl'] ? '<present>' : undefined,
+    ConnectionId: params['ConnectionId'] ?? '(ausente)',
     userId: params['SipHeader_X-ProspectaUserId'] ?? '(ausente)',
+    allKeys: Object.keys(params).join(','),
   }))
 
   const headers: Record<string, string> = {}
