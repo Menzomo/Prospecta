@@ -35,29 +35,45 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
   const [endedAt, setEndedAt]         = useState<Date | null>(null)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const deviceRef   = useRef<any>(null)
+  const deviceRef      = useRef<any>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const callRef     = useRef<any>(null)
-  const providerRef = useRef<'twilio' | 'telnyx' | null>(null)
-  const audioRef    = useRef<HTMLAudioElement | null>(null)
+  const callRef        = useRef<any>(null)
+  const providerRef    = useRef<'twilio' | 'telnyx' | null>(null)
+  const audioRef       = useRef<HTMLAudioElement | null>(null)
+  const localStreamRef = useRef<MediaStream | null>(null)
 
   const cleanup = useCallback(() => {
     callRef.current = null
+
+    // Para as tracks do microfone — sem isso o browser mantém o mic ativo e pode travar
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(t => t.stop())
+      localStreamRef.current = null
+    }
+
     if (audioRef.current) {
       audioRef.current.srcObject = null
       audioRef.current = null
     }
+
     if (deviceRef.current) {
-      try {
-        if (providerRef.current === 'telnyx') {
-          deviceRef.current.disconnect()
-        } else {
-          deviceRef.current.destroy()
-        }
-      } catch { /* ignore */ }
-      deviceRef.current = null
+      const device   = deviceRef.current
+      const provider = providerRef.current
+      deviceRef.current   = null
+      providerRef.current = null
+      // Deferred para não bloquear o ciclo de render do React
+      setTimeout(() => {
+        try {
+          if (provider === 'telnyx') {
+            device.disconnect()
+          } else {
+            device.destroy()
+          }
+        } catch { /* ignore */ }
+      }, 0)
+    } else {
+      providerRef.current = null
     }
-    providerRef.current = null
   }, [])
 
   useEffect(() => () => { cleanup() }, [cleanup])
@@ -159,6 +175,7 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
     let localStream: MediaStream
     try {
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+      localStreamRef.current = localStream
     } catch {
       setState('error')
       setError('Permissão de microfone negada. Libere o acesso ao microfone e tente novamente.')
