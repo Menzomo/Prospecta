@@ -98,22 +98,29 @@ export class TelnyxProvider implements ITelephonyProvider {
     headers: Record<string, string>,
     _url: string,
     rawBody: string,
-    _params: Record<string, string>
+    params: Record<string, string>
   ): boolean {
+    const signature = headers['telnyx-signature-ed25519-signature']
+
+    // Webhooks TeXML (SIP parking) não incluem Ed25519 — valida por ConnectionId
+    if (!signature) {
+      const connectionId = params['ConnectionId']
+      const expectedId   = process.env.TELNYX_APP_ID
+      return !expectedId || connectionId === expectedId
+    }
+
+    // Webhooks Voice API — valida com Ed25519
     const publicKey = process.env.TELNYX_PUBLIC_KEY
     if (!publicKey) return false
 
-    const signature = headers['telnyx-signature-ed25519-signature']
     const timestamp = headers['telnyx-signature-ed25519-timestamp']
-    if (!signature || !timestamp) return false
+    if (!timestamp) return false
 
-    // Rejeita replays com mais de 5 minutos
     const ts = parseInt(timestamp, 10)
     if (Number.isNaN(ts) || Math.abs(Date.now() / 1000 - ts) > 300) return false
 
     try {
       const pubKeyBytes = Buffer.from(publicKey, 'base64')
-      // A chave pública do Telnyx são 32 bytes raw de Ed25519 — converte para JWK
       const pubKey = createPublicKey({
         format: 'jwk',
         key: { kty: 'OKP', crv: 'Ed25519', x: pubKeyBytes.toString('base64url') },

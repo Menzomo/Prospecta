@@ -251,7 +251,12 @@ export function usePhoneCall({ leadId, userLeadId }: UsePhoneCallOptions = {}): 
         }
       } catch { /* ignore */ }
     }
-  }, [])
+    // Força reset do estado — a notificação de encerramento do Telnyx
+    // pode não chegar se a conexão WebSocket já caiu no servidor
+    setState('ended')
+    setEndedAt(new Date())
+    cleanup()
+  }, [cleanup])
 
   const reset = useCallback(() => {
     cleanup()
