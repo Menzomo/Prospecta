@@ -235,7 +235,7 @@ export async function handleStatusCallbackWebhook(
 
       if (!isAdmin && update.status === 'completed' && update.durationSeconds && update.durationSeconds > 0) {
         const minutos = Math.ceil(update.durationSeconds / 60)
-        const custo   = parseFloat((minutos * 0.15).toFixed(4))
+        const custo   = parseFloat((minutos * 0.20).toFixed(4))
         try {
           await debitWallet(
             adminSupabase,

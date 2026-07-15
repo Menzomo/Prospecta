@@ -17,9 +17,11 @@ Cada fase é autossuficiente — leia a fase atual antes de implementar qualquer
 | Pagamento | **Asaas** — assinatura recorrente R$150/mês + recarga avulsa Pix/cartão |
 | 150 leads de boas-vindas | Via fluxo "Buscar Leads" existente — usuário escolhe o nicho, importa manualmente |
 | Leads esgotados | Redireciona para pacotes de leads extras |
-| Bloquear sem saldo | Ligação: bloquear se saldo < R$ 0,15 · Análise: bloquear se saldo < custo estimado |
+| Bloquear sem saldo | Ligação: bloquear se saldo < R$ 0,20 · Análise: bloquear se saldo < custo estimado |
+| Tarifa de ligação | **[Atualizado 2026-07-14]** R$ 0,15/min → **R$ 0,20/min**. Motivo: com número Telnyx dedicado por usuário (~R$16,52/mês, decisão acima), R$0,15/min só empatava com ~955 min/mês de uso por usuário; a R$0,20/min o breakeven cai pra ~245 min/mês e a margem some do vermelho na maioria dos cenários de uso real. Ainda abaixo do concorrente FiberTel (R$0,26/min celular). |
 | `analysis_credits` | **Descontinuada** — substituída pelo `wallet_balances` |
-| Telnyx | Apenas stub com `NotImplementedError` — Twilio continua 100% funcional |
+| Telnyx | **[Atualizado 2026-07-14]** Implementado e ativo (não é mais stub — ver histórico de commits `feat(calls): telnyx...`). Substitui o Twilio como provider de telefonia. |
+| Telnyx — número por conta | **[Decisão 2026-07-14]** Um número Telnyx **dedicado por usuário** (não compartilhado/platform-level). Motivo: a ANATEL bloqueia uso de CallerID externo, então não é possível originar chamadas de vários usuários por um único número — cada conta precisa do seu próprio número, vinculado ao `user_id`. Custo: ~US$3/mês (≈R$16,52) por número, pago pela Prospecta. Isso invalida o comentário "uso futuro com Telnyx platform-level" da Fase 2.2 abaixo — mantido no doc só por histórico de implementação, não reflete mais a decisão de custo. |
 
 ---
 
@@ -27,7 +29,7 @@ Cada fase é autossuficiente — leia a fase atual antes de implementar qualquer
 
 | Ação | Tarifa | Cálculo |
 |---|---|---|
-| Ligação | R$ 0,15/min | `Math.ceil(duration_seconds / 60) × 0.15` |
+| Ligação | R$ 0,20/min | `Math.ceil(duration_seconds / 60) × 0.20` |
 | Análise de IA | R$ 0,08/min de áudio | `Math.ceil(duration_seconds / 60) × 0.08` |
 | 50 leads extras | R$ 19,90 | Débito único do saldo |
 | 150 leads extras | R$ 49,90 | Débito único do saldo |
@@ -181,6 +183,9 @@ Implementar `ITelephonyProvider` com `throw new Error('TelnyxProvider: <método>
 Adicionar ao `factory.ts` uma função exportada `getProviderByEnv()` que lê `process.env.TELEPHONY_PROVIDER`:
 
 ```typescript
+// ⚠️ Comentário desatualizado — ver "Decisões já tomadas": Telnyx passou a ser
+// um número dedicado por usuário (ANATEL bloqueia CallerID externo compartilhado),
+// não platform-level como sugerido abaixo.
 // Wrapper para quando não há settings de usuário (uso futuro com Telnyx platform-level)
 export function getProviderByEnv(): ITelephonyProvider {
   const provider = process.env.TELEPHONY_PROVIDER ?? 'twilio'
@@ -243,7 +248,7 @@ Após gravar `duration_seconds` em `calls` e status for `completed`:
 ```typescript
 if (update.status === 'completed' && update.durationSeconds && update.durationSeconds > 0) {
   const minutos = Math.ceil(update.durationSeconds / 60)
-  const custo = parseFloat((minutos * 0.15).toFixed(2))
+  const custo = parseFloat((minutos * 0.20).toFixed(2))
   // Não bloquear o callback se o débito falhar — logar o erro e seguir
   try {
     await debitWallet(adminSupabase, userId, custo, 'call', callId, `Ligação ${minutos} min`)
@@ -263,13 +268,13 @@ if (update.status === 'completed' && update.durationSeconds && update.durationSe
 Antes de gerar o AccessToken:
 1. Verificar se `user.id` está em `ADMIN_USER_IDS` → pular verificação
 2. Buscar `wallet_balances.balance` do usuário
-3. Se `balance < 0.15` → retornar `{ error: 'saldo_insuficiente', balance, minimo: 0.15 }` com status 402
+3. Se `balance < 0.20` → retornar `{ error: 'saldo_insuficiente', balance, minimo: 0.20 }` com status 402
 
 **Checklist Fase 3:**
 - [ ] `src/repositories/walletRepository.ts` criado
 - [ ] Débito implementado em `callService.ts` após status `completed`
 - [ ] Bloqueio implementado em `/api/calls/token/route.ts`
-- [ ] Testar com R$ 100,00 no banco: ligar 2 min → verificar débito de R$ 0,30
+- [ ] Testar com R$ 100,00 no banco: ligar 2 min → verificar débito de R$ 0,40
 - [ ] Testar bloqueio: zerar saldo → botão de ligar deve retornar 402
 
 ---
@@ -380,7 +385,7 @@ SELECT credit_wallet('<uuid-do-usuario-teste>', 100.00);
 - Criar `SidebarBalance` — client component que busca o saldo via query Supabase realtime ou polling (30s)
 - Exibir entre o CTA "Adicionar Leads" e o `SidebarFooter`
 - Formato: `Saldo: R$ 18,30` com link "Recarregar →" (aponta para `/settings?section=plano`)
-- Se saldo < R$ 0,15: exibir em vermelho com texto "Saldo insuficiente"
+- Se saldo < R$ 0,20: exibir em vermelho com texto "Saldo insuficiente"
 - Admin users: não exibir widget
 
 ### 6.2 Modal de confirmação de análise
@@ -397,7 +402,7 @@ Quando usuário clica em "Analisar":
 
 **Checklist Fase 6:**
 - [ ] Widget de saldo renderiza na sidebar para usuários não-admin
-- [ ] Saldo em vermelho quando < R$ 0,15
+- [ ] Saldo em vermelho quando < R$ 0,20
 - [ ] Modal de saldo insuficiente aparece ao tentar analisar sem saldo
 - [ ] Link "Recarregar" funciona
 
@@ -554,7 +559,7 @@ ASAAS_SANDBOX=true      # false em produção
 |---|---|---|
 | `src/lib/telephony/factory.ts` | 2 | Adicionar `getProviderByEnv()` |
 | `src/services/callService.ts` | 3 + 4 | Débito de ligação + substituir analysis_credits |
-| `src/app/api/calls/token/route.ts` | 3 | Bloquear se saldo < R$ 0,15 |
+| `src/app/api/calls/token/route.ts` | 3 | Bloquear se saldo < R$ 0,20 |
 | `src/app/onboarding/actions.ts` | 5 | Chamar `creditWelcome` |
 | `src/components/layout/Sidebar.tsx` | 6 | Widget de saldo |
 | `src/app/(app)/search/page.tsx` | 7 | Progresso de cota + bloqueio |

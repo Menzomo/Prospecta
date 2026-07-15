@@ -187,7 +187,7 @@ function NavLinks({
   )
 }
 
-const SALDO_MINIMO = 0.15
+const SALDO_MINIMO = 0.20
 const POLL_INTERVAL_MS = 30_000
 
 function formatBRL(value: number): string {

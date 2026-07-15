@@ -1,7 +1,9 @@
 # CALLS_COSTS.md — Análise de Custos
 
-**Versão:** 1.0  
+**Versão:** 1.0 (DESATUALIZADA)
 **Data:** 2026-06-21
+
+> ⚠️ **Documento superado em 2026-07-14.** Este doc assume que "o Prospecta não paga pela telefonia" e que cada usuário usaria sua própria conta Twilio. Essa decisão mudou: o provider passou a ser **Telnyx**, com **um número dedicado por usuário pago pela Prospecta** (a ANATEL bloqueia uso de CallerID externo, então não dá pra compartilhar um número único entre usuários). Ver decisão atualizada e tarifas vigentes em [`docs/tasks-v1.md`](../tasks-v1.md#decisões-já-tomadas-não-rediscutir). Mantido aqui só como referência histórica do modelo antigo.
 
 > Preços em USD convertidos para BRL à cotação aproximada de R$5,70 por dólar.  
 > Preços Twilio são referência — variam por contrato e volume.
