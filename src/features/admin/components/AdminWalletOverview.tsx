@@ -65,10 +65,10 @@ export function AdminWalletOverview({ telnyxBalance, wallets }: Props) {
         {/* Usuários com saldo baixo */}
         <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-            Saldo insuficiente (&lt; R$0,15)
+            Saldo insuficiente (&lt; R$0,20)
           </p>
           <p className="mt-1 text-2xl font-bold text-amber-600">
-            {wallets.filter((w) => w.balance < 0.15).length}
+            {wallets.filter((w) => w.balance < 0.20).length}
           </p>
           <p className="mt-0.5 text-xs text-gray-400">usuário(s) bloqueados para ligações</p>
         </div>
@@ -95,7 +95,7 @@ export function AdminWalletOverview({ telnyxBalance, wallets }: Props) {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {wallets.map((w) => {
-              const insufficient = w.balance < 0.15
+              const insufficient = w.balance < 0.20
               return (
                 <tr key={w.user_id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-900 max-w-[200px] truncate">

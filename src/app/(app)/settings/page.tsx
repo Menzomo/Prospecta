@@ -39,7 +39,7 @@ const TX_LABELS: Record<string, string> = {
 const TX_CREDITS = new Set(['recharge', 'bonus', 'welcome'])
 
 function WalletSection({ balance, transactions }: { balance: number; transactions: WalletTransaction[] }) {
-  const insufficient = balance < 0.15
+  const insufficient = balance < 0.20
   return (
     <div className="flex flex-col gap-4">
       <div className="mb-2">

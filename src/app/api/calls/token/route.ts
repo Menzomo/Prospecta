@@ -6,7 +6,7 @@ import { getBalance } from '@/repositories/walletRepository'
 export const dynamic = 'force-dynamic'
 
 // Saldo mínimo para iniciar uma ligação (equivale a 1 minuto de chamada)
-const SALDO_MINIMO = 0.15
+const SALDO_MINIMO = 0.20
 
 export async function POST(_request: NextRequest) {
   const supabase = await createClient()

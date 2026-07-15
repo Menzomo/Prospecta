@@ -54,7 +54,7 @@ function BalanceChip() {
 
   if (balance === null) return null
 
-  const insufficient = balance < 0.15
+  const insufficient = balance < 0.20
 
   return (
     <Link
