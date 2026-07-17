@@ -10,6 +10,8 @@ export type CreateCompanyProfileDto = {
   phone?: string
   commercial_email?: string
   website?: string
+  cpf_cnpj?: string
+  forwarding_cell_phone?: string
 }
 
 export type UpdateCompanyProfileDto = Partial<CreateCompanyProfileDto>

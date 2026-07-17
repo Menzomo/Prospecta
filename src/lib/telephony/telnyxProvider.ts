@@ -3,7 +3,7 @@
 
 import Telnyx from 'telnyx'
 import { createPublicKey, verify as cryptoVerify } from 'crypto'
-import { parsePhoneNumber } from 'libphonenumber-js'
+import { normalizeToE164 } from '@/lib/phone/normalizeToE164'
 import type {
   ITelephonyProvider,
   AccessTokenResult,
@@ -28,13 +28,20 @@ export class TelnyxProvider implements ITelephonyProvider {
   readonly name = 'telnyx'
 
   /**
+   * phoneNumber é o número dedicado do usuário (telnyx_numbers.phone_number,
+   * resolvido por loadProvider em callService.ts) — cai no env var só quando
+   * nenhum é passado (ex.: instância usada só pra parse/validação de webhook
+   * de entrada, onde o número ainda não foi resolvido).
+   */
+  constructor(private readonly phoneNumber: string = process.env.TELNYX_PHONE_NUMBER ?? '') {}
+
+  /**
    * Cria uma credencial temporária no Telnyx e gera o JWT para o browser SDK.
    * Cada sessão de chamada cria e expira sua própria credencial (1h de vida).
    */
   async generateAccessToken(userId: string): Promise<AccessTokenResult> {
     const apiKey = process.env.TELNYX_API_KEY
     const appId  = process.env.TELNYX_APP_ID
-    const phoneNumber = process.env.TELNYX_PHONE_NUMBER ?? ''
 
     if (!apiKey || !appId) {
       throw new Error('Telnyx: TELNYX_API_KEY e TELNYX_APP_ID são obrigatórios')
@@ -63,7 +70,7 @@ export class TelnyxProvider implements ITelephonyProvider {
 
     console.log('[TelnyxProvider] token gerado, tipo:', typeof tokenRaw, 'credId:', credId)
 
-    return { token, identity: userId, phoneNumber, provider: 'telnyx' }
+    return { token, identity: userId, phoneNumber: this.phoneNumber, provider: 'telnyx' }
   }
 
   /**
@@ -71,9 +78,8 @@ export class TelnyxProvider implements ITelephonyProvider {
    * O browser envia userId via SIP custom headers — não precisa estar no TeXML.
    */
   generateCallInstruction(to: string, callId: string, record: boolean): string {
-    const appUrl      = process.env.NEXT_PUBLIC_APP_URL ?? ''
-    const phoneNumber = process.env.TELNYX_PHONE_NUMBER ?? ''
-    const toE164      = this.normalizeToE164(to)
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
+    const toE164 = normalizeToE164(to)
 
     const recordPart = record
       ? `record="record-from-answer" recordingStatusCallback="${appUrl}/api/calls/status" recordingStatusCallbackMethod="POST"`
@@ -82,12 +88,37 @@ export class TelnyxProvider implements ITelephonyProvider {
     return (
       `<?xml version="1.0" encoding="UTF-8"?>` +
       `<Response>` +
-      `<Dial callerId="${phoneNumber}" ${recordPart}` +
+      `<Dial callerId="${this.phoneNumber}" ${recordPart}` +
       ` action="${appUrl}/api/calls/twiml/completed?callId=${callId}" method="POST">` +
       `<Number>${toE164}</Number>` +
       `</Dial>` +
       `</Response>`
     )
+  }
+
+  /**
+   * TeXML de encaminhamento pra chamada de entrada — sem callerId (não é o número
+   * do lead nem o da plataforma sendo usado como origem) e sem gravação, diferente
+   * de generateCallInstruction (que é para chamadas de saída iniciadas pelo app).
+   */
+  generateInboundForwardInstruction(forwardTo: string): string {
+    const toE164 = normalizeToE164(forwardTo)
+    return (
+      `<?xml version="1.0" encoding="UTF-8"?>` +
+      `<Response><Dial record="do-not-record"><Number>${toE164}</Number></Dial></Response>`
+    )
+  }
+
+  /**
+   * Extrai parâmetros de chamada de entrada do webhook TeXML (lead ligando de
+   * volta pro número dedicado do usuário) — sem SIP headers, diferente do outbound.
+   */
+  parseInboundCallRequest(params: Record<string, string>): { callSid: string; toNumber: string; fromNumber: string } {
+    return {
+      callSid:    params['CallSid'] ?? '',
+      toNumber:   normalizeToE164(params['To']   ?? ''),
+      fromNumber: normalizeToE164(params['From'] ?? ''),
+    }
   }
 
   /**
@@ -106,7 +137,9 @@ export class TelnyxProvider implements ITelephonyProvider {
       const connectionId = params['ConnectionId']
       const expectedId   = process.env.TELNYX_APP_ID
 
-      // TeXML parking webhooks: têm ConnectionId no payload
+      // TeXML parking webhooks: têm ConnectionId no payload. Mesma Application
+      // atende saída (SDK do navegador) e entrada (lead ligando de volta pro
+      // número dedicado dele) — todos os números do pool vivem nela.
       if (connectionId) return !expectedId || connectionId === expectedId
 
       // Recording/status callbacks TeXML: sem ConnectionId e sem Ed25519
@@ -148,7 +181,7 @@ export class TelnyxProvider implements ITelephonyProvider {
       clientCallId: params['SipHeader_X-ProspectaCallId']     || null,
       callSid:      params['CallSid']                          ?? '',
       userId:       params['SipHeader_X-ProspectaUserId']     || null,
-      toNumber:     this.normalizeToE164(params['To']         ?? ''),
+      toNumber:     normalizeToE164(params['To']              ?? ''),
       leadId:       params['SipHeader_X-ProspectaLeadId']     || null,
       userLeadId:   params['SipHeader_X-ProspectaUserLeadId'] || null,
     }
@@ -180,13 +213,4 @@ export class TelnyxProvider implements ITelephonyProvider {
     }
   }
 
-  // ── helpers privados ──────────────────────────────────────────────────────
-
-  private normalizeToE164(phone: string): string {
-    try {
-      const parsed = parsePhoneNumber(phone)
-      if (parsed.isValid()) return parsed.format('E.164')
-    } catch { /* fallthrough */ }
-    return phone.replace(/[\s\-\(\)]/g, '')
-  }
 }

@@ -37,6 +37,7 @@ export type CreateCallDto = {
   call_sid: string
   to_number: string
   from_number: string
+  direction?: 'outbound' | 'inbound'   // default 'outbound' (mesmo default da coluna)
 }
 
 export type CallWithAnalysis = Call & {

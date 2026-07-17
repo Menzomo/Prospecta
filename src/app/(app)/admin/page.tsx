@@ -11,6 +11,7 @@ import {
   getStockByUserAndCategory,
   getGmailRequests,
   getAdminUserWallets,
+  getTelnyxNumberPool,
 } from '@/repositories/adminRepository'
 import { AdminGlobalLeads } from '@/features/admin/components/AdminGlobalLeads'
 import { AdminCategories } from '@/features/admin/components/AdminCategories'
@@ -23,6 +24,7 @@ import { AdminStockOverview } from '@/features/admin/components/AdminStockOvervi
 import { AdminUserStockOverview } from '@/features/admin/components/AdminUserStockOverview'
 import { AdminGmailRequests } from '@/features/admin/components/AdminGmailRequests'
 import { AdminWalletOverview } from '@/features/admin/components/AdminWalletOverview'
+import { AdminNumberPool } from '@/features/admin/components/AdminNumberPool'
 
 type SearchParams = Promise<{ category?: string; city?: string; reviewNiche?: string }>
 
@@ -76,7 +78,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
     ? (categoryBySlug.get(reviewNiche)?.id ?? undefined)
     : undefined
 
-  const [leads, users, reviewQueue, overview, nichoStats, stock, userStock, gmailRequests, wallets, telnyxBalance] = await Promise.all([
+  const [leads, users, reviewQueue, overview, nichoStats, stock, userStock, gmailRequests, wallets, telnyxBalance, telnyxNumbers] = await Promise.all([
     getGlobalLeadsForAdmin(supabase, {
       categoryId: activeCategoryId,
       city: cityFilter || undefined,
@@ -90,6 +92,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
     getGmailRequests(supabase),
     getAdminUserWallets(adminSupabase),
     fetchTelnyxBalance(),
+    getTelnyxNumberPool(adminSupabase),
   ])
 
   return (
@@ -118,6 +121,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
         <div className="mx-auto max-w-6xl flex flex-col gap-10">
           {/* Créditos e Saldos */}
           <AdminWalletOverview telnyxBalance={telnyxBalance} wallets={wallets} />
+
+          {/* Pool de números Telnyx */}
+          <AdminNumberPool numbers={telnyxNumbers} />
 
           {/* Solicitações Gmail */}
           <AdminGmailRequests requests={gmailRequests} />

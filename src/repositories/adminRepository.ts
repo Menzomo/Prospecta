@@ -319,3 +319,39 @@ export async function getAdminUserWallets(
     updated_at: balanceMap.get(p.id)?.updated_at ?? null,
   })).sort((a, b) => b.balance - a.balance)
 }
+
+export type AdminTelnyxNumber = {
+  id: string
+  phone_number: string
+  status: string
+  user_id: string | null
+  assigned_user_email: string | null
+  created_at: string
+}
+
+/**
+ * Lista o pool de números Telnyx (disponíveis + atribuídos), com email do
+ * usuário atribuído resolvido via profiles (mesmo padrão de getAdminUserWallets).
+ */
+export async function getTelnyxNumberPool(
+  adminSupabase: SupabaseClient<Database>
+): Promise<AdminTelnyxNumber[]> {
+  const [{ data: numbers }, { data: profiles }] = await Promise.all([
+    adminSupabase
+      .from('telnyx_numbers')
+      .select('id, phone_number, status, user_id, created_at')
+      .order('created_at', { ascending: false }),
+    adminSupabase.from('profiles').select('id, email'),
+  ])
+
+  const emailMap = new Map((profiles ?? []).map((p) => [p.id, p.email]))
+
+  return (numbers ?? []).map((n) => ({
+    id: n.id,
+    phone_number: n.phone_number,
+    status: n.status,
+    user_id: n.user_id,
+    assigned_user_email: n.user_id ? emailMap.get(n.user_id) ?? '—' : null,
+    created_at: n.created_at,
+  }))
+}

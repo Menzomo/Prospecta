@@ -11,6 +11,9 @@ import { createProviderFromSettings } from '@/lib/telephony/factory'
 import { createCall, updateCallStatus } from '@/repositories/callRepository'
 import { createCallAnalysis, getCallAnalysisByCallId, deleteCallAnalysisByCallId } from '@/repositories/callAnalysisRepository'
 import { debitWallet, getBalance } from '@/repositories/walletRepository'
+import { getLeadsByUserId } from '@/repositories/leadRepository'
+import { getUserLeadsWithGlobalData } from '@/repositories/userLeadRepository'
+import { normalizeToE164 } from '@/lib/phone/normalizeToE164'
 import { CALL_EVENT, dispatchCallEvent } from '@/features/calls/events'
 
 // ── tipos de retorno ──────────────────────────────────────────────────────────
@@ -37,12 +40,21 @@ async function loadProvider(
   supabase: SupabaseClient<Database>,
   userId: string
 ): Promise<{ provider: ITelephonyProvider; phoneNumber: string } | null> {
-  // Telnyx é platform-level: uma conta para todos os usuários via env vars
+  // Telnyx: número dedicado por usuário (ANATEL bloqueia CallerID compartilhado
+  // — ver docs/tasks-v1.md, decisão 2026-07-14). Usuário precisa ter reivindicado
+  // um número em Configurações → Telefonia antes de conseguir ligar.
   if (process.env.TELEPHONY_PROVIDER === 'telnyx') {
-    const phoneNumber = process.env.TELNYX_PHONE_NUMBER ?? ''
-    if (!phoneNumber) return null
+    const { data: numberRow } = await supabase
+      .from('telnyx_numbers')
+      .select('phone_number')
+      .eq('user_id', userId)
+      .eq('status', 'assigned')
+      .maybeSingle()
+
+    if (!numberRow?.phone_number) return null
+
     const { TelnyxProvider } = await import('@/lib/telephony/telnyxProvider')
-    return { provider: new TelnyxProvider(), phoneNumber }
+    return { provider: new TelnyxProvider(numberRow.phone_number), phoneNumber: numberRow.phone_number }
   }
 
   // Twilio é per-user: configurações no banco por usuário
@@ -92,6 +104,11 @@ export async function generateToken(
  * Valida a assinatura do webhook e gera o TwiML para a chamada
  * (chamado por POST /api/calls/twiml).
  *
+ * Mesma Application Telnyx atende tanto chamadas de saída (iniciadas pelo SDK
+ * do navegador, com SIP headers) quanto chamadas de entrada (lead ligando de
+ * volta pro número dedicado de algum usuário, sem SIP headers) — números do
+ * pool vivem todos nela. Sem identidade de chamador nos params = é entrada.
+ *
  * adminSupabase: cliente com service role (sem RLS) para criar o registro da call.
  */
 export async function handleOutboundCallWebhook(
@@ -107,7 +124,7 @@ export async function handleOutboundCallWebhook(
   const parsed = parseOutboundCallParamsUnsafe(rawParams)
 
   if (!parsed.userId) {
-    return { ok: false, error: 'Identidade de chamador ausente.' }
+    return handleInboundCallWebhook(adminSupabase, rawParams, webhookUrl, rawHeaders, rawBody)
   }
 
   const loaded = await loadProvider(adminSupabase, parsed.userId)
@@ -151,6 +168,90 @@ export async function handleOutboundCallWebhook(
     true
   )
 
+  return { ok: true, twiml }
+}
+
+/**
+ * Gera o TeXML que encaminha uma chamada de entrada (lead ligando de volta pro
+ * número dedicado do usuário) pro celular pessoal do usuário.
+ * Chamado internamente por handleOutboundCallWebhook quando o webhook não traz
+ * identidade de chamador (sinal de que não foi o app que iniciou a chamada).
+ *
+ * Diferente do outbound: não há SIP header com userId — o usuário é resolvido
+ * pelo número discado (To) via telnyx_numbers. Sem gravação, sem cobrança
+ * (ver bloco de débito em handleStatusCallbackWebhook, que ignora direction='inbound').
+ */
+async function handleInboundCallWebhook(
+  adminSupabase: SupabaseClient<Database>,
+  rawParams: Record<string, string>,
+  webhookUrl: string,
+  rawHeaders: Record<string, string>,
+  rawBody: string
+): Promise<TwiMLResult> {
+  if (process.env.TELEPHONY_PROVIDER !== 'telnyx') {
+    return { ok: false, error: 'Encaminhamento de chamadas de entrada só suportado com Telnyx.' }
+  }
+
+  const { TelnyxProvider } = await import('@/lib/telephony/telnyxProvider')
+  const provider = new TelnyxProvider()
+
+  if (!isDev() && !provider.validateWebhookSignature(rawHeaders, webhookUrl, rawBody, rawParams)) {
+    return { ok: false, error: 'Assinatura inválida.', forbidden: true }
+  }
+
+  const { callSid, toNumber, fromNumber } = provider.parseInboundCallRequest(rawParams)
+  if (!toNumber) {
+    return { ok: false, error: 'Número de destino ausente.' }
+  }
+
+  const { data: numberRow } = await adminSupabase
+    .from('telnyx_numbers')
+    .select('user_id')
+    .eq('phone_number', toNumber)
+    .eq('status', 'assigned')
+    .maybeSingle()
+
+  if (!numberRow?.user_id) {
+    return {
+      ok: true,
+      twiml: `<?xml version="1.0" encoding="UTF-8"?><Response><Say language="pt-BR">Número temporariamente indisponível.</Say><Hangup/></Response>`,
+    }
+  }
+
+  const userId = numberRow.user_id
+
+  const { data: profile } = await adminSupabase
+    .from('company_profiles')
+    .select('forwarding_cell_phone')
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  const forwardTo = profile?.forwarding_cell_phone
+  if (!forwardTo) {
+    return {
+      ok: true,
+      twiml: `<?xml version="1.0" encoding="UTF-8"?><Response><Say language="pt-BR">O responsável por este número ainda não configurou o encaminhamento de chamadas.</Say><Hangup/></Response>`,
+    }
+  }
+
+  const match = await matchInboundCallerToLead(adminSupabase, userId, fromNumber)
+
+  await createCall(adminSupabase, {
+    user_id:      userId,
+    lead_id:      match.leadId,
+    user_lead_id: match.userLeadId,
+    call_sid:     callSid,
+    to_number:    toNumber,
+    from_number:  fromNumber,
+    direction:    'inbound',
+  })
+
+  // Dispara e segue — não bloqueia a resposta TeXML esperando o envio do email
+  notifyMissedCallAttempt(adminSupabase, userId, fromNumber, match).catch((err) =>
+    console.error('[callService] falha ao notificar chamada de entrada:', err)
+  )
+
+  const twiml = provider.generateInboundForwardInstruction(forwardTo)
   return { ok: true, twiml }
 }
 
@@ -216,7 +317,7 @@ export async function handleStatusCallbackWebhook(
     // Busca o callId pelo call_sid para disparar o evento e para o débito
     const { data: call } = await adminSupabase
       .from('calls')
-      .select('id')
+      .select('id, direction')
       .eq('call_sid', update.callSid)
       .maybeSingle()
 
@@ -229,11 +330,14 @@ export async function handleStatusCallbackWebhook(
         payload: { status: update.status, durationSeconds: update.durationSeconds },
       })
 
-      // Débito de ligação — apenas para chamadas completadas com duração real
+      // Débito de ligação — apenas para chamadas de saída completadas com duração real.
+      // Chamadas de entrada (lead ligando de volta, encaminhada pro celular do
+      // usuário) não são cobradas — custo absorvido pela Prospecta.
       const adminIds = (process.env.ADMIN_USER_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean)
       const isAdmin  = adminIds.includes(userId)
+      const isInbound = call.direction === 'inbound'
 
-      if (!isAdmin && update.status === 'completed' && update.durationSeconds && update.durationSeconds > 0) {
+      if (!isAdmin && !isInbound && update.status === 'completed' && update.durationSeconds && update.durationSeconds > 0) {
         const minutos = Math.ceil(update.durationSeconds / 60)
         const custo   = parseFloat((minutos * 0.20).toFixed(4))
         try {
@@ -452,6 +556,67 @@ async function handleRecordingCallback(
 }
 
 // ── helpers internos (não exportados) ────────────────────────────────────────
+
+type InboundLeadMatch = {
+  leadId: string | null
+  userLeadId: string | null
+  leadName: string | null
+}
+
+/**
+ * Casa o número de quem ligou (From) contra os leads/user_leads do usuário
+ * resolvido pelo número discado. Escopado por user_id — volume por usuário
+ * é pequeno o suficiente pra não precisar de coluna normalizada indexada.
+ */
+async function matchInboundCallerToLead(
+  adminSupabase: SupabaseClient<Database>,
+  userId: string,
+  fromNumber: string
+): Promise<InboundLeadMatch> {
+  const noMatch: InboundLeadMatch = { leadId: null, userLeadId: null, leadName: null }
+  if (!fromNumber) return noMatch
+
+  const [leads, userLeads] = await Promise.all([
+    getLeadsByUserId(adminSupabase, userId),
+    getUserLeadsWithGlobalData(adminSupabase, userId),
+  ])
+
+  const lead = leads.find((l) => l.phone && normalizeToE164(l.phone, 'BR') === fromNumber)
+  if (lead) return { leadId: lead.id, userLeadId: null, leadName: lead.company_name ?? null }
+
+  const userLead = userLeads.find((l) => l.phone && normalizeToE164(l.phone, 'BR') === fromNumber)
+  if (userLead) return { leadId: null, userLeadId: userLead.id, leadName: userLead.company_name }
+
+  return noMatch
+}
+
+/**
+ * Avisa por email que um lead (ou número desconhecido) tentou contato ligando
+ * de volta. Dispara e esquece — falha de notificação não deve afetar a chamada.
+ */
+async function notifyMissedCallAttempt(
+  adminSupabase: SupabaseClient<Database>,
+  userId: string,
+  fromNumber: string,
+  match: InboundLeadMatch
+): Promise<void> {
+  const { data: { user } } = await adminSupabase.auth.admin.getUserById(userId)
+  if (!user?.email) return
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
+  const leadUrl = match.leadId
+    ? `${appUrl}/leads/${match.leadId}`
+    : match.userLeadId
+      ? `${appUrl}/leads/global/${match.userLeadId}`
+      : null
+
+  const { sendMissedCallNotification } = await import('@/services/callNotificationService')
+  await sendMissedCallNotification(user.email, {
+    callerPhone: fromNumber,
+    leadName: match.leadName,
+    leadUrl,
+  })
+}
 
 function extractUserIdUnsafe(params: Record<string, string>): string | null {
   // Telnyx: userId passado como SIP custom header pelo browser SDK
