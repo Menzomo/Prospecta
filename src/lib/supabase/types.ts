@@ -263,6 +263,8 @@ export interface Database {
           website: string | null
           logo_path: string | null
           presentation_pdf_path: string | null
+          cpf_cnpj: string | null
+          forwarding_cell_phone: string | null
           created_at: string
           updated_at: string
         }
@@ -277,6 +279,8 @@ export interface Database {
           website?: string | null
           logo_path?: string | null
           presentation_pdf_path?: string | null
+          cpf_cnpj?: string | null
+          forwarding_cell_phone?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -289,6 +293,8 @@ export interface Database {
           website?: string | null
           logo_path?: string | null
           presentation_pdf_path?: string | null
+          cpf_cnpj?: string | null
+          forwarding_cell_phone?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -613,6 +619,37 @@ export interface Database {
           phone_number?: string
           twiml_app_sid?: string | null
           is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      telnyx_numbers: {
+        Row: {
+          id: string
+          phone_number: string
+          telnyx_number_id: string | null
+          status: string
+          user_id: string | null
+          assigned_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          phone_number: string
+          telnyx_number_id?: string | null
+          status?: string
+          user_id?: string | null
+          assigned_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          phone_number?: string
+          telnyx_number_id?: string | null
+          status?: string
+          user_id?: string | null
+          assigned_at?: string | null
           updated_at?: string
         }
         Relationships: []

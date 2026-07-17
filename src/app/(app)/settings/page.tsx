@@ -4,11 +4,14 @@ import { getCompanyProfileByUserId } from '@/repositories/companyProfileReposito
 import { getGmailConnection, getGmailRequest } from '@/repositories/gmailRepository'
 import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
 import { getBalance, getTransactions } from '@/repositories/walletRepository'
+import { getAssignedNumber, getAvailableNumbers } from '@/repositories/telnyxNumberRepository'
 import type { GmailRequestStatus } from '@/types/gmail'
 import type { WalletTransaction } from '@/repositories/walletRepository'
 import { CompanyProfileForm } from '@/features/settings/components/CompanyProfileForm'
 import { GmailConnectionCard } from '@/features/gmail/components/GmailConnectionCard'
 import { TelephonySettingsForm } from '@/features/calls/components/TelephonySettingsForm'
+import { NumberClaimForm } from '@/features/calls/components/NumberClaimForm'
+import { ForwardingDetailsForm } from '@/features/calls/components/ForwardingDetailsForm'
 import { PageHeader } from '@/components/layout/PageHeader'
 
 type Section = 'empresa' | 'gmail' | 'telefonia' | 'carteira' | 'idioma' | 'aparencia' | 'plano'
@@ -130,14 +133,21 @@ export default async function SettingsPage({ searchParams }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [company, gmailConnection, gmailRequest, telephonySettings, walletBalance, walletTransactions] = await Promise.all([
+  const [company, gmailConnection, gmailRequest, telephonySettings, walletBalance, walletTransactions, assignedNumber] = await Promise.all([
     getCompanyProfileByUserId(supabase, user.id),
     getGmailConnection(supabase, user.id),
     getGmailRequest(supabase, user.id),
     getTelephonySettings(supabase, user.id),
     section === 'carteira' ? getBalance(supabase, user.id) : Promise.resolve(0),
     section === 'carteira' ? getTransactions(supabase, user.id, 30) : Promise.resolve([]),
+    section === 'telefonia' && process.env.TELEPHONY_PROVIDER === 'telnyx'
+      ? getAssignedNumber(supabase, user.id)
+      : Promise.resolve(null),
   ])
+
+  const availableNumbers = (section === 'telefonia' && process.env.TELEPHONY_PROVIDER === 'telnyx' && !assignedNumber)
+    ? await getAvailableNumbers(supabase)
+    : []
 
   const gmailRequestStatus: GmailRequestStatus =
     gmailConnection?.is_connected
@@ -181,19 +191,26 @@ export default async function SettingsPage({ searchParams }: Props) {
               </p>
             </div>
             {process.env.TELEPHONY_PROVIDER === 'telnyx' ? (
-              <div className="rounded-xl border border-outline bg-surface-container p-6 shadow-card flex items-start gap-4">
-                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary" aria-hidden>
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
-                  </svg>
+              !assignedNumber ? (
+                <NumberClaimForm availableNumbers={availableNumbers} />
+              ) : (!company?.cpf_cnpj || !company?.forwarding_cell_phone) ? (
+                <ForwardingDetailsForm />
+              ) : (
+                <div className="rounded-xl border border-outline bg-surface-container p-6 shadow-card flex items-start gap-4">
+                  <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary" aria-hidden>
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-on-surface">Seu número Prospecta</p>
+                    <p className="mt-1 text-lg font-bold text-on-surface">{assignedNumber.phone_number}</p>
+                    <p className="mt-1 text-sm text-on-surface-muted">
+                      Ligações recebidas de leads são encaminhadas pro celular cadastrado em Dados da Empresa.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-on-surface">Telnyx — gerenciado pela plataforma</p>
-                  <p className="mt-1 text-sm text-on-surface-muted">
-                    A telefonia está configurada centralmente pelo administrador. Não é necessária nenhuma configuração adicional.
-                  </p>
-                </div>
-              </div>
+              )
             ) : (
               <div className="rounded-xl border border-outline bg-surface-container p-6 shadow-card">
                 <TelephonySettingsForm initialData={telephonySettings} />

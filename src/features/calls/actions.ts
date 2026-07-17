@@ -4,9 +4,13 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { telephonySettingsSchema } from '@/validations/telephonySettingsSchema'
+import { claimTelnyxNumberSchema } from '@/validations/claimTelnyxNumberSchema'
+import { forwardingDetailsSchema } from '@/validations/forwardingDetailsSchema'
 import { encryptCredential } from '@/lib/crypto/credentials'
 import { getTelephonySettings, upsertTelephonySettings } from '@/repositories/telephonySettingsRepository'
 import { getCurrentPeriodCredits } from '@/repositories/analysisCreditRepository'
+import { claimTelnyxNumber } from '@/repositories/telnyxNumberRepository'
+import { updateCompanyProfile } from '@/repositories/companyProfileRepository'
 import type { AnalysisCredits } from '@/types/calls'
 
 // --- Save telephony settings ---
@@ -125,6 +129,100 @@ export async function applyCallSuggestedStatusAction(formData: FormData): Promis
       .eq('user_id', user.id)
     revalidatePath(`/leads/global/${userLeadId}`)
   }
+}
+
+// --- Claim a Telnyx number (encaminhamento de chamadas de entrada) ---
+
+export type ClaimTelnyxNumberState = {
+  errors?: {
+    number_id?: string[]
+    cpf_cnpj?: string[]
+    forwarding_cell_phone?: string[]
+  }
+  error?: string
+  success?: boolean
+} | null
+
+export async function claimTelnyxNumberAction(
+  _state: ClaimTelnyxNumberState,
+  formData: FormData
+): Promise<ClaimTelnyxNumberState> {
+  const validation = claimTelnyxNumberSchema.safeParse({
+    number_id: formData.get('number_id'),
+    cpf_cnpj: formData.get('cpf_cnpj'),
+    forwarding_cell_phone: formData.get('forwarding_cell_phone'),
+  })
+
+  if (!validation.success) {
+    return { errors: validation.error.flatten().fieldErrors }
+  }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { number_id, cpf_cnpj, forwarding_cell_phone } = validation.data
+
+  const profile = await updateCompanyProfile(supabase, user.id, { cpf_cnpj, forwarding_cell_phone })
+  if (!profile) {
+    return { error: 'Erro ao salvar CPF/CNPJ e celular. Tente novamente.' }
+  }
+
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const adminSupabase = createAdminClient()
+
+  try {
+    await claimTelnyxNumber(adminSupabase, user.id, number_id)
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    if (msg.includes('number_not_available')) {
+      return { error: 'Este número acabou de ser reservado por outro usuário. Escolha outro.' }
+    }
+    if (msg.includes('user_already_has_number')) {
+      return { error: 'Você já tem um número atribuído.' }
+    }
+    return { error: 'Erro ao reivindicar número. Tente novamente.' }
+  }
+
+  revalidatePath('/settings')
+  return { success: true }
+}
+
+// --- Complete CPF/CNPJ + celular (número já atribuído, ex.: pelo admin) ---
+
+export type ForwardingDetailsState = {
+  errors?: {
+    cpf_cnpj?: string[]
+    forwarding_cell_phone?: string[]
+  }
+  error?: string
+  success?: boolean
+} | null
+
+export async function completeForwardingDetailsAction(
+  _state: ForwardingDetailsState,
+  formData: FormData
+): Promise<ForwardingDetailsState> {
+  const validation = forwardingDetailsSchema.safeParse({
+    cpf_cnpj: formData.get('cpf_cnpj'),
+    forwarding_cell_phone: formData.get('forwarding_cell_phone'),
+  })
+
+  if (!validation.success) {
+    return { errors: validation.error.flatten().fieldErrors }
+  }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const profile = await updateCompanyProfile(supabase, user.id, validation.data)
+  if (!profile) {
+    return { error: 'Erro ao salvar CPF/CNPJ e celular. Tente novamente.' }
+  }
+
+  revalidatePath('/settings')
+  return { success: true }
 }
 
 // --- Get analysis credits ---
