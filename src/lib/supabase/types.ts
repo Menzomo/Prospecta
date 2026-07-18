@@ -20,6 +20,11 @@ export interface Database {
           gmail_request_email: string | null
           gmail_request_status: string
           gmail_requested_at: string | null
+          subscription_status: string
+          subscription_source: string | null
+          asaas_customer_id: string | null
+          asaas_subscription_id: string | null
+          subscription_paid_at: string | null
           created_at: string
           updated_at: string
         }
@@ -33,6 +38,11 @@ export interface Database {
           gmail_request_email?: string | null
           gmail_request_status?: string
           gmail_requested_at?: string | null
+          subscription_status?: string
+          subscription_source?: string | null
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
+          subscription_paid_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -45,6 +55,11 @@ export interface Database {
           gmail_request_email?: string | null
           gmail_request_status?: string
           gmail_requested_at?: string | null
+          subscription_status?: string
+          subscription_source?: string | null
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
+          subscription_paid_at?: string | null
           updated_at?: string
         }
         Relationships: []
