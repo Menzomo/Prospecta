@@ -29,3 +29,30 @@ export async function upsertProfile(
   if (error) return null
   return data
 }
+
+/**
+ * Atualiza campos de assinatura — chamado pelo webhook do Asaas e pela
+ * atribuição manual de número Telnyx (admin). Deve ser chamado com adminSupabase.
+ */
+export async function updateProfileSubscription(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  patch: Partial<{
+    subscription_status: 'inactive' | 'active' | 'canceled'
+    subscription_source: 'asaas' | 'manual' | 'beta_grandfather'
+    asaas_customer_id: string
+    asaas_subscription_id: string
+    subscription_paid_at: string
+  }>
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('profiles')
+    .update(patch)
+    .eq('id', userId)
+
+  if (error) {
+    console.error('[profileRepository.updateProfileSubscription]', error.message)
+    return false
+  }
+  return true
+}

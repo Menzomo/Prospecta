@@ -131,6 +131,14 @@ export async function assignTelnyxNumberToUserAction(
     return { error: 'Erro ao atribuir número. Tente novamente.' }
   }
 
+  // Receber um número atribuído manualmente é o sinal de "pagou por fora"
+  // (ex.: dinheiro) — libera acesso igual uma assinatura confirmada via Asaas.
+  const { updateProfileSubscription } = await import('@/repositories/profileRepository')
+  await updateProfileSubscription(adminSupabase, targetProfile.id, {
+    subscription_status: 'active',
+    subscription_source: 'manual',
+  })
+
   revalidatePath('/admin')
   return { success: true }
 }

@@ -26,6 +26,15 @@ Cada fase é autossuficiente — leia a fase atual antes de implementar qualquer
 
 ---
 
+## Pendências / débitos técnicos
+
+- [ ] **Testar e2e o encaminhamento de chamada de entrada** (feature implementada em 2026-07-17, ainda não validada com ligação real): aplicar as 3 migrations novas no Supabase (`telnyx_numbers`, campos regulatórios em `company_profiles`, relaxamento do `calls_lead_xor`), associar um número real à Application Telnyx, atribuir esse número a um usuário (via admin ou fluxo normal), preencher CPF/CNPJ + celular de encaminhamento em Configurações → Telefonia, ligar de um celular externo pro número atribuído e confirmar: o celular de encaminhamento toca, a chamada aparece em `calls` com `direction='inbound'`, e **nenhum** débito é criado em `wallet_transactions` pra essa chamada.
+- [ ] Testar o fluxo admin de atribuir/liberar número manualmente (`AdminNumberPool`) com um segundo perfil de teste antes de usar em cliente real.
+- [ ] **Testar e2e a Fase 8 (Asaas)** (implementada em 2026-07-17, aguardando credenciais de sandbox): aplicar a migration `20260718000000_profiles_subscription.sql` e confirmar que todas as contas existentes ficaram com `subscription_status='active', subscription_source='beta_grandfather'`; configurar `ASAAS_API_KEY`/`ASAAS_WEBHOOK_TOKEN`/`ASAAS_SANDBOX=true` na Vercel; testar assinatura (QR Pix → webhook ativa `subscription_status`) e recarga (QR Pix → crédito em `wallet_transactions`) em sandbox; confirmar que reenviar o mesmo webhook duas vezes não duplica crédito (idempotência do `credit_wallet`); confirmar que uma conta nova (sem grandfather) é bloqueada em `/api/calls/token` até assinar.
+- [ ] **Decidir o gating de CRM/leads/templates pra quem não tem assinatura ativa.** Direção apontada (não implementada): visualizar CRM e busca de leads livre, mas travar ações de escrita (adicionar lead, criar template, etc.) sem assinatura — precisa ser detalhado antes de implementar (quais ações exatamente ficam travadas, mensagem de bloqueio, etc.). O bloqueio de ligações (`token/route.ts`) já está implementado e não depende dessa decisão.
+
+---
+
 ## Tarifas de consumo (referência)
 
 | Ação | Tarifa | Cálculo |
@@ -483,9 +492,9 @@ Fluxo de compra:
 
 ---
 
-## Fase 8 — Integração Asaas (ÚLTIMA — aguardando conta)
+## Fase 8 — Integração Asaas
 
-> Não implementar até ter conta Asaas ativa e credenciais de sandbox.
+> **[Atualizado 2026-07-17]** Implementada (`src/services/asaasService.ts`, `src/app/api/asaas/webhook`, `src/app/api/wallet/recharge`, `SubscribeForm`/`RechargeForm` em Configurações). Desambiguação entre assinatura e recarga é via `externalReference` (`subscription:<userId>` | `recharge:<userId>`), não via `description` como o rascunho original em 8.2 sugeria. Assinatura usa `billingType: 'UNDEFINED'` (Asaas oferece Pix e cartão no checkout). Bloqueio de ligação sem assinatura ativa implementado em `token/route.ts`; contas existentes antes desta fase foram marcadas `subscription_status='active', subscription_source='beta_grandfather'` via migration, então não foram afetadas. Falta só validar de ponta a ponta com credenciais de sandbox — ver "Pendências / débitos técnicos".
 
 ### Contexto e decisões
 
@@ -528,12 +537,13 @@ ASAAS_SANDBOX=true      # false em produção
   - Polling a cada 3s para detectar pagamento confirmado e atualizar saldo na tela
 
 **Checklist Fase 8:**
-- [ ] Conta Asaas criada e credenciais de sandbox disponíveis
-- [ ] `POST /api/asaas/webhook` implementado com validação do `ASAAS_WEBHOOK_TOKEN`
-- [ ] Assinatura recorrente: webhook `PAYMENT_CONFIRMED` ativa o usuário
-- [ ] Recarga: rota gera QR Code Pix + webhook credita saldo
-- [ ] UI de recarga na página de plano
-- [ ] Testar em sandbox: recarga de R$ 30 → verificar crédito em `wallet_transactions`
+- [x] Conta Asaas criada
+- [x] `POST /api/asaas/webhook` implementado com validação do `ASAAS_WEBHOOK_TOKEN`
+- [x] Assinatura recorrente: webhook `PAYMENT_CONFIRMED`/`PAYMENT_RECEIVED` ativa o usuário
+- [x] Recarga: rota gera QR Code Pix + webhook credita saldo
+- [x] UI de assinatura e recarga em Configurações
+- [x] Bloqueio de ligação sem assinatura ativa (`token/route.ts`)
+- [ ] Credenciais de sandbox configuradas na Vercel e testadas de ponta a ponta (ver "Pendências / débitos técnicos")
 - [ ] Deploy em main com `ASAAS_SANDBOX=false`
 
 ---

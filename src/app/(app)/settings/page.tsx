@@ -5,6 +5,7 @@ import { getGmailConnection, getGmailRequest } from '@/repositories/gmailReposit
 import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
 import { getBalance, getTransactions } from '@/repositories/walletRepository'
 import { getAssignedNumber, getAvailableNumbers } from '@/repositories/telnyxNumberRepository'
+import { getProfileById } from '@/repositories/profileRepository'
 import type { GmailRequestStatus } from '@/types/gmail'
 import type { WalletTransaction } from '@/repositories/walletRepository'
 import { CompanyProfileForm } from '@/features/settings/components/CompanyProfileForm'
@@ -12,6 +13,8 @@ import { GmailConnectionCard } from '@/features/gmail/components/GmailConnection
 import { TelephonySettingsForm } from '@/features/calls/components/TelephonySettingsForm'
 import { NumberClaimForm } from '@/features/calls/components/NumberClaimForm'
 import { ForwardingDetailsForm } from '@/features/calls/components/ForwardingDetailsForm'
+import { SubscribeForm } from '@/features/settings/components/SubscribeForm'
+import { RechargeForm } from '@/features/settings/components/RechargeForm'
 import { PageHeader } from '@/components/layout/PageHeader'
 
 type Section = 'empresa' | 'gmail' | 'telefonia' | 'carteira' | 'idioma' | 'aparencia' | 'plano'
@@ -62,16 +65,7 @@ function WalletSection({ balance, transactions }: { balance: number; transaction
       </div>
 
       {/* Recarga */}
-      <div className="rounded-xl border border-outline bg-surface-container p-6 shadow-card">
-        <p className="text-sm font-semibold text-on-surface">Recarregar créditos</p>
-        <p className="mt-1 text-sm text-on-surface-muted">Pagamento por PIX disponível em breve.</p>
-        <button
-          disabled
-          className="mt-4 w-full cursor-not-allowed rounded-lg bg-surface-low px-4 py-2.5 text-sm font-medium text-on-surface-muted"
-        >
-          PIX — Em breve
-        </button>
-      </div>
+      <RechargeForm />
 
       {/* Extrato */}
       {transactions.length > 0 && (
@@ -133,7 +127,7 @@ export default async function SettingsPage({ searchParams }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [company, gmailConnection, gmailRequest, telephonySettings, walletBalance, walletTransactions, assignedNumber] = await Promise.all([
+  const [company, gmailConnection, gmailRequest, telephonySettings, walletBalance, walletTransactions, assignedNumber, profile] = await Promise.all([
     getCompanyProfileByUserId(supabase, user.id),
     getGmailConnection(supabase, user.id),
     getGmailRequest(supabase, user.id),
@@ -143,6 +137,7 @@ export default async function SettingsPage({ searchParams }: Props) {
     section === 'telefonia' && process.env.TELEPHONY_PROVIDER === 'telnyx'
       ? getAssignedNumber(supabase, user.id)
       : Promise.resolve(null),
+    section === 'plano' ? getProfileById(supabase, user.id) : Promise.resolve(null),
   ])
 
   const availableNumbers = (section === 'telefonia' && process.env.TELEPHONY_PROVIDER === 'telnyx' && !assignedNumber)
@@ -297,46 +292,26 @@ export default async function SettingsPage({ searchParams }: Props) {
               <p className="mt-1 text-sm text-on-surface-muted">Seu plano atual e opções disponíveis.</p>
             </div>
 
-            <div className="mb-4 rounded-xl border border-primary/30 bg-primary/5 p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-primary">Plano atual</p>
-                  <p className="mt-1 text-xl font-bold text-on-surface font-[--font-heading]">Beta Gratuito</p>
+            {profile?.subscription_status === 'active' ? (
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-primary">Plano atual</p>
+                    <p className="mt-1 text-xl font-bold text-on-surface font-[--font-heading]">Prospecta — R$ 150,00/mês</p>
+                  </div>
+                  <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Ativo</span>
                 </div>
-                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Ativo</span>
+                <p className="mt-4 text-xs text-on-surface-muted">
+                  {profile.subscription_source === 'manual'
+                    ? 'Acesso liberado manualmente pela equipe Prospecta.'
+                    : profile.subscription_source === 'beta_grandfather'
+                      ? 'Acesso de cortesia (conta anterior à cobrança).'
+                      : 'Assinatura via Asaas.'}
+                </p>
               </div>
-              <ul className="mt-4 space-y-2">
-                {['20 leads gratuitos', 'Templates de email', 'Gestão de leads', 'Acompanhamentos'].map((b) => (
-                  <li key={b} className="flex items-center gap-2 text-sm text-on-surface">
-                    <span className="text-primary">✓</span>
-                    {b}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="rounded-xl border border-outline bg-surface-container p-6 shadow-card">
-              <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-on-surface-muted">
-                Em breve
-              </p>
-              <p className="text-base font-bold text-on-surface font-[--font-heading]">Prospecta Starter</p>
-              <div className="mt-1 flex items-baseline gap-1">
-                <span className="text-2xl font-bold text-on-surface">R$ 49,90</span>
-                <span className="text-sm text-on-surface-muted">/mês</span>
-              </div>
-              <ul className="mt-4 space-y-2">
-                <li className="flex items-center gap-2 text-sm text-on-surface-muted">
-                  <span>✓</span>
-                  200 leads por mês
-                </li>
-              </ul>
-              <button
-                disabled
-                className="mt-5 w-full cursor-not-allowed rounded-lg bg-surface-low px-4 py-2.5 text-sm font-medium text-on-surface-muted"
-              >
-                Em breve
-              </button>
-            </div>
+            ) : (
+              <SubscribeForm needsCpfCnpj={!company?.cpf_cnpj} />
+            )}
           </div>
         )}
 
