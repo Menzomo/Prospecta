@@ -3,15 +3,17 @@
 import { useState } from 'react'
 import { disconnectGmailAction } from '@/features/gmail/actions'
 import { requestGmailAccessAction } from '@/features/gmail/actions'
+import { SubscriptionGateCard } from '@/components/SubscriptionGateCard'
 import type { GmailConnection, GmailRequestStatus } from '@/types/gmail'
 
 type Props = {
   connection: GmailConnection | null
   requestStatus: GmailRequestStatus
   requestEmail: string | null
+  canWrite?: boolean
 }
 
-export function GmailConnectionCard({ connection, requestStatus, requestEmail }: Props) {
+export function GmailConnectionCard({ connection, requestStatus, requestEmail, canWrite = true }: Props) {
   const isConnected = connection !== null && connection.is_connected
 
   // Request form state (only used when not_requested)
@@ -79,12 +81,16 @@ export function GmailConnectionCard({ connection, requestStatus, requestEmail }:
           <span>✓</span>
           <span>{isReconnect ? 'Pronto para reconectar' : 'Gmail liberado — você já pode conectar'}</span>
         </div>
-        <a
-          href="/api/gmail/connect"
-          className="block w-full rounded-lg bg-primary px-4 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-primary-dark"
-        >
-          {isReconnect ? 'Reconectar Gmail' : 'Conectar Gmail'}
-        </a>
+        {canWrite ? (
+          <a
+            href="/api/gmail/connect"
+            className="block w-full rounded-lg bg-primary px-4 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-primary-dark"
+          >
+            {isReconnect ? 'Reconectar Gmail' : 'Conectar Gmail'}
+          </a>
+        ) : (
+          <SubscriptionGateCard compact description="Assine pra conectar o Gmail." />
+        )}
       </div>
     )
   }

@@ -3,11 +3,12 @@ import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { listTemplates } from '@/repositories/templateRepository'
 import { getCompanyProfileByUserId } from '@/repositories/companyProfileRepository'
-import { getProfileById } from '@/repositories/profileRepository'
+import { getProfileById, isAdminUser } from '@/repositories/profileRepository'
 import { getGmailConnection } from '@/repositories/gmailRepository'
 import { listAttachmentsByTemplateIds } from '@/repositories/templateAttachmentRepository'
 import { sendEmailFromUserLeadAction } from '@/features/email/actions'
 import { SendEmailForm } from '@/features/email/components/SendEmailForm'
+import { SubscriptionGateCard } from '@/components/SubscriptionGateCard'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -60,6 +61,7 @@ export default async function SendEmailFromGlobalLeadPage({ params }: Props) {
 
   const isGmailConnected = connection !== null && connection.is_connected
   const boundAction = sendEmailFromUserLeadAction.bind(null, id)
+  const canWrite = isAdminUser(user.id) || profile?.subscription_status === 'active'
 
   return (
     <>
@@ -96,7 +98,9 @@ export default async function SendEmailFromGlobalLeadPage({ params }: Props) {
             {gl.email && <p className="text-sm text-gray-500">{gl.email}</p>}
           </div>
 
-          {templates.length === 0 ? (
+          {!canWrite ? (
+            <SubscriptionGateCard description="Assine o Prospecta pra enviar emails pros seus leads." />
+          ) : templates.length === 0 ? (
             <div className="rounded-xl border border-gray-200 bg-white p-6 text-center shadow-sm">
               <p className="text-sm text-gray-500">Nenhum template criado ainda.</p>
               <Link

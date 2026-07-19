@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { TemplateCreateForm } from '@/features/templates/components/TemplateCreateForm'
+import { hasActiveSubscription } from '@/repositories/profileRepository'
+import { SubscriptionGateCard } from '@/components/SubscriptionGateCard'
 
 type Props = { searchParams: Promise<{ returnTo?: string; step?: string }> }
 
@@ -12,6 +14,8 @@ export default async function NewTemplatePage({ searchParams }: Props) {
   } = await supabase.auth.getUser()
 
   if (!user) redirect('/login')
+
+  const canWrite = await hasActiveSubscription(supabase, user.id)
 
   const { returnTo, step } = await searchParams
   const safeReturnTo =
@@ -36,7 +40,7 @@ export default async function NewTemplatePage({ searchParams }: Props) {
         <div className="flex flex-1 justify-center overflow-auto p-6">
           <div className="w-full max-w-lg">
             <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-              <TemplateCreateForm returnTo={returnToFull} />
+              {canWrite ? <TemplateCreateForm returnTo={returnToFull} /> : <SubscriptionGateCard />}
             </div>
           </div>
         </div>
@@ -59,7 +63,7 @@ export default async function NewTemplatePage({ searchParams }: Props) {
       <main className="flex flex-1 justify-center p-6">
         <div className="w-full max-w-lg">
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <TemplateCreateForm />
+            {canWrite ? <TemplateCreateForm /> : <SubscriptionGateCard />}
           </div>
         </div>
       </main>

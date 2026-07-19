@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import type { TemplateAttachment } from '@/repositories/templateAttachmentRepository'
+import { SubscriptionGateCard } from '@/components/SubscriptionGateCard'
 
 const ALLOWED_MIME = [
   'application/pdf',
@@ -26,9 +27,10 @@ function formatBytes(bytes: number): string {
 interface Props {
   templateId: string
   initialAttachments: TemplateAttachment[]
+  canWrite?: boolean
 }
 
-export function TemplateAttachments({ templateId, initialAttachments }: Props) {
+export function TemplateAttachments({ templateId, initialAttachments, canWrite = true }: Props) {
   const [attachments, setAttachments] = useState<TemplateAttachment[]>(initialAttachments)
   const [uploading, setUploading] = useState(false)
   const [removing, setRemoving] = useState<string | null>(null)
@@ -106,22 +108,30 @@ export function TemplateAttachments({ templateId, initialAttachments }: Props) {
         <span className="text-sm font-medium text-gray-700">
           Anexos <span className="text-gray-400">({attachments.length}/{MAX_COUNT})</span>
         </span>
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={uploading || attachments.length >= MAX_COUNT}
-          className="cursor-pointer rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {uploading ? 'Enviando...' : '+ Adicionar arquivo'}
-        </button>
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.txt"
-          className="hidden"
-          onChange={handleFile}
-        />
+        {canWrite && (
+          <>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={uploading || attachments.length >= MAX_COUNT}
+              className="cursor-pointer rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {uploading ? 'Enviando...' : '+ Adicionar arquivo'}
+            </button>
+            <input
+              ref={inputRef}
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.txt"
+              className="hidden"
+              onChange={handleFile}
+            />
+          </>
+        )}
       </div>
+
+      {!canWrite && (
+        <SubscriptionGateCard compact description="Assine pra gerenciar anexos." />
+      )}
 
       {error && (
         <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>
@@ -138,14 +148,16 @@ export function TemplateAttachments({ templateId, initialAttachments }: Props) {
                 <span className="truncate font-medium text-gray-800">{att.file_name}</span>
                 <span className="text-xs text-gray-400 uppercase">{att.file_type} · {formatBytes(att.file_size)}</span>
               </div>
-              <button
-                type="button"
-                onClick={() => handleRemove(att.id)}
-                disabled={removing === att.id}
-                className="ml-4 cursor-pointer shrink-0 text-xs text-red-500 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {removing === att.id ? 'Removendo...' : 'Remover'}
-              </button>
+              {canWrite && (
+                <button
+                  type="button"
+                  onClick={() => handleRemove(att.id)}
+                  disabled={removing === att.id}
+                  className="ml-4 cursor-pointer shrink-0 text-xs text-red-500 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {removing === att.id ? 'Removendo...' : 'Remover'}
+                </button>
+              )}
             </li>
           ))}
         </ul>

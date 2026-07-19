@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getTemplateById } from '@/repositories/templateRepository'
 import { createAttachment, countAttachmentsByTemplate } from '@/repositories/templateAttachmentRepository'
+import { hasActiveSubscription } from '@/repositories/profileRepository'
 
 const ALLOWED_TYPES: Record<string, string> = {
   'application/pdf': 'pdf',
@@ -25,6 +26,13 @@ export async function POST(request: Request, { params }: RouteParams) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+
+  if (!(await hasActiveSubscription(supabase, user.id))) {
+    return NextResponse.json(
+      { error: 'Assinatura necessária para gerenciar anexos.', code: 'assinatura_necessaria' },
+      { status: 402 }
+    )
+  }
 
   const template = await getTemplateById(supabase, templateId)
   if (!template || template.user_id !== user.id) {

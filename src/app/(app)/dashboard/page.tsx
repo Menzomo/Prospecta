@@ -4,6 +4,7 @@ import { getCompanyProfileByUserId } from '@/repositories/companyProfileReposito
 import { getSyncStatus, touchEmailSync } from '@/repositories/userSyncStatusRepository'
 import { getDashboardData } from '@/features/dashboard/services/dashboardService'
 import { syncGmailForUser } from '@/services/gmailUserSyncService'
+import { hasActiveSubscription } from '@/repositories/profileRepository'
 import { DashboardKpis } from '@/features/dashboard/components/DashboardKpis'
 import { CallsKpis } from '@/features/dashboard/components/CallsKpis'
 import { RecentReplies } from '@/features/dashboard/components/RecentReplies'
@@ -39,7 +40,10 @@ export default async function DashboardPage() {
     ])
   }
 
-  const dashboard = await getDashboardData(supabase, user.id)
+  const [dashboard, canWrite] = await Promise.all([
+    getDashboardData(supabase, user.id),
+    hasActiveSubscription(supabase, user.id),
+  ])
 
   return (
     <main className="flex flex-col gap-6 p-6">
@@ -64,7 +68,7 @@ export default async function DashboardPage() {
 
           {/* 1/3 — Follow-ups */}
           <div className="xl:col-span-1">
-            <FollowUpList followups={dashboard.nextFollowups} />
+            <FollowUpList followups={dashboard.nextFollowups} canWrite={canWrite} />
           </div>
         </div>
       </div>

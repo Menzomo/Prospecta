@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getGmailConnection, getGmailRequest } from '@/repositories/gmailRepository'
+import { hasActiveSubscription } from '@/repositories/profileRepository'
 import { GmailConnectionCard } from '@/features/gmail/components/GmailConnectionCard'
 import type { GmailRequestStatus } from '@/types/gmail'
 
@@ -29,9 +30,10 @@ export default async function GmailSettingsPage({ searchParams }: Props) {
 
   if (!user) redirect('/login')
 
-  const [connection, gmailRequest] = await Promise.all([
+  const [connection, gmailRequest, canWrite] = await Promise.all([
     getGmailConnection(supabase, user.id),
     getGmailRequest(supabase, user.id),
+    hasActiveSubscription(supabase, user.id),
   ])
 
   const errorMessage = error ? (ERROR_MESSAGES[error] ?? 'Erro desconhecido. Tente novamente.') : null
@@ -62,6 +64,7 @@ export default async function GmailSettingsPage({ searchParams }: Props) {
             connection={connection}
             requestStatus={requestStatus}
             requestEmail={gmailRequest?.gmail_request_email ?? null}
+            canWrite={canWrite}
           />
         </div>
       </main>

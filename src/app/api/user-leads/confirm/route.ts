@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { countLeadsAddedThisMonth } from '@/features/search/repositories/searchRepository'
 import { createUserLead } from '@/repositories/userLeadRepository'
+import { hasActiveSubscription } from '@/repositories/profileRepository'
 
 const MONTHLY_LIMIT = 20
 
@@ -24,6 +25,13 @@ export async function POST(request: NextRequest) {
 
   if (!user) {
     return Response.json({ error: 'Não autenticado' }, { status: 401 })
+  }
+
+  if (!(await hasActiveSubscription(supabase, user.id))) {
+    return Response.json(
+      { error: 'Assinatura necessária para adicionar leads.', code: 'assinatura_necessaria' },
+      { status: 402 }
+    )
   }
 
   let body: unknown

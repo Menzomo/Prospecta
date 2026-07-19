@@ -4,11 +4,12 @@ import { createClient } from '@/lib/supabase/server'
 import { getLeadById } from '@/repositories/leadRepository'
 import { listTemplates } from '@/repositories/templateRepository'
 import { getCompanyProfileByUserId } from '@/repositories/companyProfileRepository'
-import { getProfileById } from '@/repositories/profileRepository'
+import { getProfileById, isAdminUser } from '@/repositories/profileRepository'
 import { getGmailConnection } from '@/repositories/gmailRepository'
 import { listAttachmentsByTemplateIds } from '@/repositories/templateAttachmentRepository'
 import { sendEmailAction } from '@/features/email/actions'
 import { SendEmailForm } from '@/features/email/components/SendEmailForm'
+import { SubscriptionGateCard } from '@/components/SubscriptionGateCard'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -45,6 +46,7 @@ export default async function SendEmailPage({ params }: Props) {
   if (!lead) notFound()
 
   const isGmailConnected = connection !== null && connection.is_connected
+  const canWrite = isAdminUser(user.id) || profile?.subscription_status === 'active'
 
   return (
     <>
@@ -83,7 +85,9 @@ export default async function SendEmailPage({ params }: Props) {
             )}
           </div>
 
-          {templates.length === 0 ? (
+          {!canWrite ? (
+            <SubscriptionGateCard description="Assine o Prospecta pra enviar emails pros seus leads." />
+          ) : templates.length === 0 ? (
             <div className="rounded-xl border border-gray-200 bg-white p-6 text-center shadow-sm">
               <p className="text-sm text-gray-500">Nenhum template criado ainda.</p>
               <Link href="/templates/new" className="mt-2 inline-block text-sm text-blue-600 hover:underline">

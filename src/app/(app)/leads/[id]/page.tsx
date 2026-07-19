@@ -7,6 +7,8 @@ import { getFollowupsByLeadId } from '@/repositories/followupRepository'
 import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
 import { getCallsWithAnalysisByLeadId } from '@/repositories/callRepository'
 import { hideLeadAction } from '@/features/leads/actions'
+import { hasActiveSubscription } from '@/repositories/profileRepository'
+import { SubscriptionGateCard } from '@/components/SubscriptionGateCard'
 import { LeadEditForm } from '@/features/leads/components/LeadEditForm'
 import { LeadTimeline } from '@/features/leads/components/LeadTimeline'
 import { LeadRepliesButton } from '@/features/leads/components/LeadRepliesButton'
@@ -35,12 +37,13 @@ export default async function LeadDetailPage({ params }: Props) {
   const lead = await getLeadById(supabase, id)
   if (!lead) notFound()
 
-  const [emailMessages, followups, emailThreads, telephonySettings, calls] = await Promise.all([
+  const [emailMessages, followups, emailThreads, telephonySettings, calls, canWrite] = await Promise.all([
     getEmailMessagesByLeadId(supabase, user.id, id),
     getFollowupsByLeadId(supabase, user.id, id),
     getEmailThreadsByLeadId(supabase, user.id, id),
     getTelephonySettings(supabase, user.id),
     getCallsWithAnalysisByLeadId(supabase, user.id, id),
+    hasActiveSubscription(supabase, user.id),
   ])
 
   const status = lead.status as LeadStatus
@@ -73,14 +76,16 @@ export default async function LeadDetailPage({ params }: Props) {
             >
               Enviar email
             </Link>
-            <form action={hideLeadAction.bind(null, lead.id)}>
-              <button
-                type="submit"
-                className="cursor-pointer rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-50"
-              >
-                Ocultar lead
-              </button>
-            </form>
+            {canWrite && (
+              <form action={hideLeadAction.bind(null, lead.id)}>
+                <button
+                  type="submit"
+                  className="cursor-pointer rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-50"
+                >
+                  Ocultar lead
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </header>
@@ -112,7 +117,7 @@ export default async function LeadDetailPage({ params }: Props) {
             {/* Left: edit form */}
             <div className="rounded-xl border border-outline bg-surface-container p-6 shadow-card">
               <h2 className="mb-4 text-base font-semibold text-on-surface font-[--font-heading]">Editar dados</h2>
-              <LeadEditForm lead={lead} />
+              {canWrite ? <LeadEditForm lead={lead} /> : <SubscriptionGateCard compact description="Assine pra editar os dados do lead." />}
             </div>
 
             {/* Right: emails + calls stacked */}
@@ -122,7 +127,7 @@ export default async function LeadDetailPage({ params }: Props) {
             </div>
           </div>
 
-          <LeadFollowupSection leadId={lead.id} followups={followups} />
+          <LeadFollowupSection leadId={lead.id} followups={followups} canWrite={canWrite} />
 
           <LeadTimeline lead={lead} messages={emailMessages} followups={followups} threads={emailThreads} calls={calls} />
         </div>

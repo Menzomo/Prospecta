@@ -18,7 +18,7 @@ export type LeadCardData = {
   status: LeadStatus
   leadHref: string
   sendHref: string
-  hideAction: (_formData: FormData) => Promise<void>
+  hideAction?: (_formData: FormData) => Promise<void>
   leadId?: string | null
   userLeadId?: string | null
 }
@@ -73,14 +73,16 @@ export function LeadsGrid({ leads, hasSettings = false }: { leads: LeadCardData[
               >
                 Detalhes
               </Link>
-              <form action={lead.hideAction}>
-                <button
-                  type="submit"
-                  className="cursor-pointer rounded-md px-3 py-1.5 text-xs text-on-surface-muted transition-colors hover:bg-red-50 hover:text-red-500"
-                >
-                  Ocultar
-                </button>
-              </form>
+              {lead.hideAction && (
+                <form action={lead.hideAction}>
+                  <button
+                    type="submit"
+                    className="cursor-pointer rounded-md px-3 py-1.5 text-xs text-on-surface-muted transition-colors hover:bg-red-50 hover:text-red-500"
+                  >
+                    Ocultar
+                  </button>
+                </form>
+              )}
             </div>
           </div>
         ))}
