@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { buildGoogleOAuthUrl } from '@/services/gmailService'
+import { hasActiveSubscription } from '@/repositories/profileRepository'
 
 export async function GET() {
   const supabase = await createClient()
@@ -10,6 +11,11 @@ export async function GET() {
 
   if (!user) {
     return NextResponse.redirect(new URL('/login', process.env.NEXT_PUBLIC_SUPABASE_URL))
+  }
+
+  if (!(await hasActiveSubscription(supabase, user.id))) {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
+    return NextResponse.redirect(new URL('/settings?section=plano', appUrl))
   }
 
   let oauthUrl: string

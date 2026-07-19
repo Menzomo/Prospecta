@@ -5,6 +5,8 @@ import { hideUserLeadAction, updateUserLeadStatusAction } from '@/features/leads
 import { getFollowupsByUserLeadId } from '@/repositories/followupRepository'
 import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
 import { getCallsWithAnalysisByUserLeadId } from '@/repositories/callRepository'
+import { hasActiveSubscription } from '@/repositories/profileRepository'
+import { SubscriptionGateCard } from '@/components/SubscriptionGateCard'
 import { LeadFollowupSection } from '@/features/followups/components/LeadFollowupSection'
 import { LeadCallsSection } from '@/features/calls/components/LeadCallsSection'
 import { MarkInboxRead } from '@/features/inbox/components/MarkInboxRead'
@@ -46,10 +48,11 @@ export default async function UserLeadDetailPage({ params }: Props) {
     state: string | null
   }
 
-  const [followups, telephonySettings, calls] = await Promise.all([
+  const [followups, telephonySettings, calls, canWrite] = await Promise.all([
     getFollowupsByUserLeadId(supabase, user.id, id),
     getTelephonySettings(supabase, user.id),
     getCallsWithAnalysisByUserLeadId(supabase, user.id, id),
+    hasActiveSubscription(supabase, user.id),
   ])
 
   const status = data.status as LeadStatus
@@ -83,14 +86,16 @@ export default async function UserLeadDetailPage({ params }: Props) {
                 Enviar email
               </Link>
             )}
-            <form action={hideUserLeadAction.bind(null, id)}>
-              <button
-                type="submit"
-                className="cursor-pointer rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-50"
-              >
-                Ocultar lead
-              </button>
-            </form>
+            {canWrite && (
+              <form action={hideUserLeadAction.bind(null, id)}>
+                <button
+                  type="submit"
+                  className="cursor-pointer rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-50"
+                >
+                  Ocultar lead
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </header>
@@ -155,29 +160,33 @@ export default async function UserLeadDetailPage({ params }: Props) {
           {/* Update status */}
           <div className="rounded-xl border border-outline bg-surface-container p-6 shadow-card">
             <h2 className="mb-4 text-base font-semibold text-on-surface font-[--font-heading]">Alterar status</h2>
-            <form action={updateUserLeadStatusAction.bind(null, id)} className="flex gap-3">
-              <select
-                name="status"
-                defaultValue={status}
-                className="flex-1 rounded-lg border border-outline px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-              >
-                {LEAD_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {LEAD_STATUS_LABELS[s]}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                className="cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
-              >
-                Salvar
-              </button>
-            </form>
+            {canWrite ? (
+              <form action={updateUserLeadStatusAction.bind(null, id)} className="flex gap-3">
+                <select
+                  name="status"
+                  defaultValue={status}
+                  className="flex-1 rounded-lg border border-outline px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                >
+                  {LEAD_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {LEAD_STATUS_LABELS[s]}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="submit"
+                  className="cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
+                >
+                  Salvar
+                </button>
+              </form>
+            ) : (
+              <SubscriptionGateCard compact description="Assine pra alterar o status do lead." />
+            )}
           </div>
 
           {/* Followups */}
-          <LeadFollowupSection userLeadId={id} followups={followups} />
+          <LeadFollowupSection userLeadId={id} followups={followups} canWrite={canWrite} />
 
           {/* Calls */}
           <LeadCallsSection calls={calls} userLeadId={id} />

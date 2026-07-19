@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getTemplateById } from '@/repositories/templateRepository'
 import { listAttachmentsByTemplate } from '@/repositories/templateAttachmentRepository'
 import { deleteTemplateAction } from '@/features/templates/actions'
+import { hasActiveSubscription } from '@/repositories/profileRepository'
+import { SubscriptionGateCard } from '@/components/SubscriptionGateCard'
 import { TemplateEditForm } from '@/features/templates/components/TemplateEditForm'
 import { TemplateAttachments } from '@/features/templates/components/TemplateAttachments'
 
@@ -24,7 +26,10 @@ export default async function TemplateDetailPage({ params }: Props) {
   const template = await getTemplateById(supabase, id)
   if (!template) notFound()
 
-  const attachments = await listAttachmentsByTemplate(supabase, id)
+  const [attachments, canWrite] = await Promise.all([
+    listAttachmentsByTemplate(supabase, id),
+    hasActiveSubscription(supabase, user.id),
+  ])
 
   return (
     <>
@@ -38,14 +43,16 @@ export default async function TemplateDetailPage({ params }: Props) {
             <h1 className="text-lg font-semibold text-gray-900">{template.name}</h1>
           </div>
 
-          <form action={deleteTemplateAction.bind(null, template.id)}>
-            <button
-              type="submit"
-              className="rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-50"
-            >
-              Excluir template
-            </button>
-          </form>
+          {canWrite && (
+            <form action={deleteTemplateAction.bind(null, template.id)}>
+              <button
+                type="submit"
+                className="rounded-lg border border-red-200 px-3 py-1.5 text-sm text-red-600 transition-colors hover:bg-red-50"
+              >
+                Excluir template
+              </button>
+            </form>
+          )}
         </div>
       </header>
 
@@ -53,12 +60,16 @@ export default async function TemplateDetailPage({ params }: Props) {
         <div className="flex w-full max-w-lg flex-col gap-6">
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
             <h2 className="mb-4 text-base font-semibold text-gray-900">Editar template</h2>
-            <TemplateEditForm template={template} />
+            {canWrite ? (
+              <TemplateEditForm template={template} />
+            ) : (
+              <SubscriptionGateCard compact description="Assine pra editar este template." />
+            )}
           </div>
 
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
             <h2 className="mb-4 text-base font-semibold text-gray-900">Anexos</h2>
-            <TemplateAttachments templateId={id} initialAttachments={attachments} />
+            <TemplateAttachments templateId={id} initialAttachments={attachments} canWrite={canWrite} />
           </div>
         </div>
       </main>

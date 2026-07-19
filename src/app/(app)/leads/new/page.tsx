@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { LeadCreateForm } from '@/features/leads/components/LeadCreateForm'
+import { hasActiveSubscription } from '@/repositories/profileRepository'
+import { SubscriptionGateCard } from '@/components/SubscriptionGateCard'
 
 export default async function NewLeadPage() {
   const supabase = await createClient()
@@ -10,6 +12,8 @@ export default async function NewLeadPage() {
   } = await supabase.auth.getUser()
 
   if (!user) redirect('/login')
+
+  const canWrite = await hasActiveSubscription(supabase, user.id)
 
   return (
     <>
@@ -26,7 +30,7 @@ export default async function NewLeadPage() {
       <main className="flex flex-1 justify-center p-6">
         <div className="w-full max-w-lg">
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <LeadCreateForm />
+            {canWrite ? <LeadCreateForm /> : <SubscriptionGateCard />}
           </div>
         </div>
       </main>

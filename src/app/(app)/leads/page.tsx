@@ -6,6 +6,7 @@ import { getUserLeadsWithGlobalData } from '@/repositories/userLeadRepository'
 import { listLeadCategories } from '@/repositories/leadCategoryRepository'
 import { hideLeadAction, hideUserLeadAction } from '@/features/leads/actions'
 import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
+import { hasActiveSubscription } from '@/repositories/profileRepository'
 import type { LeadStatus } from '@/types/leads'
 import type { LeadCategory } from '@/types/globalLeads'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -17,11 +18,12 @@ export default async function LeadsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [manualLeads, searchLeads, categories, telephonySettings] = await Promise.all([
+  const [manualLeads, searchLeads, categories, telephonySettings, canWrite] = await Promise.all([
     getLeadsByUserId(supabase, user.id),
     getUserLeadsWithGlobalData(supabase, user.id),
     listLeadCategories(supabase),
     getTelephonySettings(supabase, user.id),
+    hasActiveSubscription(supabase, user.id),
   ])
 
   const hasSettings = telephonySettings !== null
@@ -41,7 +43,7 @@ export default async function LeadsPage() {
       status: lead.status as LeadStatus,
       leadHref: `/leads/global/${lead.id}`,
       sendHref: `/leads/global/${lead.id}/send`,
-      hideAction: hideUserLeadAction.bind(null, lead.id),
+      hideAction: canWrite ? hideUserLeadAction.bind(null, lead.id) : undefined,
       userLeadId: lead.id,
     })),
     ...manualLeads.map((lead): LeadCardData => ({
@@ -54,7 +56,7 @@ export default async function LeadsPage() {
       status: lead.status as LeadStatus,
       leadHref: `/leads/${lead.id}`,
       sendHref: `/leads/${lead.id}/send`,
-      hideAction: hideLeadAction.bind(null, lead.id),
+      hideAction: canWrite ? hideLeadAction.bind(null, lead.id) : undefined,
       leadId: lead.id,
     })),
   ]

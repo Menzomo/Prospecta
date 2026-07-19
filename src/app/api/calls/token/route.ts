@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { generateToken } from '@/services/callService'
 import { getBalance } from '@/repositories/walletRepository'
-import { getProfileById } from '@/repositories/profileRepository'
+import { isAdminUser, hasActiveSubscription } from '@/repositories/profileRepository'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,12 +15,10 @@ export async function POST(_request: NextRequest) {
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   // Admins são isentos de verificação de saldo e assinatura
-  const adminIds = (process.env.ADMIN_USER_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean)
-  const isAdmin  = adminIds.includes(user.id)
+  const isAdmin = isAdminUser(user.id)
 
   if (!isAdmin) {
-    const profile = await getProfileById(supabase, user.id)
-    if (profile?.subscription_status !== 'active') {
+    if (!(await hasActiveSubscription(supabase, user.id))) {
       return Response.json(
         { error: 'Assinatura necessária para fazer ligações. Acesse Configurações → Assinatura.', code: 'assinatura_necessaria' },
         { status: 402 }

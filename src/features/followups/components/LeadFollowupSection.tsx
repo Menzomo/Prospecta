@@ -1,14 +1,16 @@
 import { FollowupCreateForm } from '@/features/followups/components/FollowupCreateForm'
 import { FollowupItem } from '@/features/followups/components/FollowupItem'
+import { SubscriptionGateCard } from '@/components/SubscriptionGateCard'
 import type { Followup } from '@/types/followups'
 
 type Props = {
   leadId?: string | null
   userLeadId?: string | null
   followups: Followup[]
+  canWrite?: boolean
 }
 
-export function LeadFollowupSection({ leadId, userLeadId, followups }: Props) {
+export function LeadFollowupSection({ leadId, userLeadId, followups, canWrite = true }: Props) {
   const pending = followups.filter((f) => f.status === 'pending')
 
   return (
@@ -25,12 +27,17 @@ export function LeadFollowupSection({ leadId, userLeadId, followups }: Props) {
               followup={followup}
               leadId={leadId ?? null}
               userLeadId={userLeadId ?? null}
+              canWrite={canWrite}
             />
           ))}
         </div>
       )}
 
-      <FollowupCreateForm leadId={leadId ?? null} userLeadId={userLeadId ?? null} />
+      {canWrite ? (
+        <FollowupCreateForm leadId={leadId ?? null} userLeadId={userLeadId ?? null} />
+      ) : (
+        <SubscriptionGateCard compact description="Assine pra criar acompanhamentos." />
+      )}
     </div>
   )
 }

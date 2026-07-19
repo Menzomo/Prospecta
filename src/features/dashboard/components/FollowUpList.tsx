@@ -6,6 +6,7 @@ import type { NextFollowup } from '../services/dashboardService'
 
 type Props = {
   followups: NextFollowup[]
+  canWrite?: boolean
 }
 
 const MONTH_ABBR = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
@@ -23,7 +24,7 @@ function parseDueAt(timestamp: string) {
   }
 }
 
-export function FollowUpList({ followups }: Props) {
+export function FollowUpList({ followups, canWrite = true }: Props) {
   if (followups.length === 0) {
     return (
       <div className="rounded-xl border border-outline bg-surface-container shadow-card">
@@ -87,7 +88,7 @@ export function FollowUpList({ followups }: Props) {
                   {isNoReply ? 'Sem resposta ao último email' : f.title}
                 </p>
 
-                {isNoReplyOverdue && (
+                {isNoReplyOverdue && canWrite && (
                   <div className="mt-1 flex items-center gap-2">
                     <form action={sendNewEmailFromNoReplyAction.bind(null, f.id, f.lead_id, f.user_lead_id ?? null)}>
                       <button

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getPendingFollowupsByUserId } from '@/repositories/followupRepository'
 import { completeFollowupAction } from '@/features/followups/actions'
+import { hasActiveSubscription } from '@/repositories/profileRepository'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { LEAD_STATUS_LABELS } from '@/types/leads'
 import type { LeadStatus } from '@/types/leads'
@@ -63,7 +64,10 @@ export default async function FollowupsPage() {
 
   if (!user) redirect('/login')
 
-  const followups = await getPendingFollowupsByUserId(supabase, user.id)
+  const [followups, canWrite] = await Promise.all([
+    getPendingFollowupsByUserId(supabase, user.id),
+    hasActiveSubscription(supabase, user.id),
+  ])
 
   return (
     <main className="flex flex-col p-6">
@@ -164,22 +168,24 @@ export default async function FollowupsPage() {
                       </div>
 
                       {/* Botão concluir */}
-                      <form
-                        action={completeFollowupAction.bind(
-                          null,
-                          followup.id,
-                          followup.lead_id,
-                          followup.user_lead_id ?? null
-                        )}
-                        className="shrink-0 self-start"
-                      >
-                        <button
-                          type="submit"
-                          className="cursor-pointer rounded-lg border border-outline px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700"
+                      {canWrite && (
+                        <form
+                          action={completeFollowupAction.bind(
+                            null,
+                            followup.id,
+                            followup.lead_id,
+                            followup.user_lead_id ?? null
+                          )}
+                          className="shrink-0 self-start"
                         >
-                          Concluir
-                        </button>
-                      </form>
+                          <button
+                            type="submit"
+                            className="cursor-pointer rounded-lg border border-outline px-3 py-1.5 text-xs font-medium text-on-surface transition-colors hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700"
+                          >
+                            Concluir
+                          </button>
+                        </form>
+                      )}
                     </div>
                   </div>
                 )

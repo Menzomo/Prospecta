@@ -5,7 +5,7 @@ import { getGmailConnection, getGmailRequest } from '@/repositories/gmailReposit
 import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
 import { getBalance, getTransactions } from '@/repositories/walletRepository'
 import { getAssignedNumber, getAvailableNumbers } from '@/repositories/telnyxNumberRepository'
-import { getProfileById } from '@/repositories/profileRepository'
+import { getProfileById, hasActiveSubscription } from '@/repositories/profileRepository'
 import type { GmailRequestStatus } from '@/types/gmail'
 import type { WalletTransaction } from '@/repositories/walletRepository'
 import { CompanyProfileForm } from '@/features/settings/components/CompanyProfileForm'
@@ -127,7 +127,7 @@ export default async function SettingsPage({ searchParams }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [company, gmailConnection, gmailRequest, telephonySettings, walletBalance, walletTransactions, assignedNumber, profile] = await Promise.all([
+  const [company, gmailConnection, gmailRequest, telephonySettings, walletBalance, walletTransactions, assignedNumber, profile, canWrite] = await Promise.all([
     getCompanyProfileByUserId(supabase, user.id),
     getGmailConnection(supabase, user.id),
     getGmailRequest(supabase, user.id),
@@ -138,6 +138,7 @@ export default async function SettingsPage({ searchParams }: Props) {
       ? getAssignedNumber(supabase, user.id)
       : Promise.resolve(null),
     section === 'plano' ? getProfileById(supabase, user.id) : Promise.resolve(null),
+    hasActiveSubscription(supabase, user.id),
   ])
 
   const availableNumbers = (section === 'telefonia' && process.env.TELEPHONY_PROVIDER === 'telnyx' && !assignedNumber)
@@ -232,6 +233,7 @@ export default async function SettingsPage({ searchParams }: Props) {
               connection={gmailConnection}
               requestStatus={gmailRequestStatus}
               requestEmail={gmailRequest?.gmail_request_email ?? null}
+              canWrite={canWrite}
             />
           </div>
         )}

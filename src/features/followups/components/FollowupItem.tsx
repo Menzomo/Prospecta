@@ -9,6 +9,7 @@ type Props = {
   followup: Followup
   leadId: string | null
   userLeadId?: string | null
+  canWrite?: boolean
 }
 
 function formatDueAt(value: string): string {
@@ -45,7 +46,7 @@ function localToUtcIso(localValue: string): string {
   return new Date(`${localValue}:00-03:00`).toISOString()
 }
 
-export function FollowupItem({ followup, leadId, userLeadId }: Props) {
+export function FollowupItem({ followup, leadId, userLeadId, canWrite = true }: Props) {
   const [editing, setEditing] = useState(false)
   const boundUpdate = updateFollowupAction.bind(null, followup.id, leadId ?? null, userLeadId ?? null)
   const [updateState, updateAction, updatePending] = useActionState(boundUpdate, null)
@@ -96,28 +97,30 @@ export function FollowupItem({ followup, leadId, userLeadId }: Props) {
           )}
         </div>
 
-        <div className="flex shrink-0 gap-1.5">
-          <button
-            type="button"
-            onClick={() => setEditing((v) => !v)}
-            className="cursor-pointer rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100"
-          >
-            {editing ? 'Cancelar' : 'Editar'}
-          </button>
-
-          <form action={completeFollowupAction.bind(null, followup.id, leadId ?? null, userLeadId ?? null)}>
+        {canWrite && (
+          <div className="flex shrink-0 gap-1.5">
             <button
-              type="submit"
-              className="cursor-pointer rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-600 transition-colors hover:border-green-500 hover:bg-green-50 hover:text-green-700"
+              type="button"
+              onClick={() => setEditing((v) => !v)}
+              className="cursor-pointer rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100"
             >
-              Concluir
+              {editing ? 'Cancelar' : 'Editar'}
             </button>
-          </form>
-        </div>
+
+            <form action={completeFollowupAction.bind(null, followup.id, leadId ?? null, userLeadId ?? null)}>
+              <button
+                type="submit"
+                className="cursor-pointer rounded-lg border border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-600 transition-colors hover:border-green-500 hover:bg-green-50 hover:text-green-700"
+              >
+                Concluir
+              </button>
+            </form>
+          </div>
+        )}
       </div>
 
       {/* Edit form (below info, only when editing) */}
-      {editing && (
+      {editing && canWrite && (
         <form
           onSubmit={handleUpdateSubmit}
           className="mt-3 flex flex-col gap-2 border-t border-gray-200 pt-3"

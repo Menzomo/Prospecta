@@ -4,6 +4,7 @@ import { searchSchema } from '@/features/search/validations/searchSchema'
 import { executeLeadSearch } from '@/features/search/services/searchService'
 import { getLeadCategoryByName } from '@/repositories/leadCategoryRepository'
 import { findCity } from '@/repositories/cityRepository'
+import { hasActiveSubscription } from '@/repositories/profileRepository'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,6 +16,13 @@ export async function POST(request: NextRequest) {
 
   if (!user) {
     return Response.json({ error: 'Não autenticado' }, { status: 401 })
+  }
+
+  if (!(await hasActiveSubscription(supabase, user.id))) {
+    return Response.json(
+      { error: 'Assinatura necessária para buscar leads.', code: 'assinatura_necessaria' },
+      { status: 402 }
+    )
   }
 
   let body: unknown
