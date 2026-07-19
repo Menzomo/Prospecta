@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { onboardingSchema } from '@/validations/onboardingSchema'
-import { createCompanyProfile } from '@/repositories/companyProfileRepository'
+import { createCompanyProfile, updateCompanyProfile, getCompanyProfileByUserId } from '@/repositories/companyProfileRepository'
 
 export type OnboardingActionState = {
   errors?: {
@@ -42,7 +42,13 @@ export async function onboardingAction(
     redirect('/login')
   }
 
-  const company = await createCompanyProfile(supabase, user.id, validation.data)
+  // Passo 2 pode ser reenviado (usuário volta e mexe nos campos de novo) —
+  // usa update se já existe um profile, senão cria. Evita violação de
+  // unique constraint em company_profiles.user_id no reenvio.
+  const existing = await getCompanyProfileByUserId(supabase, user.id)
+  const company = existing
+    ? await updateCompanyProfile(supabase, user.id, validation.data)
+    : await createCompanyProfile(supabase, user.id, validation.data)
 
   if (!company) {
     return { error: 'Erro ao salvar dados da empresa. Tente novamente.' }

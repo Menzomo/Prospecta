@@ -4,22 +4,13 @@ import { useState, useEffect, useActionState } from 'react'
 import Link from 'next/link'
 import { onboardingAction } from '@/app/onboarding/actions'
 import { requestGmailAccessAction } from '@/features/gmail/actions'
-import { SearchForm } from '@/features/search/components/SearchForm'
+import { SidebarSpotlight } from '@/features/onboarding/components/SidebarSpotlight'
 import { collapseStateName } from '@/utils/stateUtils'
 import type { GmailRequestStatus } from '@/types/gmail'
 
 type Category = { id: string; name: string }
 
-type RecentLead = {
-  id: string
-  company_name: string
-  email: string | null
-  city: string | null
-  category_id: string | null
-  status: string
-}
-
-const TOTAL_STEPS = 9
+const TOTAL_STEPS = 10
 
 const INPUT_CLASS =
   'w-full rounded-lg border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface [-webkit-text-fill-color:#191b23] placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary sm:py-2.5'
@@ -63,28 +54,9 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
     }
   }
 
-  // Step 6 state — accumulates across multiple confirm actions
-  const [totalLeadsAdded, setTotalLeadsAdded] = useState(0)
-  const MIN_LEADS = 5
-
-  // Step 7 state
-  const [recentLeads, setRecentLeads] = useState<RecentLead[]>([])
-  const [loadingLeads, setLoadingLeads] = useState(false)
-
   useEffect(() => {
     if (state?.success) setStep(3)
   }, [state])
-
-  useEffect(() => {
-    if (step === 7) {
-      setLoadingLeads(true)
-      fetch('/api/user-leads')
-        .then((r) => r.json())
-        .then((data) => setRecentLeads((data as { leads: RecentLead[] }).leads ?? []))
-        .catch(() => {})
-        .finally(() => setLoadingLeads(false))
-    }
-  }, [step])
 
   function next() {
     setStep((s) => Math.min(s + 1, TOTAL_STEPS))
@@ -96,15 +68,11 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
 
   const progressPct = Math.round(((step - 1) / (TOTAL_STEPS - 1)) * 100)
 
-  // Step 6 uses wider max-width to accommodate the search form
-  const containerWidth = step === 6 ? 'max-w-2xl' : 'max-w-md'
+  const containerWidth = 'max-w-md'
 
-  // Forward arrow: blocked on step 2 (form required), step 6 (< 5 leads), and last step
+  // Forward arrow: blocked no passo 2 (formulário obrigatório) e no último passo
   const canGoPrev = step > 1
-  const canGoNext =
-    step !== 2 &&
-    step < TOTAL_STEPS &&
-    !(step === 6 && totalLeadsAdded < MIN_LEADS)
+  const canGoNext = step !== 2 && step < TOTAL_STEPS
 
   const NAV_BTN =
     'flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-outline bg-surface-container text-on-surface-muted shadow-card transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary disabled:cursor-not-allowed disabled:opacity-30 disabled:shadow-none sm:h-9 sm:w-9'
@@ -266,30 +234,32 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
           </div>
         )}
 
-        {/* ── Etapa 4 — Plano Beta ── */}
+        {/* ── Etapa 4 — O que você tem no Prospecta ── */}
         {step === 4 && (
           <div className="rounded-xl border border-outline bg-surface-container p-4 shadow-card sm:rounded-2xl sm:p-8">
             <div className="mb-3 text-center sm:mb-6">
               <p className="mb-1 text-2xl sm:mb-3 sm:text-4xl">🎁</p>
-              <h1 className="text-base font-bold text-on-surface font-[--font-heading] sm:text-xl">Seu acesso Beta</h1>
-              <p className="mt-0.5 text-xs text-on-surface-muted sm:mt-1 sm:text-sm">Você recebeu acesso ao Prospecta Beta.</p>
+              <h1 className="text-base font-bold text-on-surface font-[--font-heading] sm:text-xl">O que você tem no Prospecta</h1>
+              <p className="mt-0.5 text-xs text-on-surface-muted sm:mt-1 sm:text-sm">Um CRM completo pra encontrar leads e fechar negócio.</p>
             </div>
             <div className="mb-2 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:mb-4 sm:p-4">
-              <p className="mb-1.5 text-xs font-semibold text-primary sm:text-sm">Durante o período de testes você possui:</p>
+              <p className="mb-1.5 text-xs font-semibold text-primary sm:text-sm">No seu CRM você encontra:</p>
               <ul className="space-y-1 text-xs text-primary/80 sm:text-sm">
-                <li>✓ 20 leads gratuitos</li>
-                <li>✓ Templates de email</li>
-                <li>✓ Gestão de leads</li>
-                <li>✓ Acompanhamentos</li>
+                <li>✓ Busca de leads por nicho e cidade</li>
+                <li>✓ Envio de emails com templates reutilizáveis</li>
+                <li>✓ Acompanhamento de respostas e follow-ups</li>
+                <li>✓ Ligações direto pelo CRM, com análise por IA</li>
               </ul>
             </div>
             <div className="mb-3 rounded-xl border border-outline p-3 sm:mb-6 sm:p-4">
-              <p className="mb-0.5 text-xs font-medium uppercase tracking-wide text-on-surface-muted">Plano futuro</p>
-              <p className="text-xs font-semibold text-on-surface sm:text-sm">Prospecta Starter</p>
+              <p className="mb-0.5 text-xs font-medium uppercase tracking-wide text-on-surface-muted">Assinatura</p>
+              <p className="text-xs font-semibold text-on-surface sm:text-sm">Prospecta</p>
               <p className="text-base font-bold text-on-surface sm:text-lg">
-                R$ 49,90<span className="text-xs font-normal text-on-surface-muted sm:text-sm">/mês</span>
+                R$ 150,00<span className="text-xs font-normal text-on-surface-muted sm:text-sm">/mês</span>
               </p>
-              <p className="text-xs text-on-surface-muted">200 leads por mês</p>
+              <p className="mt-1 text-xs text-on-surface-muted">
+                Além da assinatura, você pode carregar saldo na carteira via Pix pra pagar ligações e análises de IA conforme for usando.
+              </p>
             </div>
             <button onClick={next} className={BTN_PRIMARY}>Continuar</button>
           </div>
@@ -301,99 +271,125 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
             <div className="mb-4 text-center sm:mb-6">
               <p className="mb-1 text-2xl sm:mb-3 sm:text-4xl">✉️</p>
               <h1 className="text-base font-bold text-on-surface font-[--font-heading] sm:text-xl">Templates de Email</h1>
-              <p className="mt-1 text-xs leading-snug text-on-surface-muted sm:mt-2 sm:text-sm sm:leading-relaxed">
-                Crie modelos reutilizáveis para enviar emails mais rápido. Crie agora ou faça depois.
-              </p>
             </div>
-            <div className="flex flex-col gap-2 sm:gap-3">
-              <Link
-                href="/templates/new?returnTo=/onboarding&step=6"
-                className="block w-full rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-primary-dark sm:py-3"
-              >
-                Criar primeiro template
-              </Link>
-              <button onClick={next} className={BTN_SECONDARY}>Fazer depois</button>
+            <div className="mb-4 sm:mb-6">
+              <SidebarSpotlight
+                highlight="templates"
+                title="Crie modelos reutilizáveis"
+                description="Monte modelos de email prontos, com variáveis como nome do lead e o nome da sua empresa, pra economizar tempo na prospecção. Você encontra essa opção no menu Templates quando quiser criar o primeiro."
+              />
             </div>
+            <button onClick={next} className={BTN_PRIMARY}>Continuar</button>
           </div>
         )}
 
         {/* ── Etapa 6 — Buscar Leads ── */}
         {step === 6 && (
-          <div>
-            <div className="mb-3 rounded-xl border border-outline bg-surface-container px-3 py-3 shadow-card sm:mb-5 sm:rounded-2xl sm:px-6 sm:py-5">
-              <p className="text-base font-bold text-on-surface font-[--font-heading] sm:text-xl">Buscar Leads</p>
-              <p className="mt-0.5 text-xs text-on-surface-muted sm:mt-1 sm:text-sm">
-                Selecione um nicho e uma cidade, busque empresas e adicione pelo menos {MIN_LEADS} leads para continuar.
-              </p>
-            </div>
-
-            <SearchForm
-              categories={categories}
-              onConfirmed={(added) => setTotalLeadsAdded((n) => n + added)}
-              lockedCity={lockedCity}
-              betaLimit={20}
-            />
-
-            <div className="mt-3 flex flex-col gap-2 sm:mt-4">
-              {totalLeadsAdded > 0 && totalLeadsAdded < MIN_LEADS && (
-                <p className="text-center text-xs text-amber-600 sm:text-sm">
-                  {totalLeadsAdded}/{MIN_LEADS} leads adicionados — adicione mais para continuar.
-                </p>
-              )}
-              <button
-                onClick={next}
-                disabled={totalLeadsAdded < MIN_LEADS}
-                className="w-full cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50 sm:py-3"
-              >
-                Continuar
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── Etapa 7 — Leads Adicionados ── */}
-        {step === 7 && (
           <div className="rounded-xl border border-outline bg-surface-container p-4 shadow-card sm:rounded-2xl sm:p-8">
-            <div className="mb-3 sm:mb-5">
-              <p className="text-base font-bold text-on-surface font-[--font-heading] sm:text-xl">Seus Leads</p>
-              <p className="mt-0.5 text-xs text-on-surface-muted sm:mt-1 sm:text-sm">
-                Esses são os leads que você adicionou. Estarão disponíveis na área de Leads.
-              </p>
+            <div className="mb-4 text-center sm:mb-6">
+              <p className="mb-1 text-2xl sm:mb-3 sm:text-4xl">🔍</p>
+              <h1 className="text-base font-bold text-on-surface font-[--font-heading] sm:text-xl">Buscar Leads</h1>
             </div>
-
-            {loadingLeads ? (
-              <p className="py-3 text-center text-xs text-on-surface-muted sm:py-6 sm:text-sm">Carregando leads...</p>
-            ) : recentLeads.length === 0 ? (
-              <div className="mb-3 rounded-xl border border-outline bg-surface-low p-3 text-center sm:mb-6 sm:p-6">
-                <p className="text-xs text-on-surface-muted sm:text-sm">
-                  Nenhum lead adicionado ainda. Você pode buscar leads a qualquer momento na área de Busca.
-                </p>
-              </div>
-            ) : (
-              <div className="mb-3 max-h-[35vh] overflow-y-auto sm:mb-6 sm:max-h-[50vh]">
-                <div className="grid grid-cols-1 gap-1.5 sm:gap-3">
-                  {recentLeads.map((lead) => (
-                    <div
-                      key={lead.id}
-                      className="rounded-lg border border-outline bg-surface-low p-2.5 sm:rounded-xl sm:p-4"
-                    >
-                      <p className="text-sm font-semibold text-on-surface">{lead.company_name}</p>
-                      <div className="mt-0.5 space-y-0.5 text-xs text-on-surface-muted sm:mt-1 sm:text-sm">
-                        <p className="break-all">{lead.email ?? '—'}</p>
-                        <p>{lead.city ?? '—'}</p>
-                      </div>
+            <div className="mb-4 sm:mb-6">
+              <SidebarSpotlight
+                highlight="search"
+                title="Encontre empresas por nicho e cidade"
+                description={`Escolha uma categoria e uma cidade pra descobrir empresas disponíveis pra prospecção. Por enquanto a busca está liberada só pra ${lockedCity.name}, mas a gente já está trabalhando pra chegar em mais cidades.`}
+              >
+                <div className="mt-3 flex flex-col gap-2 rounded-lg border border-outline bg-surface-low p-3">
+                  <div>
+                    <p className="text-xs font-medium text-on-surface-muted">Categoria</p>
+                    <div className="mt-1 rounded-md border border-outline bg-surface-container px-2.5 py-1.5 text-xs text-on-surface-muted">
+                      Ex: {categories[0]?.name ?? 'Restaurantes'}
                     </div>
-                  ))}
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-on-surface-muted">Cidade</p>
+                    <div className="mt-1 rounded-md border border-outline bg-surface-container px-2.5 py-1.5 text-xs text-on-surface">
+                      {lockedCity.name} - {lockedCity.state}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
-
+              </SidebarSpotlight>
+            </div>
             <button onClick={next} className={BTN_PRIMARY}>Continuar</button>
           </div>
         )}
 
-        {/* ── Etapa 8 — Gmail ── */}
+        {/* ── Etapa 7 — Leads ── */}
+        {step === 7 && (
+          <div className="rounded-xl border border-outline bg-surface-container p-4 shadow-card sm:rounded-2xl sm:p-8">
+            <div className="mb-4 text-center sm:mb-6">
+              <p className="mb-1 text-2xl sm:mb-3 sm:text-4xl">📋</p>
+              <h1 className="text-base font-bold text-on-surface font-[--font-heading] sm:text-xl">Gerencie seus Leads</h1>
+            </div>
+            <div className="mb-4 sm:mb-6">
+              <SidebarSpotlight
+                highlight="leads"
+                title="Tudo organizado num só lugar"
+                description="Os leads que você encontrar em Buscar Leads ficam aqui, organizados por status — Novo, Em Contato e Convertido — pra você acompanhar o funil de prospecção."
+              >
+                <div className="mt-3 flex flex-col gap-1.5 rounded-lg border border-outline bg-surface-low p-3">
+                  {['Novo', 'Em Contato', 'Convertido'].map((label, i) => (
+                    <div key={label} className="flex items-center gap-2 rounded-md border border-outline bg-surface-container px-2 py-1.5">
+                      <div className="h-6 w-6 shrink-0 rounded-full bg-primary/30" />
+                      <div className="flex-1 select-none blur-[3px]">
+                        <p className="text-xs font-medium text-on-surface">Empresa Exemplo {i + 1}</p>
+                        <p className="text-[10px] text-on-surface-muted">Categoria · Cidade</p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-medium text-primary">{label}</span>
+                    </div>
+                  ))}
+                </div>
+              </SidebarSpotlight>
+            </div>
+            <button onClick={next} className={BTN_PRIMARY}>Continuar</button>
+          </div>
+        )}
+
+        {/* ── Etapa 8 — Acompanhamentos ── */}
         {step === 8 && (
+          <div className="rounded-xl border border-outline bg-surface-container p-4 shadow-card sm:rounded-2xl sm:p-8">
+            <div className="mb-4 text-center sm:mb-6">
+              <p className="mb-1 text-2xl sm:mb-3 sm:text-4xl">🔔</p>
+              <h1 className="text-base font-bold text-on-surface font-[--font-heading] sm:text-xl">Acompanhamentos</h1>
+            </div>
+            <div className="mb-4 sm:mb-6">
+              <SidebarSpotlight
+                highlight="followups"
+                title="Nunca perca o timing de um follow-up"
+                description="Em cada lead você pode criar acompanhamentos — lembretes pra ligar de novo, enviar uma proposta, cobrar uma resposta. Cada um que você criar aparece na aba Acompanhamentos e também no seu Dashboard."
+              >
+                <div className="mt-3 flex flex-col gap-2">
+                  <div className="rounded-lg border border-outline bg-surface-low p-2.5">
+                    <p className="text-[10px] font-semibold text-on-surface-muted">Novo acompanhamento</p>
+                    <div className="mt-1.5 flex flex-col gap-1">
+                      <div className="rounded-md border border-outline bg-surface-container px-2 py-1 text-[10px] text-on-surface-muted">
+                        Título — Ex: Ligar para apresentar proposta
+                      </div>
+                      <div className="rounded-md border border-outline bg-surface-container px-2 py-1 text-[10px] text-on-surface-muted">
+                        Data prevista
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 rounded-lg border border-outline bg-surface-low px-2.5 py-2">
+                    <div className="h-6 w-6 shrink-0 rounded-full bg-primary/30" />
+                    <div className="flex-1 select-none blur-[3px]">
+                      <p className="text-xs font-medium text-on-surface">Empresa Exemplo</p>
+                      <p className="text-[10px] text-on-surface-muted">Abordar possibilidade de teste grátis</p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-medium text-amber-600">Pendente</span>
+                  </div>
+                </div>
+              </SidebarSpotlight>
+            </div>
+            <button onClick={next} className={BTN_PRIMARY}>Continuar</button>
+          </div>
+        )}
+
+        {/* ── Etapa 9 — Gmail ── */}
+        {step === 9 && (
           <div className="rounded-xl border border-outline bg-surface-container p-4 shadow-card sm:rounded-2xl sm:p-8">
             <div className="mb-4 text-center sm:mb-6">
               <p className="mb-1 text-2xl sm:mb-3 sm:text-4xl">📧</p>
@@ -476,8 +472,8 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
           </div>
         )}
 
-        {/* ── Etapa 9 — Finalização ── */}
-        {step === 9 && (
+        {/* ── Etapa 10 — Finalização ── */}
+        {step === 10 && (
           <div className="rounded-xl border border-outline bg-surface-container p-4 text-center shadow-card sm:rounded-2xl sm:p-8">
             <p className="mb-1 text-3xl sm:mb-3 sm:text-5xl">🚀</p>
             <h1 className="text-base font-bold text-on-surface font-[--font-heading] sm:text-2xl">Tudo pronto!</h1>

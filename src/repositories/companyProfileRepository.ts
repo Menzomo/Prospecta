@@ -27,7 +27,10 @@ export async function createCompanyProfile(
     .select()
     .single()
 
-  if (error) return null
+  if (error) {
+    console.error('[companyProfileRepository.createCompanyProfile]', error.message)
+    return null
+  }
   return data
 }
 
@@ -43,6 +46,9 @@ export async function updateCompanyProfile(
     .select()
     .single()
 
-  if (error) return null
+  if (error) {
+    console.error('[companyProfileRepository.updateCompanyProfile]', error.message)
+    return null
+  }
   return data
 }
