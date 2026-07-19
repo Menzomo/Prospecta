@@ -10,7 +10,7 @@ import type { GmailRequestStatus } from '@/types/gmail'
 
 type Category = { id: string; name: string }
 
-const TOTAL_STEPS = 10
+const TOTAL_STEPS = 11
 
 const INPUT_CLASS =
   'w-full rounded-lg border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface [-webkit-text-fill-color:#191b23] placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary sm:py-2.5'
@@ -472,8 +472,32 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
           </div>
         )}
 
-        {/* ── Etapa 10 — Finalização ── */}
+        {/* ── Etapa 10 — Assinatura ── */}
         {step === 10 && (
+          <div className="rounded-xl border border-outline bg-surface-container p-4 shadow-card sm:rounded-2xl sm:p-8">
+            <div className="mb-4 text-center sm:mb-6">
+              <p className="mb-1 text-2xl sm:mb-3 sm:text-4xl">💳</p>
+              <h1 className="text-base font-bold text-on-surface font-[--font-heading] sm:text-xl">Ative sua assinatura</h1>
+            </div>
+            <div className="mb-4 sm:mb-6">
+              <SidebarSpotlight
+                highlight="settings"
+                title="Disponível em Configurações, quando quiser"
+                description="Assine o Prospecta por R$150/mês em Configurações → Assinatura. Ao assinar, você escolhe um número de telefone dedicado do Prospecta pra ligar pros seus leads e receber ligações de volta deles."
+                subItems={[
+                  { label: 'Dados da Empresa' },
+                  { label: 'Gmail' },
+                  { label: 'Carteira' },
+                  { label: 'Assinatura', active: true },
+                ]}
+              />
+            </div>
+            <button onClick={next} className={BTN_PRIMARY}>Continuar</button>
+          </div>
+        )}
+
+        {/* ── Etapa 11 — Finalização ── */}
+        {step === 11 && (
           <div className="rounded-xl border border-outline bg-surface-container p-4 text-center shadow-card sm:rounded-2xl sm:p-8">
             <p className="mb-1 text-3xl sm:mb-3 sm:text-5xl">🚀</p>
             <h1 className="text-base font-bold text-on-surface font-[--font-heading] sm:text-2xl">Tudo pronto!</h1>

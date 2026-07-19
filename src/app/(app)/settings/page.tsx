@@ -292,6 +292,31 @@ export default async function SettingsPage({ searchParams }: Props) {
               <p className="mt-1 text-sm text-on-surface-muted">Seu plano atual e opções disponíveis.</p>
             </div>
 
+            <div className="mb-4 rounded-xl border border-outline bg-surface-container p-6 shadow-card">
+              <p className="mb-3 text-sm font-semibold text-on-surface">O que você tem no Prospecta</p>
+              <ul className="space-y-1.5 text-sm text-on-surface-muted">
+                <li className="flex items-start gap-2"><span className="text-primary">✓</span> Busca de leads por nicho e cidade</li>
+                <li className="flex items-start gap-2"><span className="text-primary">✓</span> Envio de emails com templates reutilizáveis</li>
+                <li className="flex items-start gap-2"><span className="text-primary">✓</span> Acompanhamentos (follow-ups) organizados por lead</li>
+                <li className="flex items-start gap-2"><span className="text-primary">✓</span> Ligações direto pelo CRM, com análise por IA</li>
+              </ul>
+
+              <div className="mt-4 border-t border-outline pt-4">
+                <p className="text-sm font-semibold text-on-surface">Ao assinar por R$ 150,00/mês</p>
+                <p className="mt-1 text-sm text-on-surface-muted">
+                  Você recebe um número de telefone dedicado do Prospecta, pra ligar pros seus leads e receber ligações de volta deles.
+                </p>
+              </div>
+
+              <div className="mt-4 border-t border-outline pt-4">
+                <p className="text-sm font-semibold text-on-surface">Cobrado à parte, pela carteira</p>
+                <ul className="mt-1 space-y-1 text-sm text-on-surface-muted">
+                  <li>Ligação: R$ 0,20/min</li>
+                  <li>Análise de IA da ligação: R$ 0,08/min</li>
+                </ul>
+              </div>
+            </div>
+
             {profile?.subscription_status === 'active' ? (
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-6">
                 <div className="flex items-start justify-between">

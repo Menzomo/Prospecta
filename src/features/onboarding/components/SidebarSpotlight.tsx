@@ -26,10 +26,11 @@ type Props = {
   highlight: SpotlightItem
   title: string
   description: string
+  subItems?: { label: string; active?: boolean }[]
   children?: React.ReactNode
 }
 
-export function SidebarSpotlight({ highlight, title, description, children }: Props) {
+export function SidebarSpotlight({ highlight, title, description, subItems, children }: Props) {
   return (
     <div className="flex flex-col overflow-hidden rounded-xl border border-outline sm:flex-row">
       <div className="bg-sidebar px-2 py-3 sm:w-36 sm:shrink-0 sm:px-2 sm:py-4">
@@ -37,18 +38,31 @@ export function SidebarSpotlight({ highlight, title, description, children }: Pr
           {ITEMS.map((item) => {
             const active = item.key === highlight
             return (
-              <div
-                key={item.key}
-                className={`flex items-center gap-2 rounded-lg border-l-4 py-1.5 pl-1.5 pr-2 text-xs font-medium ${
-                  active
-                    ? 'border-blue-500 bg-blue-600/15 text-blue-400 opacity-100'
-                    : 'border-transparent text-white/50 opacity-40 blur-[0.5px]'
-                }`}
-              >
-                <span className={`shrink-0 ${active ? 'text-blue-400' : 'text-white/30'}`}>
-                  {item.icon}
-                </span>
-                {item.label}
+              <div key={item.key}>
+                <div
+                  className={`flex items-center gap-2 rounded-lg border-l-4 py-1.5 pl-1.5 pr-2 text-xs font-medium ${
+                    active
+                      ? 'border-blue-500 bg-blue-600/15 text-blue-400 opacity-100'
+                      : 'border-transparent text-white/50 opacity-40 blur-[0.5px]'
+                  }`}
+                >
+                  <span className={`shrink-0 ${active ? 'text-blue-400' : 'text-white/30'}`}>
+                    {item.icon}
+                  </span>
+                  {item.label}
+                </div>
+                {active && subItems && (
+                  <div className="ml-6 mt-0.5 flex flex-col gap-0.5">
+                    {subItems.map((s) => (
+                      <div
+                        key={s.label}
+                        className={`rounded px-1.5 py-0.5 text-[10px] ${s.active ? 'font-semibold text-blue-400' : 'text-white/40'}`}
+                      >
+                        {s.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )
           })}
