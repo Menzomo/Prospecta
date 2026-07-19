@@ -92,6 +92,34 @@ export async function getGlobalLeadsForAdmin(
   return data ?? []
 }
 
+export type AdminCityStat = {
+  city: string
+  state: string | null
+  count: number
+}
+
+export async function getGlobalLeadCitiesForAdmin(
+  supabase: SupabaseClient<Database>
+): Promise<AdminCityStat[]> {
+  const { data, error } = await supabase
+    .from('global_leads')
+    .select('city, state')
+    .eq('status', 'active')
+    .not('city', 'is', null)
+
+  if (error || !data) return []
+
+  const stats = new Map<string, AdminCityStat>()
+  for (const row of data) {
+    if (!row.city) continue
+    const existing = stats.get(row.city)
+    if (existing) existing.count++
+    else stats.set(row.city, { city: row.city, state: row.state, count: 1 })
+  }
+
+  return [...stats.values()].sort((a, b) => a.city.localeCompare(b.city, 'pt-BR'))
+}
+
 export async function getLeadStatsByCategory(
   supabase: SupabaseClient<Database>
 ): Promise<NichoStats[]> {

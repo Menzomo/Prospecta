@@ -669,6 +669,26 @@ export interface Database {
         }
         Relationships: []
       }
+      released_cities: {
+        Row: {
+          id: string
+          city: string
+          state: string | null
+          released_at: string
+        }
+        Insert: {
+          id?: string
+          city: string
+          state?: string | null
+          released_at?: string
+        }
+        Update: {
+          city?: string
+          state?: string | null
+          released_at?: string
+        }
+        Relationships: []
+      }
       calls: {
         Row: {
           id: string

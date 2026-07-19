@@ -268,3 +268,37 @@ export async function reprocessGlobalLeadAction(leadId: string, _formData: FormD
   if (ok) console.log(`[reprocessGlobalLeadAction] Admin ${user.email} reprocessed lead ${leadId}`)
   revalidatePath('/admin')
 }
+
+/**
+ * Libera uma cidade de global_leads pra usuários comuns em /search e no
+ * onboarding. Sem policy de escrita em released_cities — só via admin client.
+ */
+export async function releaseCityAction(
+  city: string,
+  state: string | null,
+  _formData: FormData
+): Promise<void> {
+  await requireAdmin()
+
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const adminSupabase = createAdminClient()
+
+  await adminSupabase.from('released_cities').upsert({ city, state }, { onConflict: 'city' })
+
+  revalidatePath('/admin')
+  revalidatePath('/search')
+  revalidatePath('/onboarding')
+}
+
+export async function unreleaseCityAction(city: string, _formData: FormData): Promise<void> {
+  await requireAdmin()
+
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const adminSupabase = createAdminClient()
+
+  await adminSupabase.from('released_cities').delete().eq('city', city)
+
+  revalidatePath('/admin')
+  revalidatePath('/search')
+  revalidatePath('/onboarding')
+}
