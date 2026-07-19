@@ -78,13 +78,13 @@ export async function POST(request: NextRequest) {
   // Cap to remaining quota for non-admin
   const idsToProcess = isAdmin ? global_lead_ids : global_lead_ids.slice(0, monthly_remaining)
 
-  // Validate that leads exist, are active, and have email_found quality
+  // Validate that leads exist, are active, and have usable quality
   const { data: validLeads, error: leadsError } = await supabase
     .from('global_leads')
     .select('id')
     .in('id', idsToProcess)
     .eq('status', 'active')
-    .eq('lead_quality_status', 'email_found')
+    .in('lead_quality_status', ['complete', 'email_only', 'phone_only'])
 
   if (leadsError) {
     console.error('[confirm] Failed to validate global_leads:', leadsError.message)
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     const skippedIds = idsToProcess.filter(
       (id) => !validIds.has(id) && !alreadyOwnedSet.has(id)
     )
-    console.warn('[confirm] Leads skipped (not active/email_found):', {
+    console.warn('[confirm] Leads skipped (not active or invalid quality):', {
       userId: user.id,
       count: skipped_invalid,
       ids: skippedIds,

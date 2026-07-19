@@ -17,7 +17,7 @@ export async function listCategoriesWithAvailableLeadsForUser(
     .from('global_leads')
     .select('category_id')
     .eq('status', 'active')
-    .eq('lead_quality_status', 'email_found')
+    .in('lead_quality_status', ['complete', 'email_only', 'phone_only'])
 
   if (ownedIds.length > 0) {
     availableQuery = availableQuery.not('id', 'in', `(${ownedIds.join(',')})`)
