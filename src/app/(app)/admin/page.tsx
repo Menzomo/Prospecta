@@ -12,8 +12,11 @@ import {
   getGmailRequests,
   getAdminUserWallets,
   getTelnyxNumberPool,
+  getGlobalLeadCitiesForAdmin,
 } from '@/repositories/adminRepository'
+import { getReleasedCities } from '@/repositories/releasedCityRepository'
 import { AdminGlobalLeads } from '@/features/admin/components/AdminGlobalLeads'
+import { AdminReleasedCities } from '@/features/admin/components/AdminReleasedCities'
 import { AdminCategories } from '@/features/admin/components/AdminCategories'
 import { AdminUsers } from '@/features/admin/components/AdminUsers'
 import { AdminNichoOverview } from '@/features/admin/components/AdminNichoOverview'
@@ -78,7 +81,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
     ? (categoryBySlug.get(reviewNiche)?.id ?? undefined)
     : undefined
 
-  const [leads, users, reviewQueue, overview, nichoStats, stock, userStock, gmailRequests, wallets, telnyxBalance, telnyxNumbers] = await Promise.all([
+  const [leads, users, reviewQueue, overview, nichoStats, stock, userStock, gmailRequests, wallets, telnyxBalance, telnyxNumbers, leadCities, releasedCities] = await Promise.all([
     getGlobalLeadsForAdmin(supabase, {
       categoryId: activeCategoryId,
       city: cityFilter || undefined,
@@ -93,6 +96,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
     getAdminUserWallets(adminSupabase),
     fetchTelnyxBalance(),
     getTelnyxNumberPool(adminSupabase),
+    getGlobalLeadCitiesForAdmin(supabase),
+    getReleasedCities(supabase),
   ])
 
   return (
@@ -124,6 +129,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Search
 
           {/* Pool de números Telnyx */}
           <AdminNumberPool numbers={telnyxNumbers} />
+
+          {/* Cidades liberadas pra usuários */}
+          <AdminReleasedCities cities={leadCities} released={releasedCities} />
 
           {/* Solicitações Gmail */}
           <AdminGmailRequests requests={gmailRequests} />

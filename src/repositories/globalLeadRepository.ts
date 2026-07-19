@@ -3,6 +3,7 @@ import type { Database } from '@/lib/supabase/types'
 import type { GlobalLead, CreateGlobalLeadDto } from '@/types/globalLeads'
 import { computeLeadQualityStatus } from '@/types/globalLeads'
 import { expandStateCode } from '@/utils/stateUtils'
+import { getReleasedCities } from '@/repositories/releasedCityRepository'
 
 export type AvailableCity = { city: string; state: string | null }
 
@@ -17,12 +18,16 @@ export async function getAvailableCitiesForUser(
 
   const excludeIds = (ownedLinks ?? []).map((l) => l.global_lead_id)
 
+  const releasedCities = await getReleasedCities(supabase)
+  if (releasedCities.length === 0) return []
+
   let query = supabase
     .from('global_leads')
     .select('city, state')
     .eq('status', 'active')
     .in('lead_quality_status', ['complete', 'email_only', 'phone_only'])
     .not('city', 'is', null)
+    .in('city', releasedCities.map((c) => c.city))
 
   if (excludeIds.length > 0) {
     query = query.not('id', 'in', `(${excludeIds.join(',')})`)
