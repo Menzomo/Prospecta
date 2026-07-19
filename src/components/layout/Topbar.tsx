@@ -33,11 +33,25 @@ function IconWallet() {
   )
 }
 
+function IconPhone() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+    </svg>
+  )
+}
+
 function formatBRL(n: number) {
   return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function BalanceChip() {
+function formatPhoneDisplay(phone: string): string {
+  const match = phone.match(/^\+55(\d{2})(\d{4,5})(\d{4})$/)
+  if (!match) return phone
+  return `(${match[1]}) ${match[2]}-${match[3]}`
+}
+
+function BalanceChip({ phoneNumber }: { phoneNumber?: string | null }) {
   const [balance, setBalance] = useState<number | null>(null)
 
   useEffect(() => {
@@ -59,14 +73,25 @@ function BalanceChip() {
   return (
     <Link
       href="/settings?section=carteira"
-      className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+      className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
         insufficient
           ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
           : 'border-outline bg-surface-low text-on-surface hover:bg-surface-container'
       }`}
     >
-      <IconWallet />
-      R$ {formatBRL(balance)}
+      {phoneNumber && (
+        <>
+          <span className="flex items-center gap-1.5 font-medium">
+            <IconPhone />
+            Seu número: {formatPhoneDisplay(phoneNumber)}
+          </span>
+          <span className={`h-3 w-px ${insufficient ? 'bg-red-200' : 'bg-outline'}`} />
+        </>
+      )}
+      <span className="flex items-center gap-1.5">
+        <IconWallet />
+        R$ {formatBRL(balance)}
+      </span>
     </Link>
   )
 }
@@ -82,6 +107,7 @@ function IconPlus() {
 
 interface TopbarProps {
   userEmail?: string | null
+  phoneNumber?: string | null
 }
 
 function getInitials(email: string | null | undefined): string {
@@ -92,7 +118,7 @@ function getInitials(email: string | null | undefined): string {
   return name.slice(0, 2).toUpperCase()
 }
 
-export function Topbar({ userEmail }: TopbarProps) {
+export function Topbar({ userEmail, phoneNumber }: TopbarProps) {
   const router = useRouter()
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState<string[]>([])
@@ -174,7 +200,7 @@ export function Topbar({ userEmail }: TopbarProps) {
         )}
       </div>
 
-      <BalanceChip />
+      <BalanceChip phoneNumber={phoneNumber} />
 
       <div className="ml-auto flex items-center gap-1">
         {/* Bell */}
