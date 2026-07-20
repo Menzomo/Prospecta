@@ -5,7 +5,7 @@ import { countLeadsAddedThisMonth } from '@/features/search/repositories/searchR
 import { createUserLead } from '@/repositories/userLeadRepository'
 import { hasActiveSubscription } from '@/repositories/profileRepository'
 
-const MONTHLY_LIMIT = 20
+const MONTHLY_LIMIT = 150
 
 // Max 200 — the monthly limit is the real cap for regular users; admins have no effective limit
 const confirmSchema = z.object({
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     if (monthly_remaining <= 0) {
       return Response.json(
-        { error: 'Você atingiu o limite de 20 leads do beta.' },
+        { error: 'Você atingiu o limite de 150 leads do mês.' },
         { status: 400 }
       )
     }

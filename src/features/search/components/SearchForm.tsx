@@ -248,7 +248,7 @@ export function SearchForm({ categories, onConfirmed, lockedCity, betaLimit, ava
             <p className="mt-1 text-xs text-green-700">
               {betaLimit
                 ? `Leads restantes no beta: ${Math.min(confirmResult.monthly_remaining, betaLimit)}`
-                : `Créditos restantes este mês: ${confirmResult.monthly_remaining}`}
+                : `Leads restantes este mês: ${confirmResult.monthly_remaining}`}
             </p>
           )}
           <button
@@ -297,7 +297,7 @@ export function SearchForm({ categories, onConfirmed, lockedCity, betaLimit, ava
               ) : (
                 <div>
                   <p className="text-xl font-bold text-on-surface">{monthlyRemaining}</p>
-                  <p className="text-xs text-on-surface-muted">créditos/mês</p>
+                  <p className="text-xs text-on-surface-muted">leads/mês</p>
                 </div>
               )}
             </div>
