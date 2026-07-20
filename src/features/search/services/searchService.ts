@@ -4,7 +4,7 @@ import { countLeadsAddedThisMonth } from '../repositories/searchRepository'
 import { findAvailableGlobalLeadsForUser } from '@/repositories/globalLeadRepository'
 import type { SearchPreviewResponse } from '../types'
 
-const MONTHLY_LIMIT = 20
+const MONTHLY_LIMIT = 150
 const SEARCH_PREVIEW_LIMIT = 10
 const ADMIN_SEARCH_LIMIT = 50
 
@@ -55,7 +55,7 @@ export async function executeLeadSearch(
     return {
       leads: [],
       monthly_remaining: 0,
-      message: 'Você atingiu o limite de 20 leads do beta.',
+      message: 'Você atingiu o limite de 150 leads do mês.',
     }
   }
 
