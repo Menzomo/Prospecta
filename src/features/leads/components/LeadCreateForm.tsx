@@ -77,9 +77,10 @@ export function LeadCreateForm() {
             id="phone"
             name="phone"
             type="tel"
-            placeholder="(11) 99999-9999"
+            placeholder="(54) 99999-9999"
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           />
+          <p className="text-xs text-gray-400">Só DDD + número, sem +55.</p>
         </div>
       </div>
 
