@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getLeadById } from '@/repositories/leadRepository'
 import { getEmailMessagesByLeadId, getEmailThreadsByLeadId } from '@/repositories/emailRepository'
 import { getFollowupsByLeadId } from '@/repositories/followupRepository'
-import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
+import { hasTelephonyConfigured } from '@/repositories/telephonySettingsRepository'
 import { getCallsWithAnalysisByLeadId } from '@/repositories/callRepository'
 import { hideLeadAction } from '@/features/leads/actions'
 import { hasActiveSubscription } from '@/repositories/profileRepository'
@@ -37,11 +37,11 @@ export default async function LeadDetailPage({ params }: Props) {
   const lead = await getLeadById(supabase, id)
   if (!lead) notFound()
 
-  const [emailMessages, followups, emailThreads, telephonySettings, calls, canWrite] = await Promise.all([
+  const [emailMessages, followups, emailThreads, hasSettings, calls, canWrite] = await Promise.all([
     getEmailMessagesByLeadId(supabase, user.id, id),
     getFollowupsByLeadId(supabase, user.id, id),
     getEmailThreadsByLeadId(supabase, user.id, id),
-    getTelephonySettings(supabase, user.id),
+    hasTelephonyConfigured(supabase, user.id),
     getCallsWithAnalysisByLeadId(supabase, user.id, id),
     hasActiveSubscription(supabase, user.id),
   ])
@@ -66,7 +66,7 @@ export default async function LeadDetailPage({ params }: Props) {
             <LeadRepliesButton messages={emailMessages} threads={emailThreads} leadId={lead.id} />
             <CallButton
               phone={lead.phone ?? null}
-              hasSettings={telephonySettings !== null}
+              hasSettings={hasSettings}
               companyName={lead.company_name}
               leadId={lead.id}
             />

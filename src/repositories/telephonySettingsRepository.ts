@@ -1,6 +1,20 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/types'
 import type { TelephonySettings, UpsertTelephonySettingsDto } from '@/types/calls'
+import { getAssignedNumber } from '@/repositories/telnyxNumberRepository'
+
+// No modo Telnyx, "configurado" é ter número atribuído — telephony_settings é exclusiva do modo Twilio (BYOC).
+export async function hasTelephonyConfigured(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<boolean> {
+  if (process.env.TELEPHONY_PROVIDER === 'telnyx') {
+    const assignedNumber = await getAssignedNumber(supabase, userId)
+    return assignedNumber !== null
+  }
+  const settings = await getTelephonySettings(supabase, userId)
+  return settings !== null
+}
 
 export async function getTelephonySettings(
   supabase: SupabaseClient<Database>,

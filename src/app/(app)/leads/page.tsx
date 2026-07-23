@@ -5,7 +5,7 @@ import { getLeadsByUserId } from '@/repositories/leadRepository'
 import { getUserLeadsWithGlobalData } from '@/repositories/userLeadRepository'
 import { listLeadCategories } from '@/repositories/leadCategoryRepository'
 import { hideLeadAction, hideUserLeadAction } from '@/features/leads/actions'
-import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
+import { hasTelephonyConfigured } from '@/repositories/telephonySettingsRepository'
 import { hasActiveSubscription } from '@/repositories/profileRepository'
 import type { LeadStatus } from '@/types/leads'
 import type { LeadCategory } from '@/types/globalLeads'
@@ -18,15 +18,14 @@ export default async function LeadsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [manualLeads, searchLeads, categories, telephonySettings, canWrite] = await Promise.all([
+  const [manualLeads, searchLeads, categories, hasSettings, canWrite] = await Promise.all([
     getLeadsByUserId(supabase, user.id),
     getUserLeadsWithGlobalData(supabase, user.id),
     listLeadCategories(supabase),
-    getTelephonySettings(supabase, user.id),
+    hasTelephonyConfigured(supabase, user.id),
     hasActiveSubscription(supabase, user.id),
   ])
 
-  const hasSettings = telephonySettings !== null
   const categoryById = new Map<string, LeadCategory>(categories.map((c) => [c.id, c]))
 
   const usedCategoryIds = new Set(searchLeads.map((l) => l.category_id).filter(Boolean))
