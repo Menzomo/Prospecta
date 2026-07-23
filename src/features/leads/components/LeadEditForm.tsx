@@ -106,6 +106,7 @@ export function LeadEditForm({ lead }: Props) {
             name="phone"
             type="tel"
             defaultValue={lead.phone ?? ''}
+            placeholder="(54) 99999-9999"
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           />
         </div>
