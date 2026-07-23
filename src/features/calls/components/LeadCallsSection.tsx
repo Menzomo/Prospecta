@@ -19,6 +19,16 @@ function formatDuration(seconds: number | null): string {
   return m > 0 ? `${m}min ${s}s` : `${s}s`
 }
 
+// Estimativa — reflete a mesma regra de handleStatusCallbackWebhook (minuto arredondado pra cima × R$0,20).
+// Chamadas de entrada não são cobradas (custo absorvido pela Prospecta).
+function formatCallCost(call: CallWithAnalysis): string | null {
+  if (call.direction === 'inbound') return null
+  if (call.status !== 'completed' || !call.duration_seconds) return null
+  const minutos = Math.ceil(call.duration_seconds / 60)
+  const custo = minutos * 0.20
+  return custo.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 function formatDateTime(ts: string): string {
   return new Date(ts).toLocaleString('pt-BR', {
     timeZone: 'America/Sao_Paulo',
@@ -147,6 +157,9 @@ function CallsModal({
               </span>
               {call.duration_seconds != null && (
                 <span className="text-xs text-on-surface-muted">{formatDuration(call.duration_seconds)}</span>
+              )}
+              {formatCallCost(call) && (
+                <span className="text-xs text-on-surface-muted">R$ {formatCallCost(call)}</span>
               )}
               {call.to_number && (
                 <span className="text-xs text-on-surface-muted">{call.to_number}</span>
