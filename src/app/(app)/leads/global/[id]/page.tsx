@@ -3,7 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { hideUserLeadAction, updateUserLeadStatusAction } from '@/features/leads/actions'
 import { getFollowupsByUserLeadId } from '@/repositories/followupRepository'
-import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
+import { hasTelephonyConfigured } from '@/repositories/telephonySettingsRepository'
 import { getCallsWithAnalysisByUserLeadId } from '@/repositories/callRepository'
 import { hasActiveSubscription } from '@/repositories/profileRepository'
 import { SubscriptionGateCard } from '@/components/SubscriptionGateCard'
@@ -48,9 +48,9 @@ export default async function UserLeadDetailPage({ params }: Props) {
     state: string | null
   }
 
-  const [followups, telephonySettings, calls, canWrite] = await Promise.all([
+  const [followups, hasSettings, calls, canWrite] = await Promise.all([
     getFollowupsByUserLeadId(supabase, user.id, id),
-    getTelephonySettings(supabase, user.id),
+    hasTelephonyConfigured(supabase, user.id),
     getCallsWithAnalysisByUserLeadId(supabase, user.id, id),
     hasActiveSubscription(supabase, user.id),
   ])
@@ -74,7 +74,7 @@ export default async function UserLeadDetailPage({ params }: Props) {
           <div className="flex items-center gap-2">
             <CallButton
               phone={gl.phone ?? null}
-              hasSettings={telephonySettings !== null}
+              hasSettings={hasSettings}
               companyName={gl.company_name}
               userLeadId={data.id}
             />
