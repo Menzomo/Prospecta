@@ -7,6 +7,15 @@ import { getReleasedCities } from '@/repositories/releasedCityRepository'
 
 export type AvailableCity = { city: string; state: string | null }
 
+function shuffle<T>(items: T[]): T[] {
+  const result = [...items]
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[result[i], result[j]] = [result[j], result[i]]
+  }
+  return result
+}
+
 export async function getAvailableCitiesForUser(
   supabase: SupabaseClient<Database>,
   userId: string
@@ -170,6 +179,14 @@ export async function findAvailableGlobalLeadsForUser(
   const completeLimit = Math.ceil(limit * 0.7)
   const partialLimit = limit - completeLimit
 
+  // Busca um pool maior que o necessário e sorteia depois (ver shuffle abaixo),
+  // pra cada nova busca no mesmo nicho/cidade trazer uma amostra diferente em
+  // vez de sempre os mesmos primeiros resultados.
+  const POOL_MULTIPLIER = 5
+  const POOL_CAP = 200
+  const completePoolLimit = Math.min(completeLimit * POOL_MULTIPLIER, POOL_CAP)
+  const partialPoolLimit = Math.min(partialLimit * POOL_MULTIPLIER, POOL_CAP)
+
   const buildCompleteQuery = () => {
     let q = supabase
       .from('global_leads')
@@ -178,7 +195,7 @@ export async function findAvailableGlobalLeadsForUser(
       .ilike('city', city)
       .eq('status', 'active')
       .eq('lead_quality_status', 'complete')
-      .limit(completeLimit)
+      .limit(completePoolLimit)
     if (state) q = q.ilike('state', expandStateCode(state))
     if (excludeIds.length > 0) q = q.not('id', 'in', `(${excludeIds.join(',')})`)
     return q
@@ -192,7 +209,7 @@ export async function findAvailableGlobalLeadsForUser(
       .ilike('city', city)
       .eq('status', 'active')
       .in('lead_quality_status', ['email_only', 'phone_only'])
-      .limit(partialLimit)
+      .limit(partialPoolLimit)
     if (state) q = q.ilike('state', expandStateCode(state))
     if (excludeIds.length > 0) q = q.not('id', 'in', `(${excludeIds.join(',')})`)
     return q
@@ -210,7 +227,10 @@ export async function findAvailableGlobalLeadsForUser(
     console.error('[globalLeadRepository.findAvailableGlobalLeadsForUser] partial query:', partialResult.error.message)
   }
 
-  const results = [...(completeResult.data ?? []), ...(partialResult.data ?? [])]
+  const results = [
+    ...shuffle(completeResult.data ?? []).slice(0, completeLimit),
+    ...shuffle(partialResult.data ?? []).slice(0, partialLimit),
+  ]
 
   // Belt-and-suspenders: filter in memory so owned leads never leak through
   if (!skipExcludeOwned && excludeIds.length > 0) {
