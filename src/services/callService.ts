@@ -397,7 +397,7 @@ export async function handleStatusCallbackWebhook(
 /**
  * Solicita análise de IA para uma chamada concluída (chamado por POST /api/calls/[id]/request-analysis).
  * Gatilhado explicitamente pelo usuário — nunca chamado automaticamente.
- * Fluxo: verifica créditos → debita → cria registro em call_analyses → dispara n8n.
+ * Fluxo: verifica créditos → cria registro em call_analyses → debita (reverte o registro se falhar) → dispara n8n.
  */
 export async function requestCallAnalysis(
   supabase: SupabaseClient<Database>,
@@ -431,24 +431,29 @@ export async function requestCallAnalysis(
   const custo    = parseFloat((minutos * 0.08).toFixed(4))
 
   if (!isAdmin) {
-    const { createAdminClient } = await import('@/lib/supabase/admin')
-    const adminSupabase = createAdminClient()
-
     const balance = await getBalance(supabase, userId)
     if (balance < custo) {
       return { ok: false, error: 'Saldo insuficiente para analisar esta ligação.', status: 402, custo, balance }
     }
+  }
+
+  // Cria o registro ANTES de debitar — se o INSERT falhar, ninguém é cobrado.
+  // Se o débito falhar depois, o registro é revertido (evita entregar de graça).
+  const analysis = await createCallAnalysis(supabase, callId, userId, isAdmin ? 0 : custo)
+  if (!analysis) return { ok: false, error: 'Falha ao registrar análise.', status: 500 }
+
+  if (!isAdmin) {
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const adminSupabase = createAdminClient()
 
     try {
       await debitWallet(adminSupabase, userId, custo, 'analysis', callId, `Análise ${minutos} min`)
     } catch {
+      await deleteCallAnalysisByCallId(supabase, callId, userId)
       const balanceAtual = await getBalance(supabase, userId)
       return { ok: false, error: 'Saldo insuficiente para analisar esta ligação.', status: 402, custo, balance: balanceAtual }
     }
   }
-
-  const analysis = await createCallAnalysis(supabase, callId, userId, isAdmin ? 0 : custo)
-  if (!analysis) return { ok: false, error: 'Falha ao registrar análise.', status: 500 }
 
   dispatchCallEvent({
     type: CALL_EVENT.ANALYSIS_STARTED,

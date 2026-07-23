@@ -151,6 +151,15 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
     setNotesSaved(true)
   }
 
+  function formatCallCost(start: Date | null, end: Date | null): string | null {
+    if (!start || !end) return null
+    const seconds = Math.floor((end.getTime() - start.getTime()) / 1000)
+    if (seconds <= 0) return null
+    const minutos = Math.ceil(seconds / 60)
+    const custo = minutos * 0.20
+    return custo.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  }
+
   function formatDuration(start: Date | null, end: Date | null): string {
     if (!start || !end) return '—'
     const s = Math.floor((end.getTime() - start.getTime()) / 1000)
@@ -276,6 +285,11 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
                   <p className="text-xs text-on-surface-muted">
                     Duração: {formatDuration(connectedAt, endedAt)}
                   </p>
+                  {formatCallCost(connectedAt, endedAt) && (
+                    <p className="text-xs text-on-surface-muted">
+                      Custo estimado: R$ {formatCallCost(connectedAt, endedAt)}
+                    </p>
+                  )}
                 </div>
               </div>
 
