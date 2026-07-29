@@ -104,10 +104,12 @@ export async function generateToken(
  * Valida a assinatura do webhook e gera o TwiML para a chamada
  * (chamado por POST /api/calls/twiml).
  *
- * Mesma Application Telnyx atende tanto chamadas de saída (iniciadas pelo SDK
- * do navegador, com SIP headers) quanto chamadas de entrada (lead ligando de
- * volta pro número dedicado de algum usuário, sem SIP headers) — números do
- * pool vivem todos nela. Sem identidade de chamador nos params = é entrada.
+ * Mesmo endpoint atende tanto chamadas de saída (iniciadas pelo SDK do
+ * navegador via Credential Connection, com SIP headers) quanto chamadas de
+ * entrada (lead ligando de volta pro número dedicado de algum usuário, via
+ * TeXML Application, sem SIP headers) — duas Connections Telnyx distintas
+ * (ver TELNYX_APP_ID / TELNYX_TEXML_APP_ID em telnyxProvider.ts), mesma URL
+ * de webhook nas duas. Sem identidade de chamador nos params = é entrada.
  *
  * adminSupabase: cliente com service role (sem RLS) para criar o registro da call.
  */
