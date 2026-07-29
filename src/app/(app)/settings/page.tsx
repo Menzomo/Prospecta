@@ -202,7 +202,7 @@ export default async function SettingsPage({ searchParams }: Props) {
                     <p className="text-sm font-semibold text-on-surface">Seu número Prospecta</p>
                     <p className="mt-1 text-lg font-bold text-on-surface">{assignedNumber.phone_number}</p>
                     <p className="mt-1 text-sm text-on-surface-muted">
-                      Ligações recebidas de leads são encaminhadas pro celular cadastrado em Dados da Empresa.
+                      Ligações recebidas de leads são encaminhadas pro celular {company?.forwarding_cell_phone}.
                     </p>
                   </div>
                 </div>

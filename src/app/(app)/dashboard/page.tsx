@@ -5,6 +5,7 @@ import { getSyncStatus, touchEmailSync } from '@/repositories/userSyncStatusRepo
 import { getDashboardData } from '@/features/dashboard/services/dashboardService'
 import { syncGmailForUser } from '@/services/gmailUserSyncService'
 import { hasActiveSubscription } from '@/repositories/profileRepository'
+import { getAssignedNumber } from '@/repositories/telnyxNumberRepository'
 import { DashboardKpis } from '@/features/dashboard/components/DashboardKpis'
 import { CallsKpis } from '@/features/dashboard/components/CallsKpis'
 import { RecentReplies } from '@/features/dashboard/components/RecentReplies'
@@ -24,6 +25,15 @@ export default async function DashboardPage() {
   const company = await getCompanyProfileByUserId(supabase, user.id)
   if (!company) {
     redirect('/onboarding')
+  }
+
+  // Admin atribuiu número manualmente mas o usuário ainda não completou o
+  // cadastro (CPF/CNPJ + celular de encaminhamento) — força ida à Telefonia.
+  if (process.env.TELEPHONY_PROVIDER === 'telnyx') {
+    const assignedNumber = await getAssignedNumber(supabase, user.id)
+    if (assignedNumber && (!company.cpf_cnpj || !company.forwarding_cell_phone)) {
+      redirect('/settings?section=telefonia')
+    }
   }
 
   const syncStatus = await getSyncStatus(supabase, user.id)

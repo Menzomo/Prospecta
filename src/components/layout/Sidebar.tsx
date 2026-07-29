@@ -126,19 +126,15 @@ function NavLinks({
   pathname,
   inSettings,
   currentSection,
-  hideTelefonia,
   onLinkClick,
 }: {
   items: NavItem[]
   pathname: string
   inSettings: boolean
   currentSection: string
-  hideTelefonia?: boolean
   onLinkClick?: () => void
 }) {
-  const settingsSubItems = hideTelefonia
-    ? ALL_SETTINGS_SUB_ITEMS.filter((s) => s.section !== 'telefonia')
-    : ALL_SETTINGS_SUB_ITEMS
+  const settingsSubItems = ALL_SETTINGS_SUB_ITEMS
 
   return (
     <>
@@ -269,10 +265,9 @@ function SidebarFooter({ userEmail }: { userEmail?: string | null }) {
 interface SidebarProps {
   isAdmin?: boolean
   userEmail?: string | null
-  hideTelefonia?: boolean
 }
 
-export function Sidebar({ isAdmin = false, userEmail, hideTelefonia = false }: SidebarProps) {
+export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [open, setOpen] = useState(false)
@@ -304,7 +299,6 @@ export function Sidebar({ isAdmin = false, userEmail, hideTelefonia = false }: S
             pathname={pathname}
             inSettings={inSettings}
             currentSection={currentSection}
-            hideTelefonia={hideTelefonia}
           />
         </nav>
 
@@ -372,7 +366,6 @@ export function Sidebar({ isAdmin = false, userEmail, hideTelefonia = false }: S
             pathname={pathname}
             inSettings={inSettings}
             currentSection={currentSection}
-            hideTelefonia={hideTelefonia}
             onLinkClick={() => setOpen(false)}
           />
         </nav>
