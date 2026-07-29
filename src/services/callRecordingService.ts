@@ -62,7 +62,7 @@ export async function transferSingleRecording(
       if (!res.ok) throw new Error(`Telnyx direct download failed: HTTP ${res.status}`)
       audioBuffer = Buffer.from(await res.arrayBuffer())
     } else {
-      // Fallback para cron job: tenta via API Telnyx (RecordingSid de chamadas TeXML dá 404)
+      // Fallback pro cron job: busca via API Telnyx pelo recording_sid (ver downloadTelnyxRecording)
       audioBuffer = await downloadTelnyxRecording(call.recording_sid)
     }
   } else {
@@ -155,14 +155,25 @@ async function expireSingleRecording(
 
 // ── Helpers internos ───────────────────────────────────────────────────────────
 
+// Não existe endpoint .../recordings/{id}/download na Telnyx (sempre dava 404).
+// O correto é buscar o recurso da gravação, que traz os links reais em
+// data.download_urls.{mp3,wav}, e só então baixar o áudio a partir de lá.
 async function downloadTelnyxRecording(recordingId: string): Promise<Buffer> {
   const apiKey = process.env.TELNYX_API_KEY
   if (!apiKey) throw new Error('TELNYX_API_KEY not set')
-  const response = await fetch(`https://api.telnyx.com/v2/recordings/${recordingId}/download`, {
+
+  const metaRes = await fetch(`https://api.telnyx.com/v2/recordings/${recordingId}`, {
     headers: { Authorization: `Bearer ${apiKey}` },
   })
-  if (!response.ok) throw new Error(`Telnyx download failed: HTTP ${response.status}`)
-  return Buffer.from(await response.arrayBuffer())
+  if (!metaRes.ok) throw new Error(`Telnyx recording lookup failed: HTTP ${metaRes.status}`)
+
+  const meta: { data?: { download_urls?: { mp3?: string; wav?: string } } } = await metaRes.json()
+  const downloadUrl = meta.data?.download_urls?.mp3 ?? meta.data?.download_urls?.wav
+  if (!downloadUrl) throw new Error('Telnyx recording sem download_urls')
+
+  const audioRes = await fetch(downloadUrl)
+  if (!audioRes.ok) throw new Error(`Telnyx audio download failed: HTTP ${audioRes.status}`)
+  return Buffer.from(await audioRes.arrayBuffer())
 }
 
 async function deleteTelnyxRecording(recordingId: string): Promise<void> {
