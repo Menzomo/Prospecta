@@ -135,12 +135,16 @@ export class TelnyxProvider implements ITelephonyProvider {
 
     if (!signature) {
       const connectionId = params['ConnectionId']
-      const expectedId   = process.env.TELNYX_APP_ID
 
-      // TeXML parking webhooks: têm ConnectionId no payload. Mesma Application
-      // atende saída (SDK do navegador) e entrada (lead ligando de volta pro
-      // número dedicado dele) — todos os números do pool vivem nela.
-      if (connectionId) return !expectedId || connectionId === expectedId
+      // TeXML parking webhooks: têm ConnectionId no payload. Duas Connections
+      // Telnyx distintas usam o mesmo webhook: TELNYX_APP_ID (Credential
+      // Connection — chamadas de saída, iniciadas pelo SDK do navegador) e
+      // TELNYX_TEXML_APP_ID (TeXML Application — pra onde os números do pool
+      // ficam atribuídos, chamadas de entrada). São recursos Telnyx diferentes,
+      // não dá pra unificar num só (telephony_credentials.create exige
+      // especificamente o ID de uma Credential Connection).
+      const knownIds = [process.env.TELNYX_APP_ID, process.env.TELNYX_TEXML_APP_ID].filter(Boolean)
+      if (connectionId) return knownIds.length === 0 || knownIds.includes(connectionId)
 
       // Recording/status callbacks TeXML: sem ConnectionId e sem Ed25519
       // Telnyx não assina esses callbacks — validamos pelo conteúdo (CallSid verificado no DB)
