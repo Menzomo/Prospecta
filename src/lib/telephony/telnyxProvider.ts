@@ -135,7 +135,7 @@ export class TelnyxProvider implements ITelephonyProvider {
     rawBody: string,
     params: Record<string, string>
   ): boolean {
-    const signature = headers['telnyx-signature-ed25519-signature']
+    const signature = headers['telnyx-signature-ed25519']
 
     if (!signature) {
       const connectionId = params['ConnectionId']
@@ -159,7 +159,7 @@ export class TelnyxProvider implements ITelephonyProvider {
     const publicKey = process.env.TELNYX_PUBLIC_KEY
     if (!publicKey) return false
 
-    const timestamp = headers['telnyx-signature-ed25519-timestamp']
+    const timestamp = headers['telnyx-timestamp']
     if (!timestamp) return false
 
     const ts = parseInt(timestamp, 10)

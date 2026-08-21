@@ -17,7 +17,8 @@ export async function POST(request: NextRequest) {
   console.log('[twiml] params recebidos:', JSON.stringify(params))
   console.log('[twiml] headers relevantes:', JSON.stringify({
     'content-type': headers['content-type'],
-    'telnyx-signature-ed25519-signature': headers['telnyx-signature-ed25519-signature'] ? '<present>' : '<absent>',
+    'telnyx-signature-ed25519': headers['telnyx-signature-ed25519'] ? '<present>' : '<absent>',
+    'telnyx-timestamp': headers['telnyx-timestamp'] ? '<present>' : '<absent>',
     'x-twilio-signature': headers['x-twilio-signature'] ? '<present>' : '<absent>',
   }))
 
