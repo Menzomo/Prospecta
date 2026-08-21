@@ -97,15 +97,19 @@ export class TelnyxProvider implements ITelephonyProvider {
   }
 
   /**
-   * TeXML de encaminhamento pra chamada de entrada — sem callerId (não é o número
-   * do lead nem o da plataforma sendo usado como origem) e sem gravação, diferente
-   * de generateCallInstruction (que é para chamadas de saída iniciadas pelo app).
+   * TeXML de encaminhamento pra chamada de entrada — sem gravação, diferente de
+   * generateCallInstruction (que é pra chamadas de saída iniciadas pelo app).
+   * callerId precisa ser um número que a conta Telnyx realmente possui (o número
+   * Prospecta que recebeu a ligação) — sem isso, a Telnyx tenta originar a segunda
+   * perna com a identidade do lead (não verificada pra essa conta) e a operadora
+   * recusa a rota ("no route found").
    */
-  generateInboundForwardInstruction(forwardTo: string): string {
+  generateInboundForwardInstruction(forwardTo: string, callerId: string): string {
     const toE164 = normalizeToE164(forwardTo)
+    const callerIdE164 = normalizeToE164(callerId)
     return (
       `<?xml version="1.0" encoding="UTF-8"?>` +
-      `<Response><Dial record="do-not-record"><Number>${toE164}</Number></Dial></Response>`
+      `<Response><Dial callerId="${callerIdE164}" record="do-not-record"><Number>${toE164}</Number></Dial></Response>`
     )
   }
 

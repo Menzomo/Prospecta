@@ -253,7 +253,7 @@ async function handleInboundCallWebhook(
     console.error('[callService] falha ao notificar chamada de entrada:', err)
   )
 
-  const twiml = provider.generateInboundForwardInstruction(forwardTo)
+  const twiml = provider.generateInboundForwardInstruction(forwardTo, toNumber)
   return { ok: true, twiml }
 }
 
