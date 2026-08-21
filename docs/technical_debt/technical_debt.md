@@ -1,6 +1,84 @@
 # Débitos Técnicos — Prospecta
 
-Última atualização: 10 Jun 2026
+Última atualização: 29 Jul 2026
+
+---
+
+## SEGURANÇA — achados da auditoria completa de 29 Jul 2026
+
+Auditoria cobriu login/recuperação de senha, IDOR/RLS, webhooks, admin, segredos e XSS/injeção. Os 3 achados críticos (RPCs de carteira chamáveis por qualquer usuário via PostgREST, header de assinatura Ed25519 da Telnyx com nome errado, colunas privilegiadas de `profiles` editáveis pelo dono) já foram corrigidos no mesmo dia — ver commits `fea351c`, `4033c95`, `e513671`. O que segue é o que ficou pendente, por severidade.
+
+### Alto
+
+**DT-SEC-H1 — Cobrança de ligação confia num header controlável pelo navegador**
+
+**Problema:** `extractUserIdUnsafe` (`src/services/callService.ts`) resolve o dono da chamada a partir do SIP header `X-ProspectaUserId`, que o próprio navegador envia (`usePhoneCall.ts`). A assinatura do webhook (mesmo depois de corrigida) só prova que a Telnyx repassou a requisição — não que o conteúdo do header é verdadeiro.
+
+**Ataque:** um usuário autenticado edita esse header (via DevTools ou script) pra conter o UUID de outro usuário. A ligação é criada, gravada e **cobrada na carteira da vítima**, usando o número dela como CallerID.
+
+**Localização:** `src/services/callService.ts` (`extractUserIdUnsafe`, `handleOutboundCallWebhook`), `src/features/calls/hooks/usePhoneCall.ts`.
+
+**Solução esperada:** não confiar no header pra identidade. Vincular a ligação a um token/registro criado no servidor em `POST /api/calls/token` (já autenticado via sessão), e validar no webhook que o header bate com esse registro.
+
+---
+
+**DT-SEC-H2 — `/api/calls/hangup` sem autenticação nenhuma**
+
+**Problema:** a rota recebe `callId` no corpo, busca a chamada via client admin (ignora RLS) e manda comando de desligar pra API da Telnyx — sem `auth.getUser()`, sem checar `user_id`. Está dentro do prefixo `/api/calls/` que o middleware isenta de sessão.
+
+**Ataque:** qualquer pessoa na internet, sem login, derruba a ligação de qualquer usuário só sabendo o `callId`.
+
+**Localização:** `src/app/api/calls/hangup/route.ts`.
+
+**Solução esperada:** adicionar `auth.getUser()` + filtrar a busca da chamada por `.eq('user_id', user.id)` usando o client autenticado (não o admin).
+
+### Médio
+
+**DT-SEC-M1 — `credit_wallet` não é idempotente**
+
+O saldo em cache (`wallet_balances`) é incrementado *antes* da checagem de duplicidade no ledger (`wallet_transactions`), diferente de `debit_wallet` (que faz certo — grava o ledger primeiro e aborta em conflito). Reenvio de webhook do Asaas credita saldo real duas vezes, mesmo o extrato mostrando só uma vez. **Localização:** função `credit_wallet` em `supabase/migrations/20260709000000_wallet_security_hardening.sql`. **Solução:** espelhar a ordem de `debit_wallet`.
+
+**DT-SEC-M2 — `deduct_analysis_credit` tem o mesmo padrão de RPC sem `REVOKE` que os wallet functions tinham**
+
+`SECURITY DEFINER`, recebe `p_user_id` livre, sem `REVOKE ... FROM PUBLIC`. Um usuário consegue esgotar os créditos de análise de outro chamando a RPC direto. **Localização:** `supabase/migrations/20260625000000_calls_deduct_credit_fn.sql`. **Solução:** mesmo remédio já aplicado às funções de carteira (`REVOKE ALL FROM PUBLIC, anon, authenticated` + `GRANT EXECUTE TO service_role`), mais `SET search_path = public` (falta nessa função).
+
+**DT-SEC-M3 — `/api/asaas/webhook` e `/api/admin/enrich-lead` provavelmente nunca executam**
+
+Nenhuma das duas rotas está em `PUBLIC_PATHS` nem `BYPASS_PREFIXES` do `middleware.ts` — como a requisição do Asaas/n8n não tem cookie de sessão, o middleware redireciona pra `/login` antes do handler rodar. Não é falha de segurança (falha fechada), mas pode significar que **assinaturas via Pix nunca ativam sozinhas** e enriquecimento de leads via n8n nunca roda. **Localização:** `middleware.ts`. **Solução:** adicionar os dois paths exatos em `PUBLIC_PATHS` (não o prefixo `/api/` inteiro).
+
+**DT-SEC-M4 — `global_leads` aceita INSERT de qualquer usuário autenticado**
+
+Policy `global_leads_insert_auth` (`with check (true)`) documentada como dívida técnica desde a criação, "migrar pra service role quando existir ferramental de admin" — esse ferramental já existe. Permite poluir a base compartilhada de leads. **Localização:** `supabase/migrations/20240110000000_update_global_leads_rls.sql`. **Solução:** derrubar a policy; imports já passam pelo client admin.
+
+**DT-SEC-M5 — Injeção de filtro no autocomplete de cidade**
+
+`.or(\`name.ilike.%${query}%,search_text.ilike.%${normalized}%\`)` em `src/repositories/cityRepository.ts` interpola a busca do usuário direto numa expressão crua do PostgREST — vírgulas/parênteses no input quebram o filtro pretendido. Impacto baixo (autenticado, tabela não sensível), mas é injeção real. **Solução:** sanitizar `,().:` do input, ou separar em duas queries e mesclar em JS.
+
+**DT-SEC-M6 — Link de redefinição de senha usa o header `Host` da requisição**
+
+`getRequestOrigin()` (`src/features/auth/actions.ts`) monta a URL de redirect do reset de senha a partir do header `Host` em vez de `NEXT_PUBLIC_APP_URL` (usado em todo o resto do app). Se a allowlist de Redirect URLs do Supabase tiver wildcard, um `Host` forjado pode desviar o link de recuperação pra outro domínio. **Solução:** trocar por `NEXT_PUBLIC_APP_URL`; conferir a allowlist no painel do Supabase.
+
+**DT-SEC-M7 — Sem rate limit em login/cadastro/esqueci-senha**
+
+Nenhum limitador próprio (só os limites padrão por IP do GoTrue). Facilita força bruta de senha (agravado pela política de senha fraca, ver DT-SEC-L4) e permite usar o forgot-password como amplificador de email pra endereços arbitrários.
+
+**DT-SEC-M8 — Cadastro não confirma que a sessão veio com email verificado**
+
+`signUp` redireciona direto pra `/onboarding` sem checar `data.session`/`email_confirmed_at`. Depende de "Confirm email" estar ativado no painel do Supabase (não verificável pelo código) — se estiver desligado, abre caminho pra pré-sequestro de conta via cadastro com email de outra pessoa + login Google depois. **Solução:** confirmar a config no painel, e adicionar checagem defensiva `if (!data.session) return {...}` antes do redirect.
+
+### Baixo
+
+- **DT-SEC-L1** — `call_analyses` tem policy `FOR ALL` sem restrição de coluna — dono da linha pode escrever `credits_used` e outros campos que deveriam ser só do sistema. Mesma classe de bug já corrigida pra `calls`/`profiles`; falta aplicar o mesmo `REVOKE`/`GRANT` de colunas aqui.
+- **DT-SEC-L2** — `/reset-password` não confere se a sessão veio de um link de recuperação (nem pede senha atual), e não desloga as outras sessões depois de trocar a senha.
+- **DT-SEC-L3** — Cookie de sessão sem a flag `Secure` explícita (herda o padrão da lib `@supabase/ssr`).
+- **DT-SEC-L4** — Senha mínima de 6 caracteres, sem exigência de complexidade (`src/validations/authSchema.ts`).
+- **DT-SEC-L5** — Sem headers de segurança (CSP, HSTS, X-Frame-Options) — `next.config.ts` não define nenhum.
+- **DT-SEC-L6** — Cadastro devolve mensagem de erro crua do Supabase (`error.message`), permitindo descobrir se um email já tem conta — login já normaliza pra mensagem genérica, cadastro não.
+- **DT-SEC-L7** — Redirect aberto tipo `//evil.com` em `src/app/auth/callback/page.tsx` (`next?.startsWith('/')` deixa passar `//`).
+- **DT-SEC-L8** — Injeção de cabeçalho de email via assunto de template não sanitizado (`\r\n`) em `src/services/emailSendService.ts`.
+- **DT-SEC-L9** — Validação de assinatura Telnyx totalmente desligada quando `NODE_ENV === 'development'` — trocar por uma flag explícita tipo `ALLOW_UNSIGNED_WEBHOOKS`, já que qualquer ambiente de preview/staging que suba com `NODE_ENV` errado fica sem proteção nenhuma.
+- **DT-SEC-L10** — `notifyBetaAction` (`src/app/auth/callback/actions.ts`) é uma Server Action sem checagem de sessão que aceita `userId` arbitrário — impacto baixo (exige adivinhar um UUID v4), mas devia derivar o ID da sessão, não do argumento.
+- **DT-SEC-L11** — Dois modelos de "admin" que não se conversam: `ADMIN_USER_IDS` (isenção de cobrança) e `profiles.role==='admin'` (acesso ao painel) — risco de um usuário ser admin num sentido e não no outro sem perceber. Considerar unificar ou documentar melhor a distinção.
 
 ---
 
