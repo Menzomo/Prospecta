@@ -7,9 +7,13 @@ type Props = {
   leadId: string | null
   userLeadId: string | null
   currentAddress: string | null
+  defaultCity?: string | null
 }
 
-export function LeadAddressForm({ leadId, userLeadId, currentAddress }: Props) {
+const inputClass =
+  'rounded-md border border-outline bg-surface-container px-2 py-1.5 text-xs text-on-surface outline-none focus:border-primary focus:ring-1 focus:ring-primary'
+
+export function LeadAddressForm({ leadId, userLeadId, currentAddress, defaultCity }: Props) {
   const [mode, setMode] = useState<'address' | 'cnpj'>('address')
   const [editing, setEditing] = useState(!currentAddress)
 
@@ -37,7 +41,14 @@ export function LeadAddressForm({ leadId, userLeadId, currentAddress }: Props) {
   }
 
   if (state?.success) {
-    return <p className="text-sm text-green-700">Endereço encontrado e salvo — atualize a página pra ver.</p>
+    return state.approximate ? (
+      <p className="text-sm text-amber-700">
+        Endereço salvo, mas só achamos a localização aproximada (bairro/cidade) — a rua exata não está mapeada nesse
+        serviço. A rota pode ficar imprecisa nesse ponto. Atualize a página pra ver.
+      </p>
+    ) : (
+      <p className="text-sm text-green-700">Endereço encontrado e salvo — atualize a página pra ver.</p>
+    )
   }
 
   return (
@@ -60,20 +71,32 @@ export function LeadAddressForm({ leadId, userLeadId, currentAddress }: Props) {
       </div>
 
       {mode === 'address' ? (
-        <form action={addressFormAction} className="flex items-center gap-2">
-          <input
-            type="text"
-            name="address"
-            placeholder="Rua, número, bairro, cidade"
-            className="flex-1 rounded-md border border-outline bg-surface-container px-2 py-1.5 text-xs text-on-surface outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-          />
-          <button
-            type="submit"
-            disabled={addressPending}
-            className="cursor-pointer shrink-0 rounded-md bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {addressPending ? 'Buscando...' : 'Salvar endereço'}
-          </button>
+        <form action={addressFormAction} className="flex flex-col gap-2">
+          <div className="grid grid-cols-[1fr_auto] gap-2">
+            <input type="text" name="street" placeholder="Rua / Avenida" required className={inputClass} />
+            <input type="text" name="number" placeholder="Nº" className={`w-16 ${inputClass}`} />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <input type="text" name="neighborhood" placeholder="Bairro" className={inputClass} />
+            <input
+              type="text"
+              name="city"
+              placeholder="Cidade"
+              required
+              defaultValue={defaultCity ?? ''}
+              className={inputClass}
+            />
+          </div>
+          <div className="grid grid-cols-[1fr_auto] gap-2">
+            <input type="text" name="state" placeholder="Estado (RS, SP...)" className={inputClass} />
+            <button
+              type="submit"
+              disabled={addressPending}
+              className="cursor-pointer shrink-0 rounded-md bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {addressPending ? 'Buscando...' : 'Salvar endereço'}
+            </button>
+          </div>
         </form>
       ) : (
         <form action={cnpjFormAction} className="flex items-center gap-2">
@@ -82,7 +105,7 @@ export function LeadAddressForm({ leadId, userLeadId, currentAddress }: Props) {
             name="cnpj"
             placeholder="CNPJ (só números)"
             inputMode="numeric"
-            className="w-40 rounded-md border border-outline bg-surface-container px-2 py-1.5 text-xs text-on-surface outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            className={`w-40 ${inputClass}`}
           />
           <button
             type="submit"

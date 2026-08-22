@@ -11,6 +11,7 @@ export type CnpjEnrichmentResult = {
   address: string
   latitude: number
   longitude: number
+  precise: boolean
 }
 
 type BrasilApiCnpjResponse = {
@@ -49,5 +50,6 @@ export async function enrichAddressFromCnpj(rawCnpj: string): Promise<CnpjEnrich
     address: geocoded.formattedAddress,
     latitude: geocoded.lat,
     longitude: geocoded.lng,
+    precise: geocoded.precise,
   }
 }

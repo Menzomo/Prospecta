@@ -166,7 +166,7 @@ export default async function UserLeadDetailPage({ params }: Props) {
           <div className="rounded-xl border border-outline bg-surface-container p-6 shadow-card">
             <h2 className="mb-4 text-base font-semibold text-on-surface font-[--font-heading]">Endereço</h2>
             {canWrite ? (
-              <LeadAddressForm leadId={null} userLeadId={id} currentAddress={gl.address} />
+              <LeadAddressForm leadId={null} userLeadId={id} currentAddress={gl.address} defaultCity={gl.city} />
             ) : (
               <SubscriptionGateCard compact description="Assine pra adicionar o endereço do lead." />
             )}

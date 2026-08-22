@@ -13,9 +13,15 @@ const BASE_URL = 'https://api.openrouteservice.org'
 type OrsGeocodeResponse = {
   features?: Array<{
     geometry: { coordinates: [number, number] } // [lng, lat]
-    properties: { label?: string }
+    properties: { label?: string; layer?: string }
   }>
 }
+
+// Ruas fora do OpenStreetMap (comum em bairros novos/rurais) fazem o Pelias
+// cair pro fallback de cidade/bairro inteiro — coordenada do "meio da
+// cidade", inútil pra calcular rota. Só aceita resultado de nível de
+// endereço/rua real.
+const PRECISE_LAYERS = new Set(['venue', 'address', 'street'])
 
 type OrsOptimizationResponse = {
   routes?: Array<{
@@ -40,7 +46,12 @@ export class OpenRouteServiceProvider implements IRouteProvider {
     if (!feature) return null
 
     const [lng, lat] = feature.geometry.coordinates
-    return { lat, lng, formattedAddress: feature.properties.label ?? address }
+    return {
+      lat,
+      lng,
+      formattedAddress: feature.properties.label ?? address,
+      precise: PRECISE_LAYERS.has(feature.properties.layer ?? ''),
+    }
   }
 
   async optimizeRoute(
