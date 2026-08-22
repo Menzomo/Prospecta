@@ -26,7 +26,11 @@ export async function enrichAddressFromCnpj(rawCnpj: string): Promise<CnpjEnrich
   const digits = rawCnpj.replace(/\D/g, '')
   if (!isValidCnpj(digits)) throw new Error('CNPJ inválido.')
 
-  const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`)
+  // A BrasilAPI retorna 403 no endpoint de CNPJ sem um User-Agent —
+  // diferente do endpoint de CEP, que funciona sem esse header.
+  const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${digits}`, {
+    headers: { 'User-Agent': 'Prospecta/1.0', Accept: 'application/json' },
+  })
   if (res.status === 404) throw new Error('CNPJ não encontrado na Receita Federal.')
   if (!res.ok) throw new Error(`Falha ao consultar CNPJ: HTTP ${res.status}`)
 
