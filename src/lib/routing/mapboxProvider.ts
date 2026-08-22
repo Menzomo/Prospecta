@@ -55,20 +55,42 @@ export class MapboxProvider implements IRouteProvider {
     if (stops.length === 0) throw new Error('Mapbox: nenhuma parada informada')
     if (stops.length > 11) throw new Error('Mapbox: no máximo 11 paradas por cálculo de rota')
 
-    // Primeira coordenada é sempre o ponto de partida (source=first) — com
-    // roundtrip=true (padrão), a API já monta a volta pro início sozinha.
-    const points = [start, ...stops]
+    // A rota é só de ida (o link do Google Maps não volta pro ponto de
+    // partida) — mas a Optimization API v1 só otimiza "abre onde for melhor"
+    // se for round trip (roundtrip=true), que na verdade minimiza o CIRCUITO
+    // INTEIRO (ida + volta pro início), não a viagem de ida sozinha. Testado
+    // ao vivo: isso escolhia ordens ~30% mais longas do que o trajeto de ida
+    // realmente mais curto. A v1 só otimiza uma viagem aberta com
+    // source=first&destination=last, mas exige destino fixo — então testamos
+    // cada parada como destino final (a API otimiza a ordem das do meio) e
+    // ficamos com a combinação de menor distância total.
+    const results = await Promise.all(
+      stops.map((lastStop) => this.tryEndingAt(start, stops, lastStop))
+    )
+    const valid = results.filter((r): r is OptimizedRoute => r !== null)
+    if (valid.length === 0) throw new Error('Mapbox: nenhuma rota retornada')
+
+    return valid.reduce((best, r) => (r.totalDistanceMeters < best.totalDistanceMeters ? r : best))
+  }
+
+  private async tryEndingAt(
+    start: { lat: number; lng: number },
+    allStops: RouteStop[],
+    lastStop: RouteStop
+  ): Promise<OptimizedRoute | null> {
+    const middle = allStops.filter((s) => s.id !== lastStop.id)
+    const idByIndex = [...middle.map((s) => s.id), lastStop.id]
+
+    const points = [start, ...middle, lastStop]
     const coords = points.map((p) => `${p.lng},${p.lat}`).join(';')
-    const url = `${BASE_URL}/optimized-trips/v1/mapbox/driving/${coords}?source=first&roundtrip=true&access_token=${encodeURIComponent(this.token)}`
+    const url = `${BASE_URL}/optimized-trips/v1/mapbox/driving/${coords}?source=first&destination=last&roundtrip=false&access_token=${encodeURIComponent(this.token)}&overview=false`
 
     const res = await fetch(url, { headers: DEFAULT_HEADERS })
-    if (!res.ok) throw new Error(`Mapbox optimization falhou: HTTP ${res.status}`)
+    if (!res.ok) return null
 
     const data: MapboxOptimizationResponse = await res.json()
     const trip = data.trips?.[0]
-    if (data.code !== 'Ok' || !trip || !data.waypoints) {
-      throw new Error('Mapbox: nenhuma rota retornada')
-    }
+    if (data.code !== 'Ok' || !trip || !data.waypoints) return null
 
     // waypoints[] vem na mesma ordem das coordenadas de entrada (índice 0 é
     // sempre o ponto de partida) — cada item traz sua posição real dentro da
@@ -78,7 +100,7 @@ export class MapboxProvider implements IRouteProvider {
       .map((wp, inputIndex) => ({ inputIndex, order: wp.waypoint_index }))
       .filter((w) => w.inputIndex !== 0)
       .sort((a, b) => a.order - b.order)
-      .map((w) => stops[w.inputIndex - 1].id)
+      .map((w) => idByIndex[w.inputIndex - 1])
 
     return {
       orderedStopIds,
