@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { updateVisitStatusAction, deleteVisitAction } from '@/features/visits/actions'
 import { updateVisitLeadStatusAction } from '@/features/leads/actions'
 import { FollowupCreateForm } from '@/features/followups/components/FollowupCreateForm'
-import { VisitCnpjForm } from './VisitCnpjForm'
+import { LeadAddressForm } from '@/features/leads/components/LeadAddressForm'
 import { VISIT_STATUSES, VISIT_STATUS_LABELS } from '@/types/visits'
 import { LEAD_STATUSES, LEAD_STATUS_LABELS } from '@/types/leads'
 import type { VisitWithLeadInfo } from '@/types/visits'
@@ -43,7 +43,9 @@ export function VisitCard({ visit }: Props) {
         </span>
       </div>
 
-      {!hasAddress && <VisitCnpjForm leadId={visit.lead_id} userLeadId={visit.user_lead_id} />}
+      {!hasAddress && (
+        <LeadAddressForm leadId={visit.lead_id} userLeadId={visit.user_lead_id} currentAddress={null} />
+      )}
 
       <div className="flex flex-wrap items-center gap-2">
         <form action={updateVisitStatusAction.bind(null, visit.id)} className="flex items-center gap-1.5">

@@ -11,6 +11,7 @@ import { hideLeadAction } from '@/features/leads/actions'
 import { hasActiveSubscription } from '@/repositories/profileRepository'
 import { SubscriptionGateCard } from '@/components/SubscriptionGateCard'
 import { LeadEditForm } from '@/features/leads/components/LeadEditForm'
+import { LeadAddressForm } from '@/features/leads/components/LeadAddressForm'
 import { LeadTimeline } from '@/features/leads/components/LeadTimeline'
 import { LeadRepliesButton } from '@/features/leads/components/LeadRepliesButton'
 import { LeadFollowupSection } from '@/features/followups/components/LeadFollowupSection'
@@ -112,6 +113,16 @@ export default async function LeadDetailPage({ params }: Props) {
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* Endereço — usado pra planejar visitas */}
+          <div className="rounded-xl border border-outline bg-surface-container p-4 shadow-card">
+            <h2 className="mb-2 text-base font-semibold text-on-surface font-[--font-heading]">Endereço</h2>
+            {canWrite ? (
+              <LeadAddressForm leadId={lead.id} userLeadId={null} currentAddress={lead.address} />
+            ) : (
+              <SubscriptionGateCard compact description="Assine pra adicionar o endereço do lead." />
+            )}
           </div>
 
           {/* Main grid: edit form + email/calls side by side */}
