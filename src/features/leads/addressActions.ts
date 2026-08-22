@@ -13,6 +13,8 @@ import type { LeadStatus } from '@/types/leads'
 export type SetLeadAddressState = {
   error?: string
   success?: boolean
+  /** true quando só achamos uma localização aproximada (bairro/cidade), não a rua exata. */
+  approximate?: boolean
 } | null
 
 type AddressPayload = {
@@ -20,6 +22,7 @@ type AddressPayload = {
   latitude: number
   longitude: number
   cnpj: string | null
+  precise: boolean
 }
 
 /**
@@ -60,7 +63,7 @@ async function saveLeadAddress(
 
     revalidatePath(`/leads/${leadId}`)
     revalidatePath('/visitas')
-    return { success: true }
+    return { success: true, approximate: !payload.precise }
   }
 
   if (userLeadId) {
@@ -87,7 +90,7 @@ async function saveLeadAddress(
 
     revalidatePath(`/leads/global/${userLeadId}`)
     revalidatePath('/visitas')
-    return { success: true }
+    return { success: true, approximate: !payload.precise }
   }
 
   return { error: 'Nenhum lead informado.' }
@@ -120,6 +123,7 @@ export async function setLeadCnpjAction(
     latitude: enrichment.latitude,
     longitude: enrichment.longitude,
     cnpj: enrichment.cnpj,
+    precise: enrichment.precise,
   })
 }
 
@@ -133,8 +137,22 @@ export async function setLeadAddressAction(
   _state: SetLeadAddressState,
   formData: FormData
 ): Promise<SetLeadAddressState> {
-  const address = (formData.get('address') as string | null)?.trim()
-  if (!address) return { error: 'Informe o endereço.' }
+  const street = (formData.get('street') as string | null)?.trim()
+  const number = (formData.get('number') as string | null)?.trim()
+  const neighborhood = (formData.get('neighborhood') as string | null)?.trim()
+  const city = (formData.get('city') as string | null)?.trim()
+  const state = (formData.get('state') as string | null)?.trim()
+
+  if (!street || !city) return { error: 'Informe pelo menos rua e cidade.' }
+
+  const address = [
+    [street, number].filter(Boolean).join(', '),
+    neighborhood,
+    city,
+    state,
+  ]
+    .filter((part): part is string => !!part && part.length > 0)
+    .join(', ')
 
   const supabase = await createClient()
   const {
@@ -142,13 +160,23 @@ export async function setLeadAddressAction(
   } = await supabase.auth.getUser()
   if (!user) return { error: 'Não autenticado.' }
 
-  const geocoded = await getRouteProvider().geocodeAddress(address).catch(() => null)
-  if (!geocoded) return { error: 'Não foi possível localizar esse endereço no mapa.' }
+  let geocoded
+  try {
+    geocoded = await getRouteProvider().geocodeAddress(address)
+  } catch (err) {
+    // Antes engolia qualquer falha (rede, HTTP, etc.) e mostrava sempre "não
+    // encontrado" — mascarava instabilidades reais da API. Loga o motivo de
+    // verdade pra facilitar diagnóstico.
+    console.error('[setLeadAddressAction] geocodeAddress falhou', err)
+    return { error: `Falha ao consultar o serviço de mapas: ${err instanceof Error ? err.message : 'erro desconhecido'}. Tente de novo em alguns instantes.` }
+  }
+  if (!geocoded) return { error: 'Endereço não encontrado no mapa. Tente incluir número e cidade.' }
 
   return saveLeadAddress(supabase, user.id, leadId, userLeadId, {
     address: geocoded.formattedAddress,
     latitude: geocoded.lat,
     longitude: geocoded.lng,
     cnpj: null,
+    precise: geocoded.precise,
   })
 }

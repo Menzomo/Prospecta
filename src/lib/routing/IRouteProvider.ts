@@ -5,6 +5,12 @@ export interface GeocodeResult {
   lat: number
   lng: number
   formattedAddress: string
+  /**
+   * false quando o provedor não achou o endereço exato e caiu num fallback
+   * de bairro/cidade (comum em ruas pouco mapeadas no OpenStreetMap) — as
+   * coordenadas ficam bem menos precisas, útil avisar quem recebe.
+   */
+  precise: boolean
 }
 
 export interface RouteStop {

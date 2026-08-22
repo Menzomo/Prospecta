@@ -121,8 +121,14 @@ export async function calculateRouteAction(
 
   const provider = getRouteProvider()
 
-  const start = await provider.geocodeAddress(startAddress).catch(() => null)
-  if (!start) return { error: 'Não foi possível localizar o ponto de partida informado.' }
+  let start
+  try {
+    start = await provider.geocodeAddress(startAddress)
+  } catch (err) {
+    console.error('[calculateRouteAction] geocodeAddress falhou', err)
+    return { error: `Falha ao consultar o serviço de mapas: ${err instanceof Error ? err.message : 'erro desconhecido'}. Tente de novo em alguns instantes.` }
+  }
+  if (!start) return { error: 'Não foi possível localizar o ponto de partida informado. Tente incluir número e cidade.' }
 
   let optimized
   try {
