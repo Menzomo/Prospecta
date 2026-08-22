@@ -122,6 +122,19 @@ export async function updateVisitStatus(
   return true
 }
 
+export async function deleteVisit(
+  supabase: SupabaseClient<Database>,
+  id: string
+): Promise<boolean> {
+  const { error } = await supabase.from('lead_visits').delete().eq('id', id)
+
+  if (error) {
+    console.error('[leadVisitRepository.deleteVisit]', error.message)
+    return false
+  }
+  return true
+}
+
 /**
  * Grava a ordem otimizada calculada pelo provider de rota — visitIds já vêm
  * na ordem correta, o índice no array vira o valor salvo em visit_order.

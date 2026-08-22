@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getLeadById } from '@/repositories/leadRepository'
 import { getUserLeadById } from '@/repositories/userLeadRepository'
-import { createVisit, getVisitsByDate, saveOptimizedOrder, updateVisitStatus } from '@/repositories/leadVisitRepository'
+import { createVisit, getVisitsByDate, saveOptimizedOrder, updateVisitStatus, deleteVisit } from '@/repositories/leadVisitRepository'
 import { getBalance, debitWallet } from '@/repositories/walletRepository'
 import { isAdminUser } from '@/repositories/profileRepository'
 import { getRouteProvider } from '@/lib/routing/factory'
@@ -66,6 +66,19 @@ export async function updateVisitStatusAction(id: string, formData: FormData): P
   if (!user) return
 
   await updateVisitStatus(supabase, id, status)
+  revalidatePath('/visitas')
+}
+
+// --- Excluir visita ---
+
+export async function deleteVisitAction(id: string, _formData: FormData): Promise<void> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return
+
+  await deleteVisit(supabase, id)
   revalidatePath('/visitas')
 }
 
