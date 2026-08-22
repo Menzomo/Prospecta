@@ -83,7 +83,11 @@ export class MapboxProvider implements IRouteProvider {
 
     const points = [start, ...middle, lastStop]
     const coords = points.map((p) => `${p.lng},${p.lat}`).join(';')
-    const url = `${BASE_URL}/optimized-trips/v1/mapbox/driving/${coords}?source=first&destination=last&roundtrip=false&access_token=${encodeURIComponent(this.token)}&overview=false`
+    // driving-traffic (em vez de driving simples) considera trânsito ao vivo
+    // e histórico na estimativa de duração — não muda a distância (km é uma
+    // propriedade física da via, trânsito não altera isso), só deixa o tempo
+    // mostrado na tela mais realista.
+    const url = `${BASE_URL}/optimized-trips/v1/mapbox/driving-traffic/${coords}?source=first&destination=last&roundtrip=false&access_token=${encodeURIComponent(this.token)}&overview=false`
 
     const res = await fetch(url, { headers: DEFAULT_HEADERS })
     if (!res.ok) return null
