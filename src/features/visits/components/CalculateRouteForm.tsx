@@ -1,12 +1,15 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useState, useActionState } from 'react'
 import { calculateRouteAction } from '@/features/visits/actions'
 
 type Props = {
   scheduledDate: string
   stopCount: number
 }
+
+const inputClass =
+  'rounded-lg border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface outline-none focus:border-primary focus:ring-1 focus:ring-primary'
 
 function formatDistance(meters: number): string {
   return meters >= 1000 ? `${(meters / 1000).toFixed(1)} km` : `${Math.round(meters)} m`
@@ -24,6 +27,37 @@ export function CalculateRouteForm({ scheduledDate, stopCount }: Props) {
   const boundAction = calculateRouteAction.bind(null, scheduledDate)
   const [state, formAction, pending] = useActionState(boundAction, null)
 
+  const [mode, setMode] = useState<'gps' | 'address'>('gps')
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
+  const [gpsError, setGpsError] = useState<string | null>(null)
+  const [locating, setLocating] = useState(false)
+
+  function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      setGpsError('Seu navegador não suporta localização automática. Digite o endereço.')
+      setMode('address')
+      return
+    }
+    setLocating(true)
+    setGpsError(null)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        setLocating(false)
+      },
+      (err) => {
+        setLocating(false)
+        setGpsError(
+          err.code === err.PERMISSION_DENIED
+            ? 'Permissão de localização negada. Digite o endereço abaixo.'
+            : 'Não foi possível pegar sua localização. Digite o endereço abaixo.'
+        )
+        setMode('address')
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
+  }
+
   if (stopCount === 0) return null
 
   return (
@@ -33,21 +67,56 @@ export function CalculateRouteForm({ scheduledDate, stopCount }: Props) {
         {stopCount} {stopCount === 1 ? 'visita planejada' : 'visitas planejadas'} com endereço confirmado. Custa R$ 0,50, descontado da carteira.
       </p>
 
-      <form action={formAction} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <div className="flex flex-1 flex-col gap-1">
-          <label className="text-sm font-medium text-on-surface">Ponto de partida</label>
-          <input
-            type="text"
-            name="start_address"
-            placeholder="Endereço de onde você vai sair"
-            required
-            className="rounded-lg border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-          />
-        </div>
+      <div className="mb-3 flex gap-3 text-xs">
+        <button
+          type="button"
+          onClick={() => setMode('gps')}
+          className={`cursor-pointer ${mode === 'gps' ? 'font-medium text-primary' : 'text-on-surface-muted hover:text-on-surface'}`}
+        >
+          Usar minha localização
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('address')}
+          className={`cursor-pointer ${mode === 'address' ? 'font-medium text-primary' : 'text-on-surface-muted hover:text-on-surface'}`}
+        >
+          Digitar endereço
+        </button>
+      </div>
+
+      <form action={formAction} className="flex flex-col gap-3">
+        {mode === 'gps' ? (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input type="hidden" name="start_lat" value={coords?.lat ?? ''} />
+            <input type="hidden" name="start_lng" value={coords?.lng ?? ''} />
+            <button
+              type="button"
+              onClick={useCurrentLocation}
+              disabled={locating}
+              className="cursor-pointer rounded-lg border border-outline px-3 py-2 text-sm text-on-surface transition-colors hover:bg-surface-low disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {locating ? 'Localizando...' : coords ? '📍 Localização capturada — atualizar' : '📍 Usar minha localização atual'}
+            </button>
+            {gpsError && <p className="text-xs text-red-500">{gpsError}</p>}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-[1fr_auto] gap-2">
+              <input type="text" name="street" placeholder="Rua / Avenida" className={inputClass} />
+              <input type="text" name="number" placeholder="Nº" className={`w-16 ${inputClass}`} />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <input type="text" name="neighborhood" placeholder="Bairro" className={inputClass} />
+              <input type="text" name="city" placeholder="Cidade" className={inputClass} />
+            </div>
+            <input type="text" name="state" placeholder="Estado (RS, SP...)" className={inputClass} />
+          </div>
+        )}
+
         <button
           type="submit"
-          disabled={pending}
-          className="cursor-pointer rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={pending || (mode === 'gps' && !coords)}
+          className="cursor-pointer self-start rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending ? 'Calculando...' : 'Calcular rota'}
         </button>
