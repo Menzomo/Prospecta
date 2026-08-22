@@ -10,6 +10,12 @@ import type { IRouteProvider, GeocodeResult, RouteStop, OptimizedRoute } from '.
 // confirmarmos que o novo está de fato servindo a API.
 const BASE_URL = 'https://api.openrouteservice.org'
 
+// Mesma causa do 403 que a gente já resolveu na BrasilAPI: o fetch do Node
+// na Vercel não manda um User-Agent que o WAF aceita, então bloqueia como
+// bot — mesmo com a chave válida (curl local nunca reproduz porque manda
+// o dele por padrão). Header fixo evita isso nas duas chamadas.
+const DEFAULT_HEADERS = { 'User-Agent': 'Prospecta/1.0', Accept: 'application/json' }
+
 type OrsGeocodeResponse = {
   features?: Array<{
     geometry: { coordinates: [number, number] } // [lng, lat]
@@ -31,6 +37,25 @@ type OrsOptimizationResponse = {
   }>
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+// A OpenRouteService já se mostrou instável nesta integração (403
+// intermitente mesmo com chave válida, sem reproduzir localmente) — repete
+// uma vez com um pequeno atraso antes de desistir, em vez de falhar já na
+// primeira instabilidade passageira.
+async function fetchWithRetry(url: string, init: RequestInit, retries = 1): Promise<Response> {
+  let lastRes: Response | undefined
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const res = await fetch(url, init)
+    if (res.ok) return res
+    lastRes = res
+    if (attempt < retries) await sleep(600)
+  }
+  return lastRes!
+}
+
 export class OpenRouteServiceProvider implements IRouteProvider {
   constructor(private readonly apiKey: string = process.env.ORS_API_KEY ?? '') {}
 
@@ -38,7 +63,7 @@ export class OpenRouteServiceProvider implements IRouteProvider {
     if (!this.apiKey) throw new Error('OpenRouteService: ORS_API_KEY não configurada')
 
     const url = `${BASE_URL}/geocode/search?api_key=${encodeURIComponent(this.apiKey)}&text=${encodeURIComponent(address)}&boundary.country=BR&size=1`
-    const res = await fetch(url)
+    const res = await fetchWithRetry(url, { headers: DEFAULT_HEADERS })
     if (!res.ok) throw new Error(`OpenRouteService geocode falhou: HTTP ${res.status}`)
 
     const data: OrsGeocodeResponse = await res.json()
@@ -83,9 +108,10 @@ export class OpenRouteServiceProvider implements IRouteProvider {
       options: { g: true },
     }
 
-    const res = await fetch(`${BASE_URL}/optimization`, {
+    const res = await fetchWithRetry(`${BASE_URL}/optimization`, {
       method: 'POST',
       headers: {
+        ...DEFAULT_HEADERS,
         Authorization: this.apiKey,
         'Content-Type': 'application/json',
       },
