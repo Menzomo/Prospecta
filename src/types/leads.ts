@@ -13,6 +13,7 @@ export const LEAD_STATUSES = [
   'convertido',
   'convertido_email',
   'convertido_telefonia',
+  'convertido_visita',
 ] as const
 
 export type LeadStatus = (typeof LEAD_STATUSES)[number]
@@ -28,9 +29,10 @@ export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
   convertido: 'Convertido',
   convertido_email: 'Convertido — Email',
   convertido_telefonia: 'Convertido — Telefonia',
+  convertido_visita: 'Convertido — Visita',
 }
 
-export const CONVERTED_STATUSES: LeadStatus[] = ['convertido', 'convertido_email', 'convertido_telefonia']
+export const CONVERTED_STATUSES: LeadStatus[] = ['convertido', 'convertido_email', 'convertido_telefonia', 'convertido_visita']
 
 export type CreateLeadDto = {
   company_name: string
@@ -53,4 +55,8 @@ export type UpdateLeadDto = {
   city?: string | null
   status: LeadStatus
   notes?: string | null
+  address?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  cnpj?: string | null
 }

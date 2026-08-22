@@ -6,6 +6,7 @@ import { getEmailMessagesByLeadId, getEmailThreadsByLeadId } from '@/repositorie
 import { getFollowupsByLeadId } from '@/repositories/followupRepository'
 import { hasTelephonyConfigured } from '@/repositories/telephonySettingsRepository'
 import { getCallsWithAnalysisByLeadId } from '@/repositories/callRepository'
+import { getVisitsByLeadId } from '@/repositories/leadVisitRepository'
 import { hideLeadAction } from '@/features/leads/actions'
 import { hasActiveSubscription } from '@/repositories/profileRepository'
 import { SubscriptionGateCard } from '@/components/SubscriptionGateCard'
@@ -37,13 +38,14 @@ export default async function LeadDetailPage({ params }: Props) {
   const lead = await getLeadById(supabase, id)
   if (!lead) notFound()
 
-  const [emailMessages, followups, emailThreads, hasSettings, calls, canWrite] = await Promise.all([
+  const [emailMessages, followups, emailThreads, hasSettings, calls, canWrite, visits] = await Promise.all([
     getEmailMessagesByLeadId(supabase, user.id, id),
     getFollowupsByLeadId(supabase, user.id, id),
     getEmailThreadsByLeadId(supabase, user.id, id),
     hasTelephonyConfigured(supabase, user.id),
     getCallsWithAnalysisByLeadId(supabase, user.id, id),
     hasActiveSubscription(supabase, user.id),
+    getVisitsByLeadId(supabase, user.id, id),
   ])
 
   const status = lead.status as LeadStatus
@@ -129,7 +131,7 @@ export default async function LeadDetailPage({ params }: Props) {
 
           <LeadFollowupSection leadId={lead.id} followups={followups} canWrite={canWrite} />
 
-          <LeadTimeline lead={lead} messages={emailMessages} followups={followups} threads={emailThreads} calls={calls} />
+          <LeadTimeline lead={lead} messages={emailMessages} followups={followups} threads={emailThreads} calls={calls} visits={visits} />
         </div>
       </main>
     </>
