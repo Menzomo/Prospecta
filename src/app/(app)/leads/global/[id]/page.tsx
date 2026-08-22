@@ -9,6 +9,7 @@ import { getVisitsByUserLeadId } from '@/repositories/leadVisitRepository'
 import { hasActiveSubscription } from '@/repositories/profileRepository'
 import { SubscriptionGateCard } from '@/components/SubscriptionGateCard'
 import { LeadFollowupSection } from '@/features/followups/components/LeadFollowupSection'
+import { LeadAddressForm } from '@/features/leads/components/LeadAddressForm'
 import { LeadCallsSection } from '@/features/calls/components/LeadCallsSection'
 import { LeadTimeline } from '@/features/leads/components/LeadTimeline'
 import { MarkInboxRead } from '@/features/inbox/components/MarkInboxRead'
@@ -34,7 +35,7 @@ export default async function UserLeadDetailPage({ params }: Props) {
   // Fetch user_lead (ownership enforced by RLS) joined with global_leads
   const { data, error } = await supabase
     .from('user_leads')
-    .select('id, status, created_at, notes, global_leads(company_name, email, website, phone, city, state)')
+    .select('id, status, created_at, notes, global_leads(company_name, email, website, phone, city, state, address)')
     .eq('id', id)
     .eq('user_id', user.id)
     .single()
@@ -48,6 +49,7 @@ export default async function UserLeadDetailPage({ params }: Props) {
     phone: string | null
     city: string | null
     state: string | null
+    address: string | null
   }
 
   const [followups, hasSettings, calls, canWrite, visits] = await Promise.all([
@@ -158,6 +160,16 @@ export default async function UserLeadDetailPage({ params }: Props) {
                 </div>
               )}
             </dl>
+          </div>
+
+          {/* Endereço — usado pra planejar visitas */}
+          <div className="rounded-xl border border-outline bg-surface-container p-6 shadow-card">
+            <h2 className="mb-4 text-base font-semibold text-on-surface font-[--font-heading]">Endereço</h2>
+            {canWrite ? (
+              <LeadAddressForm leadId={null} userLeadId={id} currentAddress={gl.address} />
+            ) : (
+              <SubscriptionGateCard compact description="Assine pra adicionar o endereço do lead." />
+            )}
           </div>
 
           {/* Update status */}
