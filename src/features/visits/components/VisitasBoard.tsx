@@ -8,6 +8,8 @@ export type PickableLead = {
   userLeadId: string | null
   company_name: string
   hasAddress: boolean
+  /** Nicho/categoria — só existe pra leads de busca, leads manuais não têm. */
+  niche: string | null
 }
 
 export type DayColumnData = {
