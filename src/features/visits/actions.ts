@@ -94,8 +94,12 @@ export async function calculateRouteAction(
   _state: CalculateRouteState,
   formData: FormData
 ): Promise<CalculateRouteState> {
-  const startAddress = (formData.get('start_address') as string | null)?.trim()
-  if (!startAddress) return { error: 'Informe o ponto de partida.' }
+  // Ponto de partida pode vir de duas formas: coordenadas reais do GPS do
+  // navegador (mais preciso, sempre bate com onde a pessoa realmente está)
+  // ou endereço digitado (fallback, útil pra planejar a rota de um lugar
+  // onde não se está fisicamente ainda).
+  const gpsLat = formData.get('start_lat') as string | null
+  const gpsLng = formData.get('start_lng') as string | null
 
   const supabase = await createClient()
   const {
@@ -121,14 +125,37 @@ export async function calculateRouteAction(
 
   const provider = getRouteProvider()
 
-  let start
-  try {
-    start = await provider.geocodeAddress(startAddress)
-  } catch (err) {
-    console.error('[calculateRouteAction] geocodeAddress falhou', err)
-    return { error: `Falha ao consultar o serviço de mapas: ${err instanceof Error ? err.message : 'erro desconhecido'}. Tente de novo em alguns instantes.` }
+  const parsedLat = gpsLat ? parseFloat(gpsLat) : NaN
+  const parsedLng = gpsLng ? parseFloat(gpsLng) : NaN
+
+  let start: { lat: number; lng: number }
+  if (!isNaN(parsedLat) && !isNaN(parsedLng)) {
+    start = { lat: parsedLat, lng: parsedLng }
+  } else {
+    const street = (formData.get('street') as string | null)?.trim()
+    const number = (formData.get('number') as string | null)?.trim()
+    const neighborhood = (formData.get('neighborhood') as string | null)?.trim()
+    const city = (formData.get('city') as string | null)?.trim()
+    const state = (formData.get('state') as string | null)?.trim()
+
+    if (!street || !city) {
+      return { error: 'Informe rua e cidade, ou use sua localização atual.' }
+    }
+
+    const address = [[street, number].filter(Boolean).join(', '), neighborhood, city, state]
+      .filter((part): part is string => !!part && part.length > 0)
+      .join(', ')
+
+    let geocoded
+    try {
+      geocoded = await provider.geocodeAddress(address)
+    } catch (err) {
+      console.error('[calculateRouteAction] geocodeAddress falhou', err)
+      return { error: `Falha ao consultar o serviço de mapas: ${err instanceof Error ? err.message : 'erro desconhecido'}. Tente de novo em alguns instantes.` }
+    }
+    if (!geocoded) return { error: 'Não foi possível localizar o ponto de partida informado. Tente incluir número e cidade.' }
+    start = { lat: geocoded.lat, lng: geocoded.lng }
   }
-  if (!start) return { error: 'Não foi possível localizar o ponto de partida informado. Tente incluir número e cidade.' }
 
   let optimized
   try {
