@@ -35,6 +35,18 @@ export default async function VisitasPage() {
   const visitsByDate = await Promise.all(boardDates.map((d) => getVisitsByDate(supabase, user.id, d)))
   const columns = boardDates.map((date, i) => ({ date, visits: visitsByDate[i] }))
 
+  // Leads de busca têm nicho (category_id) — busca os nomes só das
+  // categorias que aparecem aqui, pra agrupar o seletor de lead por nicho.
+  const categoryIds = [...new Set(searchLeads.map((l) => l.category_id).filter((id): id is string => !!id))]
+  const categoryNameById = new Map<string, string>()
+  if (categoryIds.length > 0) {
+    const { data: categories } = await supabase
+      .from('lead_categories')
+      .select('id, name')
+      .in('id', categoryIds)
+    for (const c of categories ?? []) categoryNameById.set(c.id, c.name)
+  }
+
   const pickableLeads: PickableLead[] = [
     ...manualLeads.map((l): PickableLead => ({
       key: `manual-${l.id}`,
@@ -42,6 +54,7 @@ export default async function VisitasPage() {
       userLeadId: null,
       company_name: l.company_name,
       hasAddress: l.latitude != null && l.longitude != null,
+      niche: null,
     })),
     ...searchLeads.map((l): PickableLead => ({
       key: `search-${l.id}`,
@@ -49,6 +62,7 @@ export default async function VisitasPage() {
       userLeadId: l.id,
       company_name: l.company_name,
       hasAddress: l.latitude != null && l.longitude != null,
+      niche: l.category_id ? categoryNameById.get(l.category_id) ?? null : null,
     })),
   ]
 

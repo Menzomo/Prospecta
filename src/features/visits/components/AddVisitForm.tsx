@@ -18,6 +18,20 @@ export function AddVisitForm({ leads, defaultDate }: Props) {
   const manualLeads = leads.filter((l) => l.leadId)
   const searchLeads = leads.filter((l) => l.userLeadId)
 
+  // Agrupa os leads de busca por nicho — os sem categoria caem juntos no
+  // final, com um rótulo claro em vez de sumir do seletor.
+  const searchByNiche = new Map<string, PickableLead[]>()
+  for (const l of searchLeads) {
+    const key = l.niche ?? 'Sem nicho'
+    if (!searchByNiche.has(key)) searchByNiche.set(key, [])
+    searchByNiche.get(key)!.push(l)
+  }
+  const nicheGroups = [...searchByNiche.entries()].sort(([a], [b]) => {
+    if (a === 'Sem nicho') return 1
+    if (b === 'Sem nicho') return -1
+    return a.localeCompare(b)
+  })
+
   return (
     <form action={formAction} className="flex flex-col gap-3 rounded-xl border border-outline bg-surface-container p-5 shadow-card sm:flex-row sm:items-end">
       <div className="flex flex-1 flex-col gap-1">
@@ -38,15 +52,15 @@ export function AddVisitForm({ leads, defaultDate }: Props) {
               ))}
             </optgroup>
           )}
-          {searchLeads.length > 0 && (
-            <optgroup label="Leads da busca">
-              {searchLeads.map((l) => (
+          {nicheGroups.map(([niche, nicheLeads]) => (
+            <optgroup key={niche} label={`Busca — ${niche}`}>
+              {nicheLeads.map((l) => (
                 <option key={l.key} value={l.key}>
                   {l.company_name}{!l.hasAddress ? ' (sem endereço)' : ''}
                 </option>
               ))}
             </optgroup>
-          )}
+          ))}
         </select>
       </div>
 
