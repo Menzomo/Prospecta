@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { updateVisitStatusAction } from '@/features/visits/actions'
+import { updateVisitStatusAction, deleteVisitAction } from '@/features/visits/actions'
 import { updateVisitLeadStatusAction } from '@/features/leads/actions'
 import { FollowupCreateForm } from '@/features/followups/components/FollowupCreateForm'
 import { VisitCnpjForm } from './VisitCnpjForm'
@@ -84,6 +84,18 @@ export function VisitCard({ visit }: Props) {
         >
           {showFollowup ? 'Cancelar' : '+ Acompanhamento'}
         </button>
+
+        <form
+          action={deleteVisitAction.bind(null, visit.id)}
+          onSubmit={(e) => {
+            if (!confirm('Excluir essa visita? Não é possível desfazer.')) e.preventDefault()
+          }}
+          className="ml-auto"
+        >
+          <button type="submit" className="cursor-pointer rounded-md border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50">
+            Excluir
+          </button>
+        </form>
       </div>
 
       {showFollowup && (
