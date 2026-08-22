@@ -11,7 +11,7 @@ import { getRouteProvider } from '@/lib/routing/factory'
 import { buildGoogleMapsRouteUrl } from '@/lib/routing/buildMapsUrl'
 import type { VisitStatus } from '@/types/visits'
 
-const CUSTO_CALCULO_ROTA = 0.5
+const CUSTO_CALCULO_ROTA = 0.15
 
 // --- Criar visita ---
 
