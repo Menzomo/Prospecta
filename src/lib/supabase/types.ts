@@ -108,6 +108,10 @@ export interface Database {
           hidden_at: string | null
           last_contacted_at: string | null
           last_reply_at: string | null
+          address: string | null
+          latitude: number | null
+          longitude: number | null
+          cnpj: string | null
           created_at: string
           updated_at: string
         }
@@ -127,6 +131,10 @@ export interface Database {
           hidden_at?: string | null
           last_contacted_at?: string | null
           last_reply_at?: string | null
+          address?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          cnpj?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -144,6 +152,10 @@ export interface Database {
           hidden_at?: string | null
           last_contacted_at?: string | null
           last_reply_at?: string | null
+          address?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          cnpj?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -406,6 +418,10 @@ export interface Database {
           approved_at: string | null
           approved_by: string | null
           rejection_reason: string | null
+          address: string | null
+          latitude: number | null
+          longitude: number | null
+          cnpj: string | null
           created_at: string
           updated_at: string
         }
@@ -429,6 +445,10 @@ export interface Database {
           approved_at?: string | null
           approved_by?: string | null
           rejection_reason?: string | null
+          address?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          cnpj?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -451,6 +471,46 @@ export interface Database {
           approved_at?: string | null
           approved_by?: string | null
           rejection_reason?: string | null
+          address?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          cnpj?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lead_visits: {
+        Row: {
+          id: string
+          user_id: string
+          lead_id: string | null
+          user_lead_id: string | null
+          scheduled_date: string
+          status: string
+          visit_order: number | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          lead_id?: string | null
+          user_lead_id?: string | null
+          scheduled_date: string
+          status?: string
+          visit_order?: number | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          lead_id?: string | null
+          user_lead_id?: string | null
+          scheduled_date?: string
+          status?: string
+          visit_order?: number | null
+          notes?: string | null
           updated_at?: string
         }
         Relationships: []

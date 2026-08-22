@@ -28,7 +28,7 @@ export async function debitWallet(
   supabase: AnyClient,
   userId: string,
   amount: number,
-  type: 'call' | 'analysis' | 'leads_purchase',
+  type: 'call' | 'analysis' | 'leads_purchase' | 'route',
   referenceId: string,
   description: string
 ): Promise<number> {

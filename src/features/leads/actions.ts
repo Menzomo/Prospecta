@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createLeadSchema, updateLeadSchema } from '@/validations/leadSchema'
-import { updateLead, hideLead } from '@/repositories/leadRepository'
+import { updateLead, hideLead, updateLeadStatus } from '@/repositories/leadRepository'
 import { hideUserLead, updateUserLead } from '@/repositories/userLeadRepository'
 import { createLeadWithDuplicateCheck } from '@/services/leadService'
 import type { LeadStatus } from '@/types/leads'
@@ -209,4 +209,39 @@ export async function updateUserLeadStatusAction(id: string, formData: FormData)
   revalidatePath(`/leads/global/${id}`)
   revalidatePath('/leads')
   redirect(`/leads/global/${id}`)
+}
+
+// Trocar status sem sair da página (usado nos cards de visita em /visitas —
+// diferente de updateLeadAction/updateUserLeadStatusAction, que redirecionam
+// pra tela do lead). Aceita exatamente um dos dois IDs, mesmo padrão de
+// createFollowupAction.
+export async function updateVisitLeadStatusAction(
+  leadId: string | null,
+  userLeadId: string | null,
+  formData: FormData
+): Promise<void> {
+  const status = formData.get('status') as string
+  if (!status) return
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  if (leadId) {
+    await updateLeadStatus(supabase, user.id, leadId, status)
+  } else if (userLeadId) {
+    const { data: existing } = await supabase
+      .from('user_leads')
+      .select('id')
+      .eq('id', userLeadId)
+      .eq('user_id', user.id)
+      .single()
+    if (existing) {
+      await updateUserLead(supabase, userLeadId, { status: status as UserLeadStatus })
+    }
+  }
+
+  revalidatePath('/visitas')
 }

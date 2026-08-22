@@ -11,7 +11,7 @@ export function DashboardKpis({ kpis }: Props) {
       ? Math.round((kpis.receivedReplies / kpis.sentEmails) * 100)
       : 0
 
-  const hasConversions = kpis.convertedByEmail > 0 || kpis.convertedByPhone > 0
+  const hasConversions = kpis.convertedByEmail > 0 || kpis.convertedByPhone > 0 || kpis.convertedByVisit > 0
 
   return (
     <div className="flex flex-col gap-4">
@@ -56,7 +56,7 @@ export function DashboardKpis({ kpis }: Props) {
           <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-muted">
             Conversões
           </p>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
             {kpis.convertedByEmail > 0 && (
               <KpiCard
                 label="Convertidos via Email"
@@ -69,6 +69,13 @@ export function DashboardKpis({ kpis }: Props) {
                 label="Convertidos via Telefonia"
                 value={kpis.convertedByPhone}
                 badge={{ label: '📞 TELEFONIA', variant: 'success' }}
+              />
+            )}
+            {kpis.convertedByVisit > 0 && (
+              <KpiCard
+                label="Convertidos via Visita"
+                value={kpis.convertedByVisit}
+                badge={{ label: '📍 VISITA', variant: 'success' }}
               />
             )}
           </div>

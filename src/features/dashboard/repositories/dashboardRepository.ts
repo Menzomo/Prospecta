@@ -243,3 +243,18 @@ export async function getConvertedByPhoneCount(
   if (error) return 0
   return count ?? 0
 }
+
+// Diferente das duas contagens acima (só leads manuais), soma leads e
+// user_leads — visita funciona pros dois tipos de lead.
+export async function getConvertedByVisitCount(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<number> {
+  const [manual, fromSearch] = await Promise.all([
+    supabase.from('leads').select('*', { count: 'exact', head: true })
+      .eq('user_id', userId).eq('status', 'convertido_visita'),
+    supabase.from('user_leads').select('*', { count: 'exact', head: true })
+      .eq('user_id', userId).eq('status', 'convertido_visita'),
+  ])
+  return (manual.count ?? 0) + (fromSearch.count ?? 0)
+}

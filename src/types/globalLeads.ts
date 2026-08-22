@@ -69,4 +69,7 @@ export type CreateGlobalLeadDto = {
   provider_external_id?: string | null
   lead_quality_status?: LeadQualityStatus
   status?: GlobalLeadStatus
+  address?: string | null
+  latitude?: number | null
+  longitude?: number | null
 }

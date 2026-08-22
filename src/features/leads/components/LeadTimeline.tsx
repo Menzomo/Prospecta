@@ -5,8 +5,11 @@ import type { Lead } from '@/types/leads'
 import type { EmailMessage, EmailThread } from '@/types/email'
 import type { Followup } from '@/types/followups'
 import type { CallWithAnalysis } from '@/types/calls'
+import type { LeadVisit } from '@/types/visits'
+import { VISIT_STATUS_LABELS } from '@/types/visits'
 
 type LeadCreatedEvent = { id: string; type: 'lead_created'; timestamp: string }
+type VisitEvent = { id: string; type: 'visit'; timestamp: string; status: string; scheduled_date: string }
 type EmailSentEvent = { id: string; type: 'email_sent'; timestamp: string; subject: string }
 type FollowupCreatedEvent = { id: string; type: 'followup_created'; timestamp: string; title: string; due_at: string }
 type FollowupCompletedEvent = { id: string; type: 'followup_completed'; timestamp: string; title: string }
@@ -22,6 +25,7 @@ type TimelineEvent =
   | ReplyReceivedEvent
   | CallCompletedEvent
   | CallAnalyzedEvent
+  | VisitEvent
 
 const ENDED_STATUSES = ['completed', 'failed', 'no-answer', 'busy', 'canceled']
 
@@ -41,11 +45,12 @@ function formatDuration(seconds: number | null): string {
 }
 
 function buildTimeline(
-  lead: Lead,
+  lead: Pick<Lead, 'id' | 'created_at'>,
   messages: EmailMessage[],
   followups: Followup[],
   threads: EmailThread[],
-  calls: CallWithAnalysis[] = []
+  calls: CallWithAnalysis[] = [],
+  visits: LeadVisit[] = []
 ): TimelineEvent[] {
   const gmailIdMap = new Map(threads.map((t) => [t.id, t.gmail_thread_id]))
 
@@ -107,6 +112,13 @@ function buildTimeline(
       }
       return evts
     }),
+    ...visits.map((v): VisitEvent => ({
+      id: `visit_${v.id}`,
+      type: 'visit',
+      timestamp: v.updated_at,
+      status: v.status,
+      scheduled_date: v.scheduled_date,
+    })),
   ]
 
   return events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
@@ -136,20 +148,22 @@ function eventLabel(event: TimelineEvent): string {
     case 'followup_completed': return 'Acompanhamento concluído'
     case 'call_completed': return 'Ligação realizada'
     case 'call_analyzed': return 'Análise de IA disponível'
+    case 'visit': return 'Visita'
   }
 }
 
 type Props = {
-  lead: Lead
+  lead: Pick<Lead, 'id' | 'created_at'>
   messages: EmailMessage[]
   followups: Followup[]
   threads: EmailThread[]
   calls?: CallWithAnalysis[]
+  visits?: LeadVisit[]
 }
 
-export function LeadTimeline({ lead, messages, followups, threads, calls = [] }: Props) {
+export function LeadTimeline({ lead, messages, followups, threads, calls = [], visits = [] }: Props) {
   const [expanded, setExpanded] = useState(false)
-  const events = buildTimeline(lead, messages, followups, threads, calls)
+  const events = buildTimeline(lead, messages, followups, threads, calls, visits)
 
   const lastEvent = events[0]
   const replyCount = events.filter((e) => e.type === 'reply_received').length
@@ -199,6 +213,7 @@ export function LeadTimeline({ lead, messages, followups, threads, calls = [] }:
                         event.type === 'reply_received' ? 'bg-blue-400'
                           : event.type === 'call_completed' ? 'bg-green-400'
                           : event.type === 'call_analyzed' ? 'bg-purple-400'
+                          : event.type === 'visit' ? 'bg-amber-400'
                           : 'bg-gray-300'
                       }`} />
                       {!isLast && <div className="mt-1 w-px flex-1 bg-gray-100" />}
@@ -279,6 +294,16 @@ export function LeadTimeline({ lead, messages, followups, threads, calls = [] }:
                         <>
                           <p className="text-sm font-medium text-purple-700">Análise de IA disponível</p>
                           <p className="mt-0.5 text-xs text-gray-400">{formatDateTime(event.timestamp)}</p>
+                        </>
+                      )}
+
+                      {event.type === 'visit' && (
+                        <>
+                          <p className="text-sm font-medium text-amber-700">
+                            Visita — {VISIT_STATUS_LABELS[event.status as keyof typeof VISIT_STATUS_LABELS] ?? event.status}
+                          </p>
+                          <p className="mt-0.5 text-xs text-gray-400">{formatDateTime(event.timestamp)}</p>
+                          <p className="mt-0.5 text-xs text-gray-500">Agendada pra {formatDate(event.scheduled_date)}</p>
                         </>
                       )}
                     </div>

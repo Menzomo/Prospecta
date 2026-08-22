@@ -23,6 +23,8 @@ type ApifyItem = {
   city?: string
   state?: string
   placeId?: string
+  address?: string
+  location?: { lat?: number; lng?: number }
 }
 
 type RouteParams = { params: Promise<{ id: string }> }
@@ -188,6 +190,9 @@ export async function POST(_request: Request, { params }: RouteParams) {
     const itemCity = item.city?.trim() || null
     const state = item.state?.trim() || null
     const placeId = item.placeId?.trim() || null
+    const address = item.address?.trim() || null
+    const latitude = typeof item.location?.lat === 'number' ? item.location.lat : null
+    const longitude = typeof item.location?.lng === 'number' ? item.location.lng : null
 
     const discardContext: Omit<DiscardedItem, 'reason'> = { company_name: companyName, city: itemCity, website, placeId }
 
@@ -247,6 +252,9 @@ export async function POST(_request: Request, { params }: RouteParams) {
       provider_external_id: placeId,
       lead_quality_status: qualityStatus,
       status: qualityStatus === 'incomplete' ? 'rejected' : 'pending_review',
+      address,
+      latitude,
+      longitude,
     })
 
     if (created) {
