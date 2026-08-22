@@ -9,31 +9,31 @@ import { SubscriptionGateCard } from '@/components/SubscriptionGateCard'
 import { VisitasBoard } from '@/features/visits/components/VisitasBoard'
 import type { PickableLead } from '@/features/visits/components/VisitasBoard'
 
-type Props = {
-  searchParams: Promise<{ date?: string }>
-}
-
 function todayIso(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
 }
 
-export default async function VisitasPage({ searchParams }: Props) {
-  const { date } = await searchParams
-  const selectedDate = date ?? todayIso()
-
+export default async function VisitasPage() {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const [manualLeads, searchLeads, visits, upcomingDates, canWrite] = await Promise.all([
+  const today = todayIso()
+
+  const [manualLeads, searchLeads, upcomingDates, canWrite] = await Promise.all([
     getLeadsByUserId(supabase, user.id),
     getUserLeadsWithGlobalData(supabase, user.id),
-    getVisitsByDate(supabase, user.id, selectedDate),
     getUpcomingVisitDates(supabase, user.id),
     hasActiveSubscription(supabase, user.id),
   ])
+
+  // Um card/coluna por dia — hoje sempre aparece (mesmo vazio, pra ter onde
+  // agendar) mais qualquer outro dia que já tenha visita planejada.
+  const boardDates = [...new Set([today, ...upcomingDates])].sort()
+  const visitsByDate = await Promise.all(boardDates.map((d) => getVisitsByDate(supabase, user.id, d)))
+  const columns = boardDates.map((date, i) => ({ date, visits: visitsByDate[i] }))
 
   const pickableLeads: PickableLead[] = [
     ...manualLeads.map((l): PickableLead => ({
@@ -60,13 +60,7 @@ export default async function VisitasPage({ searchParams }: Props) {
       />
 
       {canWrite ? (
-        <VisitasBoard
-          selectedDate={selectedDate}
-          today={todayIso()}
-          visits={visits}
-          upcomingDates={upcomingDates}
-          pickableLeads={pickableLeads}
-        />
+        <VisitasBoard today={today} columns={columns} pickableLeads={pickableLeads} />
       ) : (
         <SubscriptionGateCard description="Assine pra agendar visitas e calcular rotas." />
       )}
