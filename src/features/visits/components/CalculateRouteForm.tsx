@@ -64,7 +64,7 @@ export function CalculateRouteForm({ scheduledDate, stopCount }: Props) {
     <div className="rounded-xl border border-outline bg-surface-container p-5 shadow-card">
       <h2 className="mb-1 text-base font-semibold text-on-surface font-[--font-heading]">Calcular rota do dia</h2>
       <p className="mb-4 text-sm text-on-surface-muted">
-        {stopCount} {stopCount === 1 ? 'visita planejada' : 'visitas planejadas'} com endereço confirmado. Custa R$ 0,50, descontado da carteira.
+        {stopCount} {stopCount === 1 ? 'visita planejada' : 'visitas planejadas'} com endereço confirmado. Custa R$ 0,15, descontado da carteira.
       </p>
 
       <div className="mb-3 flex gap-3 text-xs">
