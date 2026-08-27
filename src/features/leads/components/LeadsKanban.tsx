@@ -66,18 +66,15 @@ export function LeadsKanban({ leads, hasSettings }: Props) {
     )
   }
 
-  const colCount = activeColumns.length
-  const gridCols =
-    colCount === 1 ? 'grid-cols-1' :
-    colCount === 2 ? 'grid-cols-2' :
-    colCount === 3 ? 'grid-cols-3' :
-    colCount === 4 ? 'grid-cols-2 lg:grid-cols-4' :
-    'grid-cols-2 lg:grid-cols-3 xl:grid-cols-5'
-
   return (
-    <div className={`grid gap-4 ${gridCols}`}>
+    // Colunas de largura fixa com rolagem horizontal — no celular, o Grid
+    // com número de colunas variável espremia tudo (2-3 colunas em 375px),
+    // misturando cards de status diferentes numa grade confusa. Rolagem
+    // horizontal com snap funciona bem tanto no celular (arrasta uma coluna
+    // por vez) quanto no desktop (mostra várias, sem quebrar layout).
+    <div className="flex snap-x gap-4 overflow-x-auto pb-2">
       {activeColumns.map((col) => (
-        <div key={col.id} className="flex flex-col gap-3">
+        <div key={col.id} className="flex w-[85vw] shrink-0 snap-start flex-col gap-3 sm:w-80">
           {/* Column header */}
           <div className="flex items-center gap-2 rounded-lg border border-outline bg-surface-container px-4 py-3">
             <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${col.dot}`} />
