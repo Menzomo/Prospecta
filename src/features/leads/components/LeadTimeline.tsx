@@ -7,6 +7,7 @@ import type { Followup } from '@/types/followups'
 import type { CallWithAnalysis } from '@/types/calls'
 import type { LeadVisit } from '@/types/visits'
 import { VISIT_STATUS_LABELS } from '@/types/visits'
+import type { WhatsAppMessage } from '@/types/whatsapp'
 
 type LeadCreatedEvent = { id: string; type: 'lead_created'; timestamp: string }
 type VisitEvent = { id: string; type: 'visit'; timestamp: string; status: string; scheduled_date: string }
@@ -16,6 +17,8 @@ type FollowupCompletedEvent = { id: string; type: 'followup_completed'; timestam
 type ReplyReceivedEvent = { id: string; type: 'reply_received'; timestamp: string; subject: string; gmail_url: string | null }
 type CallCompletedEvent = { id: string; type: 'call_completed'; timestamp: string; duration_seconds: number | null; status: string }
 type CallAnalyzedEvent = { id: string; type: 'call_analyzed'; timestamp: string }
+type WhatsAppSentEvent = { id: string; type: 'whatsapp_sent'; timestamp: string; body: string }
+type WhatsAppReceivedEvent = { id: string; type: 'whatsapp_received'; timestamp: string; body: string }
 
 type TimelineEvent =
   | LeadCreatedEvent
@@ -26,6 +29,8 @@ type TimelineEvent =
   | CallCompletedEvent
   | CallAnalyzedEvent
   | VisitEvent
+  | WhatsAppSentEvent
+  | WhatsAppReceivedEvent
 
 const ENDED_STATUSES = ['completed', 'failed', 'no-answer', 'busy', 'canceled']
 
@@ -50,7 +55,8 @@ function buildTimeline(
   followups: Followup[],
   threads: EmailThread[],
   calls: CallWithAnalysis[] = [],
-  visits: LeadVisit[] = []
+  visits: LeadVisit[] = [],
+  whatsappMessages: WhatsAppMessage[] = []
 ): TimelineEvent[] {
   const gmailIdMap = new Map(threads.map((t) => [t.id, t.gmail_thread_id]))
 
@@ -119,6 +125,12 @@ function buildTimeline(
       status: v.status,
       scheduled_date: v.scheduled_date,
     })),
+    ...whatsappMessages
+      .filter((m) => m.direction === 'outbound')
+      .map((m): WhatsAppSentEvent => ({ id: m.id, type: 'whatsapp_sent', timestamp: m.created_at, body: m.body })),
+    ...whatsappMessages
+      .filter((m) => m.direction === 'inbound')
+      .map((m): WhatsAppReceivedEvent => ({ id: m.id, type: 'whatsapp_received', timestamp: m.created_at, body: m.body })),
   ]
 
   return events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
@@ -149,6 +161,8 @@ function eventLabel(event: TimelineEvent): string {
     case 'call_completed': return 'Ligação realizada'
     case 'call_analyzed': return 'Análise de IA disponível'
     case 'visit': return 'Visita'
+    case 'whatsapp_sent': return 'WhatsApp enviado'
+    case 'whatsapp_received': return 'WhatsApp recebido'
   }
 }
 
@@ -159,11 +173,12 @@ type Props = {
   threads: EmailThread[]
   calls?: CallWithAnalysis[]
   visits?: LeadVisit[]
+  whatsappMessages?: WhatsAppMessage[]
 }
 
-export function LeadTimeline({ lead, messages, followups, threads, calls = [], visits = [] }: Props) {
+export function LeadTimeline({ lead, messages, followups, threads, calls = [], visits = [], whatsappMessages = [] }: Props) {
   const [expanded, setExpanded] = useState(false)
-  const events = buildTimeline(lead, messages, followups, threads, calls, visits)
+  const events = buildTimeline(lead, messages, followups, threads, calls, visits, whatsappMessages)
 
   const lastEvent = events[0]
   const replyCount = events.filter((e) => e.type === 'reply_received').length
@@ -214,6 +229,7 @@ export function LeadTimeline({ lead, messages, followups, threads, calls = [], v
                           : event.type === 'call_completed' ? 'bg-green-400'
                           : event.type === 'call_analyzed' ? 'bg-purple-400'
                           : event.type === 'visit' ? 'bg-amber-400'
+                          : event.type === 'whatsapp_sent' || event.type === 'whatsapp_received' ? 'bg-emerald-400'
                           : 'bg-gray-300'
                       }`} />
                       {!isLast && <div className="mt-1 w-px flex-1 bg-gray-100" />}
@@ -304,6 +320,22 @@ export function LeadTimeline({ lead, messages, followups, threads, calls = [], v
                           </p>
                           <p className="mt-0.5 text-xs text-gray-400">{formatDateTime(event.timestamp)}</p>
                           <p className="mt-0.5 text-xs text-gray-500">Agendada pra {formatDate(event.scheduled_date)}</p>
+                        </>
+                      )}
+
+                      {event.type === 'whatsapp_sent' && (
+                        <>
+                          <p className="text-sm font-medium text-emerald-700">WhatsApp enviado</p>
+                          <p className="mt-0.5 text-xs text-gray-400">{formatDateTime(event.timestamp)}</p>
+                          <p className="mt-0.5 truncate text-xs text-gray-500">{event.body}</p>
+                        </>
+                      )}
+
+                      {event.type === 'whatsapp_received' && (
+                        <>
+                          <p className="text-sm font-medium text-emerald-700">WhatsApp recebido</p>
+                          <p className="mt-0.5 text-xs text-gray-400">{formatDateTime(event.timestamp)}</p>
+                          <p className="mt-0.5 truncate text-xs text-gray-500">{event.body}</p>
                         </>
                       )}
                     </div>
