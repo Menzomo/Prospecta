@@ -330,7 +330,7 @@ export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
 
       {/* Mobile top bar */}
       <div className="lg:hidden flex items-center justify-between border-b border-outline bg-surface-container px-4 py-3 fixed top-0 left-0 right-0 z-40">
-        <span className="text-sm font-bold text-on-surface font-[--font-heading]">Prospecta</span>
+        <span className="text-base font-bold text-on-surface font-[--font-heading]">Prospecta</span>
         <button
           type="button"
           onClick={() => setOpen(true)}

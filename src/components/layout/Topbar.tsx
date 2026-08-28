@@ -73,22 +73,24 @@ function BalanceChip({ phoneNumber }: { phoneNumber?: string | null }) {
   return (
     <Link
       href="/settings?section=carteira"
-      className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+      className={`flex shrink-0 items-center gap-2 rounded-full border px-2.5 py-1.5 text-xs font-semibold transition-colors sm:px-3 ${
         insufficient
           ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100'
           : 'border-outline bg-surface-low text-on-surface hover:bg-surface-container'
       }`}
     >
+      {/* Número: some no celular — só o essencial (saldo) cabe ali; ainda
+          dá pra ver o número em /settings, pra onde esse chip já leva. */}
       {phoneNumber && (
         <>
-          <span className="flex items-center gap-1.5 font-medium">
+          <span className="hidden items-center gap-1.5 font-medium sm:flex">
             <IconPhone />
             Seu número: {formatPhoneDisplay(phoneNumber)}
           </span>
-          <span className={`h-3 w-px ${insufficient ? 'bg-red-200' : 'bg-outline'}`} />
+          <span className={`hidden h-3 w-px sm:block ${insufficient ? 'bg-red-200' : 'bg-outline'}`} />
         </>
       )}
-      <span className="flex items-center gap-1.5">
+      <span className="flex items-center gap-1.5 whitespace-nowrap">
         <IconWallet />
         R$ {formatBRL(balance)}
       </span>
@@ -160,9 +162,10 @@ export function Topbar({ userEmail, phoneNumber }: TopbarProps) {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-outline bg-surface-container px-6 py-3">
-      {/* Search with suggestions */}
-      <div className="relative flex-1 max-w-sm">
+    <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-outline bg-surface-container px-3 py-3 sm:gap-3 sm:px-6">
+      {/* Search with suggestions — some no celular, não cabe junto com o
+          resto; a busca de leads também existe na própria página /leads. */}
+      <div className="relative hidden flex-1 max-w-sm sm:block">
         <form onSubmit={handleSubmit}>
           <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-on-surface-muted">
             <IconSearch />
@@ -212,13 +215,14 @@ export function Topbar({ userEmail, phoneNumber }: TopbarProps) {
           <IconBell />
         </button>
 
-        {/* Add Leads CTA */}
+        {/* Add Leads CTA — só o ícone no celular, texto completo a partir de sm */}
         <Link
           href="/leads/new"
-          className="ml-2 flex items-center gap-1.5 rounded-lg border border-outline px-3 py-1.5 text-sm font-medium text-on-surface transition-colors hover:bg-surface-low"
+          aria-label="Adicionar Lead"
+          className="ml-1 flex items-center gap-1.5 rounded-lg border border-outline px-2.5 py-1.5 text-sm font-medium text-on-surface transition-colors hover:bg-surface-low sm:ml-2 sm:px-3"
         >
           <IconPlus />
-          Adicionar Lead
+          <span className="hidden sm:inline">Adicionar Lead</span>
         </Link>
 
         {/* User avatar */}
