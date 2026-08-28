@@ -46,7 +46,23 @@ export async function loginAction(
   }
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (user) await checkAndSendBetaNotification(user.id)
+  if (user) {
+    await checkAndSendBetaNotification(user.id)
+
+    // Máximo 2 sessões simultâneas por usuário — evita uma assinatura sendo
+    // usada por vários vendedores ao mesmo tempo. Nunca bloqueia o login se
+    // a limpeza falhar (pior caso: uma sessão a mais temporariamente).
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const adminSupabase = createAdminClient()
+    // RPCs não são tipadas em src/lib/supabase/types.ts (Functions: never) —
+    // mesmo padrão de cast já usado em debitWallet/creditWallet.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: sessionError } = await (adminSupabase as any).rpc('enforce_session_limit', {
+      p_user_id: user.id,
+      p_max_sessions: 2,
+    })
+    if (sessionError) console.error('[loginAction] enforce_session_limit falhou', sessionError.message)
+  }
 
   redirect('/dashboard')
 }
