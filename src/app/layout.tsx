@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Plus_Jakarta_Sans, Inter } from 'next/font/google'
+import { HapticFeedback } from '@/components/HapticFeedback'
 import './globals.css'
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -28,7 +29,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={`${plusJakarta.variable} ${inter.variable} h-full antialiased`}>
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        <HapticFeedback />
+        {children}
+      </body>
     </html>
   )
 }
