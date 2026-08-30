@@ -58,6 +58,26 @@ export async function getVisitsByDate(
   return (data ?? []).map((row) => toVisitWithLeadInfo(row as unknown as RawVisitRow))
 }
 
+/**
+ * Visita que passou da data e ficou "planejada" (usuário não marcou nem
+ * concluída nem cancelada) vira "cancelada" automaticamente — fica
+ * registrado no histórico do lead em vez de só sumir, e a coluna do dia
+ * desaparece sozinha do board (que só mostra dias com visita planejada).
+ * Chamada a cada carregamento da página /visitas, antes de montar o board.
+ */
+export async function autoCancelOverdueVisits(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  today: string
+): Promise<void> {
+  await supabase
+    .from('lead_visits')
+    .update({ status: 'cancelada', updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .eq('status', 'planejada')
+    .lt('scheduled_date', today)
+}
+
 export async function getUpcomingVisitDates(
   supabase: SupabaseClient<Database>,
   userId: string
