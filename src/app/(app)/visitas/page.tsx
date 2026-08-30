@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getLeadsByUserId } from '@/repositories/leadRepository'
 import { getUserLeadsWithGlobalData } from '@/repositories/userLeadRepository'
-import { getVisitsByDate, getUpcomingVisitDates } from '@/repositories/leadVisitRepository'
+import { getVisitsByDate, getUpcomingVisitDates, autoCancelOverdueVisits } from '@/repositories/leadVisitRepository'
 import { hasActiveSubscription } from '@/repositories/profileRepository'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { SubscriptionGateCard } from '@/components/SubscriptionGateCard'
@@ -21,6 +21,10 @@ export default async function VisitasPage() {
   if (!user) redirect('/login')
 
   const today = todayIso()
+
+  // Precisa terminar antes de buscar as datas com visita pendente — senão
+  // uma visita vencida ainda apareceria como "planejada" nessa mesma carga.
+  await autoCancelOverdueVisits(supabase, user.id, today)
 
   const [manualLeads, searchLeads, upcomingDates, canWrite] = await Promise.all([
     getLeadsByUserId(supabase, user.id),
