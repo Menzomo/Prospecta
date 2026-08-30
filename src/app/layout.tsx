@@ -20,6 +20,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'Prospecta',
   description: 'Prospecção comercial organizada',
+  other: {
+    // Verificação de domínio do Business Manager da Meta (prospectainova.com.br)
+    'facebook-domain-verification': '07s0sildiiaheod8fo8sgbhfevhmyp',
+  },
 }
 
 export default function RootLayout({
