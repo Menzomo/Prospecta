@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { loginSchema, signupSchema } from '@/validations/authSchema'
 import { checkAndSendBetaNotification } from '@/services/betaNotificationService'
+import { getProfileById } from '@/repositories/profileRepository'
 
 async function getRequestOrigin(): Promise<string> {
   const h = await headers()
@@ -47,6 +48,16 @@ export async function loginAction(
 
   const { data: { user } } = await supabase.auth.getUser()
   if (user) {
+    // Diferente de 'inactive' (nunca assinou / deixou expirar — ainda pode
+    // logar, só sem canWrite), 'canceled' por encerramento self-service
+    // bloqueia login por completo — é a diferença real entre "não pagou"
+    // e "encerrou de propósito".
+    const profile = await getProfileById(supabase, user.id)
+    if (profile?.subscription_status === 'canceled') {
+      await supabase.auth.signOut()
+      return { error: 'Essa conta foi encerrada. Entre em contato com o suporte pra reativar.' }
+    }
+
     await checkAndSendBetaNotification(user.id)
 
     // Máximo 2 sessões simultâneas por usuário — evita uma assinatura sendo

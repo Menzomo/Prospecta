@@ -106,6 +106,7 @@ const ALL_SETTINGS_SUB_ITEMS = [
   { section: 'idioma',    label: 'Idioma' },
   { section: 'aparencia', label: 'Aparência' },
   { section: 'plano',     label: 'Assinatura' },
+  { section: 'conta',     label: 'Conta' },
 ]
 
 const NAV_ITEMS: NavItem[] = [

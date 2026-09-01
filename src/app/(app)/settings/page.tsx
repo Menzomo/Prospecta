@@ -15,9 +15,10 @@ import { NumberClaimForm } from '@/features/calls/components/NumberClaimForm'
 import { ForwardingDetailsForm } from '@/features/calls/components/ForwardingDetailsForm'
 import { SubscribeForm } from '@/features/settings/components/SubscribeForm'
 import { RechargeForm } from '@/features/settings/components/RechargeForm'
+import { CloseAccountForm } from '@/features/settings/components/CloseAccountForm'
 import { PageHeader } from '@/components/layout/PageHeader'
 
-type Section = 'empresa' | 'gmail' | 'telefonia' | 'carteira' | 'idioma' | 'aparencia' | 'plano'
+type Section = 'empresa' | 'gmail' | 'telefonia' | 'carteira' | 'idioma' | 'aparencia' | 'plano' | 'conta'
 
 const SECTIONS: { key: Section; label: string }[] = [
   { key: 'empresa',   label: 'Dados da Empresa' },
@@ -27,6 +28,7 @@ const SECTIONS: { key: Section; label: string }[] = [
   { key: 'idioma',    label: 'Idioma' },
   { key: 'aparencia', label: 'Aparência' },
   { key: 'plano',     label: 'Assinatura' },
+  { key: 'conta',     label: 'Conta' },
 ]
 
 function formatBRL(n: number) {
@@ -339,6 +341,20 @@ export default async function SettingsPage({ searchParams }: Props) {
             ) : (
               <SubscribeForm needsCpfCnpj={!company?.cpf_cnpj} />
             )}
+          </div>
+        )}
+
+        {/* Conta */}
+        {section === 'conta' && (
+          <div>
+            <div className="mb-6">
+              <h2 className="text-base font-semibold text-on-surface font-[--font-heading]">Conta</h2>
+              <p className="mt-1 text-sm text-on-surface-muted">Gerenciamento da sua conta no Prospecta.</p>
+            </div>
+            <div className="rounded-xl border border-red-200 bg-red-50/40 p-6 shadow-card">
+              <h3 className="mb-1 text-sm font-semibold text-red-700">Encerrar conta</h3>
+              <CloseAccountForm />
+            </div>
           </div>
         )}
 
