@@ -101,6 +101,15 @@ export async function createAsaasPayment(input: {
   return payment.id
 }
 
+/**
+ * Cancela a recorrência de vez (DELETE /v3/subscriptions/{id}) — apaga
+ * cobranças pendentes/atrasadas vinculadas, cobranças já pagas continuam
+ * registradas. Usada no fluxo de encerrar conta.
+ */
+export async function cancelAsaasSubscription(subscriptionId: string): Promise<void> {
+  await asaasFetch(`/subscriptions/${subscriptionId}`, { method: 'DELETE' })
+}
+
 export async function getPixQrCode(paymentId: string): Promise<{
   encodedImage: string
   payload: string

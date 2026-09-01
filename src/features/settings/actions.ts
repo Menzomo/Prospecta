@@ -6,7 +6,7 @@ import { companyProfileSchema } from '@/validations/companyProfileSchema'
 import { subscribeSchema } from '@/validations/subscribeSchema'
 import { updateCompanyProfile, getCompanyProfileByUserId } from '@/repositories/companyProfileRepository'
 import { getProfileById, updateProfileSubscription } from '@/repositories/profileRepository'
-import { createAsaasCustomer, createAsaasSubscription, getPixQrCode } from '@/services/asaasService'
+import { createAsaasCustomer, createAsaasSubscription, getPixQrCode, cancelAsaasSubscription } from '@/services/asaasService'
 
 export type UpdateCompanyActionState = {
   errors?: {
@@ -122,4 +122,62 @@ export async function subscribeAction(
     console.error('[subscribeAction]', msg)
     return { error: msg }
   }
+}
+
+// --- Encerrar conta (desativação self-service) ---
+
+export type CloseAccountActionState = { error?: string } | null
+
+/**
+ * Desativação reversível, não apaga dados: cancela a cobrança recorrente,
+ * libera o número Telnyx pro pool, derruba todas as sessões ativas e
+ * bloqueia login futuro (loginAction checa subscription_status='canceled').
+ * Cobrança é cancelada ANTES de qualquer outra coisa — se isso falhar, para
+ * tudo, nunca libera número/encerra a conta com cobrança ainda ativa.
+ */
+export async function closeAccountAction(
+  _state: CloseAccountActionState,
+  formData: FormData
+): Promise<CloseAccountActionState> {
+  const password = (formData.get('password') as string | null) ?? ''
+  if (!password) return { error: 'Informe sua senha atual pra confirmar.' }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user?.email) redirect('/login')
+
+  // Reautentica com a senha digitada — camada extra de confirmação antes de
+  // uma ação irreversível pelo próprio usuário (não existe modal de
+  // confirmação forte no app, só window.confirm no cliente).
+  const { error: authError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password,
+  })
+  if (authError) return { error: 'Senha incorreta.' }
+
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const adminSupabase = createAdminClient()
+
+  const profile = await getProfileById(supabase, user.id)
+
+  if (profile?.asaas_subscription_id) {
+    try {
+      await cancelAsaasSubscription(profile.asaas_subscription_id)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Falha ao cancelar assinatura.'
+      console.error('[closeAccountAction] cancelAsaasSubscription falhou', msg)
+      return { error: `Não foi possível cancelar sua assinatura (${msg}). Tente de novo ou contate o suporte.` }
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (adminSupabase as any).rpc('release_telnyx_number', { p_user_id: user.id })
+
+  await updateProfileSubscription(adminSupabase, user.id, { subscription_status: 'canceled' })
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (adminSupabase as any).rpc('enforce_session_limit', { p_user_id: user.id, p_max_sessions: 0 })
+
+  await supabase.auth.signOut()
+  redirect('/login')
 }
