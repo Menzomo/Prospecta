@@ -6,7 +6,6 @@ import { getFollowupsByUserLeadId } from '@/repositories/followupRepository'
 import { hasTelephonyConfigured } from '@/repositories/telephonySettingsRepository'
 import { getCallsWithAnalysisByUserLeadId } from '@/repositories/callRepository'
 import { getVisitsByUserLeadId } from '@/repositories/leadVisitRepository'
-import { getWhatsAppMessagesByUserLeadId } from '@/repositories/whatsappMessageRepository'
 import { hasActiveSubscription } from '@/repositories/profileRepository'
 import { SubscriptionGateCard } from '@/components/SubscriptionGateCard'
 import { LeadFollowupSection } from '@/features/followups/components/LeadFollowupSection'
@@ -15,7 +14,6 @@ import { LeadCallsSection } from '@/features/calls/components/LeadCallsSection'
 import { LeadTimeline } from '@/features/leads/components/LeadTimeline'
 import { MarkInboxRead } from '@/features/inbox/components/MarkInboxRead'
 import { CallButton } from '@/features/calls/components/CallButton'
-import { WhatsAppThread } from '@/features/whatsapp/components/WhatsAppThread'
 import { LEAD_STATUS_LABELS, LEAD_STATUSES } from '@/types/leads'
 import type { LeadStatus } from '@/types/leads'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -54,13 +52,12 @@ export default async function UserLeadDetailPage({ params }: Props) {
     address: string | null
   }
 
-  const [followups, hasSettings, calls, canWrite, visits, whatsappMessages] = await Promise.all([
+  const [followups, hasSettings, calls, canWrite, visits] = await Promise.all([
     getFollowupsByUserLeadId(supabase, user.id, id),
     hasTelephonyConfigured(supabase, user.id),
     getCallsWithAnalysisByUserLeadId(supabase, user.id, id),
     hasActiveSubscription(supabase, user.id),
     getVisitsByUserLeadId(supabase, user.id, id),
-    getWhatsAppMessagesByUserLeadId(supabase, user.id, id),
   ])
 
   const status = data.status as LeadStatus
@@ -209,9 +206,6 @@ export default async function UserLeadDetailPage({ params }: Props) {
           {/* Calls */}
           <LeadCallsSection calls={calls} userLeadId={id} />
 
-          {/* WhatsApp */}
-          <WhatsAppThread leadId={null} userLeadId={id} messages={whatsappMessages} />
-
           <LeadTimeline
             lead={{ id: data.id, created_at: data.created_at }}
             messages={[]}
@@ -219,7 +213,6 @@ export default async function UserLeadDetailPage({ params }: Props) {
             threads={[]}
             calls={calls}
             visits={visits}
-            whatsappMessages={whatsappMessages}
           />
         </div>
       </main>
