@@ -7,7 +7,6 @@ import { getFollowupsByLeadId } from '@/repositories/followupRepository'
 import { hasTelephonyConfigured } from '@/repositories/telephonySettingsRepository'
 import { getCallsWithAnalysisByLeadId } from '@/repositories/callRepository'
 import { getVisitsByLeadId } from '@/repositories/leadVisitRepository'
-import { getWhatsAppMessagesByLeadId } from '@/repositories/whatsappMessageRepository'
 import { hideLeadAction } from '@/features/leads/actions'
 import { hasActiveSubscription } from '@/repositories/profileRepository'
 import { SubscriptionGateCard } from '@/components/SubscriptionGateCard'
@@ -19,7 +18,6 @@ import { LeadFollowupSection } from '@/features/followups/components/LeadFollowu
 import { CallButton } from '@/features/calls/components/CallButton'
 import { LeadCallsSection } from '@/features/calls/components/LeadCallsSection'
 import { LeadEmailsSection } from '@/features/email/components/LeadEmailsSection'
-import { WhatsAppThread } from '@/features/whatsapp/components/WhatsAppThread'
 import { LEAD_STATUS_LABELS } from '@/types/leads'
 import type { LeadStatus } from '@/types/leads'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -41,7 +39,7 @@ export default async function LeadDetailPage({ params }: Props) {
   const lead = await getLeadById(supabase, id)
   if (!lead) notFound()
 
-  const [emailMessages, followups, emailThreads, hasSettings, calls, canWrite, visits, whatsappMessages] = await Promise.all([
+  const [emailMessages, followups, emailThreads, hasSettings, calls, canWrite, visits] = await Promise.all([
     getEmailMessagesByLeadId(supabase, user.id, id),
     getFollowupsByLeadId(supabase, user.id, id),
     getEmailThreadsByLeadId(supabase, user.id, id),
@@ -49,7 +47,6 @@ export default async function LeadDetailPage({ params }: Props) {
     getCallsWithAnalysisByLeadId(supabase, user.id, id),
     hasActiveSubscription(supabase, user.id),
     getVisitsByLeadId(supabase, user.id, id),
-    getWhatsAppMessagesByLeadId(supabase, user.id, id),
   ])
 
   const status = lead.status as LeadStatus
@@ -140,13 +137,12 @@ export default async function LeadDetailPage({ params }: Props) {
             <div className="flex flex-col gap-4">
               <LeadEmailsSection messages={emailMessages} threads={emailThreads} />
               <LeadCallsSection calls={calls} leadId={lead.id} />
-              <WhatsAppThread leadId={lead.id} userLeadId={null} messages={whatsappMessages} />
             </div>
           </div>
 
           <LeadFollowupSection leadId={lead.id} followups={followups} canWrite={canWrite} />
 
-          <LeadTimeline lead={lead} messages={emailMessages} followups={followups} threads={emailThreads} calls={calls} visits={visits} whatsappMessages={whatsappMessages} />
+          <LeadTimeline lead={lead} messages={emailMessages} followups={followups} threads={emailThreads} calls={calls} visits={visits} />
         </div>
       </main>
     </>
