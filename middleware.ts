@@ -3,7 +3,12 @@ import { updateSession } from '@/lib/supabase/middleware'
 
 const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password', '/auth/callback', '/api/gmail/callback']
 
-const BYPASS_PREFIXES = ['/api/cron/', '/api/calls/']
+// Webhooks servidor-a-servidor — sem cookie de sessão, cada um se protege
+// com o próprio segredo (Bearer CRON_SECRET, assinatura Ed25519 da Telnyx,
+// header asaas-access-token). Sem isso na lista, o middleware redirecionava
+// a chamada pra /login em vez de deixar chegar no handler — bug real:
+// o webhook da Asaas nunca rodou de verdade em produção até agora.
+const BYPASS_PREFIXES = ['/api/cron/', '/api/calls/', '/api/asaas/webhook']
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
