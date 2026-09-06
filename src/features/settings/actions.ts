@@ -1,12 +1,27 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { companyProfileSchema } from '@/validations/companyProfileSchema'
 import { subscribeSchema } from '@/validations/subscribeSchema'
 import { updateCompanyProfile, getCompanyProfileByUserId } from '@/repositories/companyProfileRepository'
 import { getProfileById, updateProfileSubscription } from '@/repositories/profileRepository'
-import { createAsaasCustomer, createAsaasSubscription, getPixQrCode, cancelAsaasSubscription } from '@/services/asaasService'
+import {
+  createAsaasCustomer,
+  createAsaasSubscription,
+  getPixQrCode,
+  setAsaasSubscriptionCreditCard,
+  findSubscriptionPayment,
+  switchPendingPaymentToPix,
+  alertBillingError,
+} from '@/services/asaasService'
+import { closeUserAccount } from '@/services/subscriptionService'
+
+async function getRemoteIp(): Promise<string> {
+  const h = await headers()
+  return h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? h.get('x-real-ip') ?? '127.0.0.1'
+}
 
 export type UpdateCompanyActionState = {
   errors?: {
@@ -120,6 +135,102 @@ export async function subscribeAction(
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Erro ao criar assinatura.'
     console.error('[subscribeAction]', msg)
+    await alertBillingError(`assinar (userId=${user.id})`, err)
+    return { error: msg }
+  }
+}
+
+// --- Cartão de crédito (opcional, na assinatura já criada via Pix) ---
+
+export type SetCreditCardActionState = { error?: string; success?: boolean } | null
+
+/**
+ * Cadastra/troca o cartão da assinatura (PUT /subscriptions/{id}/creditCard)
+ * — funciona tanto pra quem nunca teve cartão (assinatura criada via Pix)
+ * quanto pra trocar um já cadastrado. Não existe "remover cartão sem
+ * trocar" na API da Asaas — não oferecemos essa opção.
+ */
+export async function setCreditCardAction(
+  _state: SetCreditCardActionState,
+  formData: FormData
+): Promise<SetCreditCardActionState> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const profile = await getProfileById(supabase, user.id)
+  if (!profile?.asaas_subscription_id) {
+    return { error: 'Você precisa assinar antes de cadastrar um cartão.' }
+  }
+
+  const holderName = (formData.get('holder_name') as string | null)?.trim() ?? ''
+  const number = (formData.get('number') as string | null)?.replace(/\D/g, '') ?? ''
+  const expiryMonth = (formData.get('expiry_month') as string | null)?.trim() ?? ''
+  const expiryYear = (formData.get('expiry_year') as string | null)?.trim() ?? ''
+  const ccv = (formData.get('ccv') as string | null)?.trim() ?? ''
+  const postalCode = (formData.get('postal_code') as string | null)?.replace(/\D/g, '') ?? ''
+  const addressNumber = (formData.get('address_number') as string | null)?.trim() ?? ''
+  const phone = (formData.get('phone') as string | null)?.replace(/\D/g, '') ?? ''
+
+  if (!holderName || !number || !expiryMonth || !expiryYear || !ccv || !postalCode || !addressNumber) {
+    return { error: 'Preencha todos os campos do cartão.' }
+  }
+
+  const company = await getCompanyProfileByUserId(supabase, user.id)
+
+  try {
+    await setAsaasSubscriptionCreditCard({
+      subscriptionId: profile.asaas_subscription_id,
+      remoteIp: await getRemoteIp(),
+      creditCard: { holderName, number, expiryMonth, expiryYear, ccv },
+      creditCardHolderInfo: {
+        name: holderName,
+        email: user.email ?? '',
+        cpfCnpj: company?.cpf_cnpj ?? '',
+        postalCode,
+        addressNumber,
+        phone,
+      },
+    })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erro ao cadastrar cartão.'
+    console.error('[setCreditCardAction]', msg)
+    await alertBillingError(`cadastrar cartão (userId=${user.id})`, err)
+    return { error: msg }
+  }
+
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const adminSupabase = createAdminClient()
+  await updateProfileSubscription(adminSupabase, user.id, { asaas_has_card: true })
+
+  return { success: true }
+}
+
+// --- Regularizar cobrança vencida via Pix (assinante de cartão) ---
+
+export type PayOverdueActionState = { error?: string; qrCode?: string; payload?: string } | null
+
+export async function payOverdueViaPixAction(
+  _state: PayOverdueActionState,
+  _formData: FormData
+): Promise<PayOverdueActionState> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const profile = await getProfileById(supabase, user.id)
+  if (!profile?.asaas_subscription_id) return { error: 'Nenhuma assinatura encontrada.' }
+
+  try {
+    const payment = await findSubscriptionPayment(profile.asaas_subscription_id, ['PENDING', 'OVERDUE'])
+    if (!payment) return { error: 'Nenhuma cobrança pendente encontrada.' }
+
+    const qr = await switchPendingPaymentToPix(payment.id)
+    return { qrCode: qr.encodedImage, payload: qr.payload }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erro ao gerar Pix.'
+    console.error('[payOverdueViaPixAction]', msg)
+    await alertBillingError(`pagar vencido via pix (userId=${user.id})`, err)
     return { error: msg }
   }
 }
@@ -128,12 +239,16 @@ export async function subscribeAction(
 
 export type CloseAccountActionState = { error?: string } | null
 
+const REFUND_WINDOW_DAYS = 7
+
 /**
- * Desativação reversível, não apaga dados: cancela a cobrança recorrente,
- * libera o número Telnyx pro pool, derruba todas as sessões ativas e
- * bloqueia login futuro (loginAction checa subscription_status='canceled').
- * Cobrança é cancelada ANTES de qualquer outra coisa — se isso falhar, para
- * tudo, nunca libera número/encerra a conta com cobrança ainda ativa.
+ * Desativação reversível, não apaga dados: reembolsa automaticamente se
+ * ainda estiver dentro de 7 dias do pagamento, cancela a cobrança
+ * recorrente, libera o número Telnyx pro pool, derruba todas as sessões
+ * ativas e bloqueia login futuro (loginAction checa
+ * subscription_status='canceled'). Cobrança é cancelada ANTES de qualquer
+ * outra coisa — se isso falhar, para tudo, nunca libera número/encerra a
+ * conta com cobrança ainda ativa.
  */
 export async function closeAccountAction(
   _state: CloseAccountActionState,
@@ -160,23 +275,30 @@ export async function closeAccountAction(
 
   const profile = await getProfileById(supabase, user.id)
 
-  if (profile?.asaas_subscription_id) {
-    try {
-      await cancelAsaasSubscription(profile.asaas_subscription_id)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Falha ao cancelar assinatura.'
-      console.error('[closeAccountAction] cancelAsaasSubscription falhou', msg)
-      return { error: `Não foi possível cancelar sua assinatura (${msg}). Tente de novo ou contate o suporte.` }
+  let refundPaymentId: string | null = null
+  if (profile?.asaas_subscription_id && profile.subscription_paid_at) {
+    const daysSincePaid = (Date.now() - new Date(profile.subscription_paid_at).getTime()) / 86_400_000
+    if (daysSincePaid <= REFUND_WINDOW_DAYS) {
+      try {
+        const payment = await findSubscriptionPayment(profile.asaas_subscription_id, ['CONFIRMED', 'RECEIVED'])
+        refundPaymentId = payment?.id ?? null
+      } catch (err) {
+        console.error('[closeAccountAction] falha ao buscar pagamento pro reembolso', err)
+        await alertBillingError(`buscar pagamento pro reembolso (userId=${user.id})`, err)
+      }
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (adminSupabase as any).rpc('release_telnyx_number', { p_user_id: user.id })
-
-  await updateProfileSubscription(adminSupabase, user.id, { subscription_status: 'canceled' })
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (adminSupabase as any).rpc('enforce_session_limit', { p_user_id: user.id, p_max_sessions: 0 })
+  try {
+    await closeUserAccount(adminSupabase, user.id, {
+      asaasSubscriptionId: profile?.asaas_subscription_id ?? null,
+      refundPaymentId,
+      requireAsaasCancelSuccess: true,
+    })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Falha ao cancelar assinatura.'
+    return { error: `Não foi possível cancelar sua assinatura (${msg}). Tente de novo ou contate o suporte.` }
+  }
 
   await supabase.auth.signOut()
   redirect('/login')

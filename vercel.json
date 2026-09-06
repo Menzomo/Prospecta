@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/process-recordings",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/check-overdue-subscriptions",
+      "schedule": "0 10 * * *"
     }
   ]
 }

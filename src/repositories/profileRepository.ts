@@ -61,11 +61,13 @@ export async function updateProfileSubscription(
   supabase: SupabaseClient<Database>,
   userId: string,
   patch: Partial<{
-    subscription_status: 'inactive' | 'active' | 'canceled'
+    subscription_status: 'inactive' | 'active' | 'overdue' | 'canceled'
     subscription_source: 'asaas' | 'manual' | 'beta_grandfather'
     asaas_customer_id: string
     asaas_subscription_id: string
     subscription_paid_at: string
+    payment_overdue_since: string | null
+    asaas_has_card: boolean
   }>
 ): Promise<boolean> {
   const { error } = await supabase
