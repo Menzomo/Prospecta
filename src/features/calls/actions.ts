@@ -11,6 +11,8 @@ import { getTelephonySettings, upsertTelephonySettings } from '@/repositories/te
 import { getCurrentPeriodCredits } from '@/repositories/analysisCreditRepository'
 import { claimTelnyxNumber } from '@/repositories/telnyxNumberRepository'
 import { updateCompanyProfile } from '@/repositories/companyProfileRepository'
+import { getProfileById, updateProfileSubscription } from '@/repositories/profileRepository'
+import { createAsaasCustomer, createAsaasSubscription, alertBillingError } from '@/services/asaasService'
 import type { AnalysisCredits } from '@/types/calls'
 
 // --- Save telephony settings ---
@@ -219,6 +221,43 @@ export async function completeForwardingDetailsAction(
   const profile = await updateCompanyProfile(supabase, user.id, validation.data)
   if (!profile) {
     return { error: 'Erro ao salvar CPF/CNPJ e celular. Tente novamente.' }
+  }
+
+  // Quem recebeu o número por liberação manual do admin (1º mês pago por
+  // fora) ainda não tem assinatura na Asaas — agora que o CPF/CNPJ chegou
+  // (só existe pra poder usar o número, mesmo critério de sempre), cria a
+  // assinatura de verdade, com cobrança começando só no mês 2. Daqui pra
+  // frente essa conta passa a ser tratada como 'asaas' — carência de
+  // inadimplência e tudo mais passam a valer igual qualquer outra.
+  // Nunca bloqueia o cadastro de telefonia por causa disso — best-effort.
+  const userProfile = await getProfileById(supabase, user.id)
+  if (userProfile?.subscription_source === 'manual' && !userProfile.asaas_subscription_id) {
+    try {
+      const { createAdminClient } = await import('@/lib/supabase/admin')
+      const adminSupabase = createAdminClient()
+
+      const customerId = await createAsaasCustomer({
+        name: profile.company_name,
+        email: user.email ?? '',
+        cpfCnpj: validation.data.cpf_cnpj,
+      })
+
+      const nextDueDate = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10)
+      const { subscriptionId } = await createAsaasSubscription({
+        customerId,
+        externalReference: `subscription:${user.id}`,
+        nextDueDate,
+      })
+
+      await updateProfileSubscription(adminSupabase, user.id, {
+        subscription_source: 'asaas',
+        asaas_customer_id: customerId,
+        asaas_subscription_id: subscriptionId,
+      })
+    } catch (err) {
+      console.error('[completeForwardingDetailsAction] falha ao criar assinatura Asaas', err)
+      await alertBillingError(`iniciar assinatura pós-liberação manual (userId=${user.id})`, err)
+    }
   }
 
   revalidatePath('/settings')

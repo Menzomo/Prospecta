@@ -73,6 +73,12 @@ export async function createAsaasCustomer(input: {
 export async function createAsaasSubscription(input: {
   customerId: string
   externalReference: string
+  /**
+   * Usado quando o 1º mês já foi pago por fora (liberação manual do admin) —
+   * a cobrança na Asaas só começa a valer a partir do 2º mês, em vez de
+   * cobrar de novo pelo mês que a pessoa já pagou fora do sistema.
+   */
+  nextDueDate?: string
 }): Promise<{ subscriptionId: string; firstPaymentId: string | null }> {
   const subscription = await asaasFetch<{ id: string }>('/subscriptions', {
     method: 'POST',
@@ -80,7 +86,7 @@ export async function createAsaasSubscription(input: {
       customer: input.customerId,
       billingType: 'UNDEFINED', // Asaas oferece Pix e cartão no checkout
       value: SUBSCRIPTION_VALUE,
-      nextDueDate: todayISODate(),
+      nextDueDate: input.nextDueDate ?? todayISODate(),
       cycle: 'MONTHLY',
       description: 'Prospecta — assinatura mensal',
       externalReference: input.externalReference,
