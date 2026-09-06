@@ -17,10 +17,40 @@ import {
   alertBillingError,
 } from '@/services/asaasService'
 import { closeUserAccount } from '@/services/subscriptionService'
+import { sendEmail, SUPPORT_EMAIL } from '@/lib/email'
 
 async function getRemoteIp(): Promise<string> {
   const h = await headers()
   return h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? h.get('x-real-ip') ?? '127.0.0.1'
+}
+
+// --- Fale conosco ---
+
+export type ContactActionState = { error?: string; success?: boolean } | null
+
+export async function sendContactMessageAction(
+  _state: ContactActionState,
+  formData: FormData
+): Promise<ContactActionState> {
+  const subject = (formData.get('subject') as string | null)?.trim()
+  const message = (formData.get('message') as string | null)?.trim()
+  if (!subject || !message) return { error: 'Preencha assunto e mensagem.' }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const company = await getCompanyProfileByUserId(supabase, user.id)
+  const body = `De: ${company?.company_name ?? 'Sem nome'} (${user.email})\n\n${message}`
+
+  try {
+    await sendEmail(SUPPORT_EMAIL, `[Fale Conosco] ${subject}`, body, { replyTo: user.email ?? undefined })
+  } catch (err) {
+    console.error('[sendContactMessageAction]', err)
+    return { error: `Erro ao enviar. Tente de novo ou manda um email direto pra ${SUPPORT_EMAIL}.` }
+  }
+
+  return { success: true }
 }
 
 export type UpdateCompanyActionState = {

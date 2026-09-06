@@ -18,9 +18,10 @@ import { RechargeForm } from '@/features/settings/components/RechargeForm'
 import { CloseAccountForm } from '@/features/settings/components/CloseAccountForm'
 import { CreditCardForm } from '@/features/settings/components/CreditCardForm'
 import { PayOverdueViaPixButton } from '@/features/settings/components/PayOverdueViaPixButton'
+import { ContactForm } from '@/features/settings/components/ContactForm'
 import { PageHeader } from '@/components/layout/PageHeader'
 
-type Section = 'empresa' | 'gmail' | 'telefonia' | 'carteira' | 'idioma' | 'aparencia' | 'plano' | 'conta'
+type Section = 'empresa' | 'gmail' | 'telefonia' | 'carteira' | 'idioma' | 'aparencia' | 'plano' | 'conta' | 'contato'
 
 const SECTIONS: { key: Section; label: string }[] = [
   { key: 'empresa',   label: 'Dados da Empresa' },
@@ -31,6 +32,7 @@ const SECTIONS: { key: Section; label: string }[] = [
   { key: 'aparencia', label: 'Aparência' },
   { key: 'plano',     label: 'Assinatura' },
   { key: 'conta',     label: 'Conta' },
+  { key: 'contato',   label: 'Fale Conosco' },
 ]
 
 function formatBRL(n: number) {
@@ -381,6 +383,20 @@ export default async function SettingsPage({ searchParams }: Props) {
               <h3 className="mb-1 text-sm font-semibold text-red-700">Encerrar conta</h3>
               <CloseAccountForm />
             </div>
+          </div>
+        )}
+
+        {/* Fale Conosco */}
+        {section === 'contato' && (
+          <div>
+            <div className="mb-6">
+              <h2 className="text-base font-semibold text-on-surface font-[--font-heading]">Fale Conosco</h2>
+              <p className="mt-1 text-sm text-on-surface-muted">
+                Manda sua dúvida, sugestão ou problema — respondemos por email.
+                {/* Suporte por WhatsApp chega numa próxima versão. */}
+              </p>
+            </div>
+            <ContactForm />
           </div>
         )}
 

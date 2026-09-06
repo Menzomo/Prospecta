@@ -5,9 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/types'
 import { creditWallet } from '@/repositories/walletRepository'
 import { updateProfileSubscription, getProfileById } from '@/repositories/profileRepository'
-import { sendEmail } from '@/lib/email'
-
-const SUPPORT_EMAIL = 'prospectasuporte06@gmail.com'
+import { sendEmail, SUPPORT_EMAIL } from '@/lib/email'
 
 /**
  * Avisa o suporte por email em qualquer erro de assinatura/renovação —
