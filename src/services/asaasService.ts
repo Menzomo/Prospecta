@@ -4,7 +4,21 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/types'
 import { creditWallet } from '@/repositories/walletRepository'
-import { updateProfileSubscription } from '@/repositories/profileRepository'
+import { updateProfileSubscription, getProfileById } from '@/repositories/profileRepository'
+import { sendEmail } from '@/lib/email'
+
+const SUPPORT_EMAIL = 'prospectasuporte06@gmail.com'
+
+/**
+ * Avisa o suporte por email em qualquer erro de assinatura/renovação —
+ * nunca bloqueia o fluxo principal, é só melhor esforço.
+ */
+export async function alertBillingError(context: string, error: unknown): Promise<void> {
+  const msg = error instanceof Error ? error.message : String(error)
+  await sendEmail(SUPPORT_EMAIL, `Erro de cobrança — ${context}`, msg).catch((e) =>
+    console.error('[billingAlert] falha ao enviar alerta', e)
+  )
+}
 
 const SUBSCRIPTION_VALUE = 150.0
 
@@ -110,6 +124,86 @@ export async function cancelAsaasSubscription(subscriptionId: string): Promise<v
   await asaasFetch(`/subscriptions/${subscriptionId}`, { method: 'DELETE' })
 }
 
+/**
+ * PUT /v3/subscriptions/{id}/creditCard — adiciona o primeiro cartão numa
+ * assinatura criada como Pix (UNDEFINED) ou troca um cartão já cadastrado.
+ * Cobranças pendentes da assinatura passam a usar o cartão novo
+ * automaticamente (comportamento documentado pela Asaas) — não precisa
+ * recriar a assinatura pra "virar cartão".
+ */
+export async function setAsaasSubscriptionCreditCard(input: {
+  subscriptionId: string
+  remoteIp: string
+  creditCard: { holderName: string; number: string; expiryMonth: string; expiryYear: string; ccv: string }
+  creditCardHolderInfo: {
+    name: string
+    email: string
+    cpfCnpj: string
+    postalCode: string
+    addressNumber: string
+    phone: string
+  }
+}): Promise<void> {
+  await asaasFetch(`/subscriptions/${input.subscriptionId}/creditCard`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      creditCard: input.creditCard,
+      creditCardHolderInfo: input.creditCardHolderInfo,
+      remoteIp: input.remoteIp,
+    }),
+  })
+}
+
+/**
+ * POST /v3/payments/{id}/refund — funciona pra Pix (parcial ou total) e
+ * cartão. Usado no cancelamento dentro dos 7 dias da assinatura.
+ */
+export async function refundAsaasPayment(paymentId: string, value?: number): Promise<void> {
+  await asaasFetch(`/payments/${paymentId}/refund`, {
+    method: 'POST',
+    body: JSON.stringify(value != null ? { value } : {}),
+  })
+}
+
+/**
+ * PUT /v3/payments/{id} — muda o billingType de uma cobrança ainda não paga
+ * (pendente ou vencida) pra PIX, mantendo valor/vencimento. Usado quando um
+ * assinante de cartão quer regularizar por Pix em vez de esperar o retry
+ * automático — uma vez que a cobrança vira PIX e é paga, ela sai do ciclo
+ * de retry do cartão (o retry é por cobrança, não por assinatura inteira).
+ */
+export async function switchPendingPaymentToPix(paymentId: string): Promise<{
+  encodedImage: string
+  payload: string
+  expirationDate: string | null
+}> {
+  const current = await asaasFetch<{ value: number; dueDate: string }>(`/payments/${paymentId}`)
+  await asaasFetch(`/payments/${paymentId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ billingType: 'PIX', value: current.value, dueDate: current.dueDate }),
+  })
+  return getPixQrCode(paymentId)
+}
+
+/**
+ * Busca o pagamento mais recente de uma assinatura, tentando cada status na
+ * ordem dada — usado tanto pro reembolso (CONFIRMED) quanto pra achar a
+ * cobrança vencida que o assinante de cartão quer trocar pra Pix
+ * (PENDING, depois OVERDUE).
+ */
+export async function findSubscriptionPayment(
+  subscriptionId: string,
+  statuses: string[]
+): Promise<{ id: string } | null> {
+  for (const status of statuses) {
+    const result = await asaasFetch<{ data: { id: string }[] }>(
+      `/payments?subscription=${subscriptionId}&status=${status}&limit=1`
+    )
+    if (result.data[0]) return result.data[0]
+  }
+  return null
+}
+
 export async function getPixQrCode(paymentId: string): Promise<{
   encodedImage: string
   payload: string
@@ -131,6 +225,7 @@ type AsaasWebhookPayload = {
 }
 
 const CONFIRMED_EVENTS = new Set(['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED'])
+const HANDLED_EVENTS = new Set([...CONFIRMED_EVENTS, 'PAYMENT_OVERDUE'])
 
 /**
  * Processa o webhook do Asaas. Desambigua recarga vs. assinatura pelo prefixo
@@ -142,7 +237,7 @@ export async function handleAsaasWebhook(
   adminSupabase: SupabaseClient<Database>,
   payload: AsaasWebhookPayload
 ): Promise<{ ok: true }> {
-  if (!CONFIRMED_EVENTS.has(payload.event) || !payload.payment) {
+  if (!HANDLED_EVENTS.has(payload.event) || !payload.payment) {
     console.log('[asaasService] evento ignorado:', payload.event)
     return { ok: true }
   }
@@ -156,6 +251,26 @@ export async function handleAsaasWebhook(
 
   const [kind, userId] = externalReference.split(':')
 
+  // Cobrança vencida — só marca o início da carência, uma vez (não reinicia
+  // a contagem numa segunda cobrança atrasada da mesma dívida). Quem decide
+  // desativar/encerrar é o cron check-overdue-subscriptions, não aqui.
+  if (payload.event === 'PAYMENT_OVERDUE') {
+    if (kind === 'subscription' && userId) {
+      try {
+        const profile = await getProfileById(adminSupabase, userId)
+        if (!profile?.payment_overdue_since) {
+          await updateProfileSubscription(adminSupabase, userId, {
+            payment_overdue_since: new Date().toISOString(),
+          })
+        }
+      } catch (err) {
+        console.error('[asaasService] falha ao marcar pagamento vencido:', err)
+        await alertBillingError(`marcar payment_overdue_since (userId=${userId})`, err)
+      }
+    }
+    return { ok: true }
+  }
+
   if (kind === 'recharge' && userId) {
     try {
       await creditWallet(adminSupabase, userId, value, 'recharge', paymentId, 'Recarga Pix')
@@ -166,11 +281,17 @@ export async function handleAsaasWebhook(
   }
 
   if (kind === 'subscription' && userId) {
-    await updateProfileSubscription(adminSupabase, userId, {
-      subscription_status: 'active',
-      subscription_source: 'asaas',
-      subscription_paid_at: new Date().toISOString(),
-    })
+    try {
+      await updateProfileSubscription(adminSupabase, userId, {
+        subscription_status: 'active',
+        subscription_source: 'asaas',
+        subscription_paid_at: new Date().toISOString(),
+        payment_overdue_since: null,
+      })
+    } catch (err) {
+      console.error('[asaasService] falha ao ativar assinatura:', err)
+      await alertBillingError(`ativar assinatura (userId=${userId})`, err)
+    }
     return { ok: true }
   }
 

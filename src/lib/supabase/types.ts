@@ -25,6 +25,8 @@ export interface Database {
           asaas_customer_id: string | null
           asaas_subscription_id: string | null
           subscription_paid_at: string | null
+          payment_overdue_since: string | null
+          asaas_has_card: boolean
           created_at: string
           updated_at: string
         }
@@ -43,6 +45,8 @@ export interface Database {
           asaas_customer_id?: string | null
           asaas_subscription_id?: string | null
           subscription_paid_at?: string | null
+          payment_overdue_since?: string | null
+          asaas_has_card?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -60,6 +64,8 @@ export interface Database {
           asaas_customer_id?: string | null
           asaas_subscription_id?: string | null
           subscription_paid_at?: string | null
+          payment_overdue_since?: string | null
+          asaas_has_card?: boolean
           updated_at?: string
         }
         Relationships: []

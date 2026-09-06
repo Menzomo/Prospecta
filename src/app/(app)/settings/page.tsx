@@ -16,6 +16,8 @@ import { ForwardingDetailsForm } from '@/features/calls/components/ForwardingDet
 import { SubscribeForm } from '@/features/settings/components/SubscribeForm'
 import { RechargeForm } from '@/features/settings/components/RechargeForm'
 import { CloseAccountForm } from '@/features/settings/components/CloseAccountForm'
+import { CreditCardForm } from '@/features/settings/components/CreditCardForm'
+import { PayOverdueViaPixButton } from '@/features/settings/components/PayOverdueViaPixButton'
 import { PageHeader } from '@/components/layout/PageHeader'
 
 type Section = 'empresa' | 'gmail' | 'telefonia' | 'carteira' | 'idioma' | 'aparencia' | 'plano' | 'conta'
@@ -321,24 +323,48 @@ export default async function SettingsPage({ searchParams }: Props) {
               </div>
             </div>
 
-            {profile?.subscription_status === 'active' ? (
-              <div className="rounded-xl border border-primary/30 bg-primary/5 p-6">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-primary">Plano atual</p>
-                    <p className="mt-1 text-xl font-bold text-on-surface font-[--font-heading]">Prospecta — R$ 150,00/mês</p>
+            {profile?.subscription_status === 'active' && (
+              <>
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-6">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-primary">Plano atual</p>
+                      <p className="mt-1 text-xl font-bold text-on-surface font-[--font-heading]">Prospecta — R$ 150,00/mês</p>
+                    </div>
+                    <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Ativo</span>
                   </div>
-                  <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Ativo</span>
+                  <p className="mt-4 text-xs text-on-surface-muted">
+                    {profile.subscription_source === 'manual'
+                      ? 'Acesso liberado manualmente pela equipe Prospecta.'
+                      : profile.subscription_source === 'beta_grandfather'
+                        ? 'Acesso de cortesia (conta anterior à cobrança).'
+                        : 'Assinatura via Asaas.'}
+                  </p>
                 </div>
-                <p className="mt-4 text-xs text-on-surface-muted">
-                  {profile.subscription_source === 'manual'
-                    ? 'Acesso liberado manualmente pela equipe Prospecta.'
-                    : profile.subscription_source === 'beta_grandfather'
-                      ? 'Acesso de cortesia (conta anterior à cobrança).'
-                      : 'Assinatura via Asaas.'}
-                </p>
+
+                {profile.subscription_source === 'asaas' && (
+                  <div className="mt-4">
+                    <CreditCardForm hasCard={profile.asaas_has_card} />
+                  </div>
+                )}
+              </>
+            )}
+
+            {profile?.subscription_status === 'overdue' && (
+              <div className="flex flex-col gap-4">
+                <div className="rounded-xl border border-red-300 bg-red-50 p-6">
+                  <p className="text-sm font-semibold text-red-700">Pagamento atrasado</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    Sua assinatura está com o pagamento em atraso e o acesso foi temporariamente suspenso.
+                    Pague a cobrança pendente via Pix pra reativar na hora.
+                  </p>
+                  <PayOverdueViaPixButton />
+                </div>
+                {profile.asaas_has_card && <CreditCardForm hasCard />}
               </div>
-            ) : (
+            )}
+
+            {(!profile || profile.subscription_status === 'inactive') && (
               <SubscribeForm needsCpfCnpj={!company?.cpf_cnpj} />
             )}
           </div>
