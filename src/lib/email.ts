@@ -6,7 +6,14 @@
 
 import nodemailer from 'nodemailer'
 
-export async function sendEmail(to: string, subject: string, text: string): Promise<void> {
+export const SUPPORT_EMAIL = 'prospectasuporte06@gmail.com'
+
+export async function sendEmail(
+  to: string,
+  subject: string,
+  text: string,
+  opts?: { replyTo?: string }
+): Promise<void> {
   const from = process.env.NOTIFICATION_EMAIL_FROM
   const password = process.env.NOTIFICATION_EMAIL_PASSWORD
 
@@ -16,5 +23,5 @@ export async function sendEmail(to: string, subject: string, text: string): Prom
   }
 
   const transporter = nodemailer.createTransport({ service: 'gmail', auth: { user: from, pass: password } })
-  await transporter.sendMail({ from, to, subject, text })
+  await transporter.sendMail({ from, to, subject, text, replyTo: opts?.replyTo })
 }

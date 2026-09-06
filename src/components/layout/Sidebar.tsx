@@ -107,6 +107,7 @@ const ALL_SETTINGS_SUB_ITEMS = [
   { section: 'aparencia', label: 'Aparência' },
   { section: 'plano',     label: 'Assinatura' },
   { section: 'conta',     label: 'Conta' },
+  { section: 'contato',   label: 'Fale Conosco' },
 ]
 
 const NAV_ITEMS: NavItem[] = [
