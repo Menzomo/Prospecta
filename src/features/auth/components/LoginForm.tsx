@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { loginAction, signupAction } from '@/features/auth/actions'
 
 function EyeIcon({ open }: { open: boolean }) {
@@ -25,6 +26,8 @@ export function LoginForm() {
   const [signupState, signupFormAction, signupPending] = useActionState(signupAction, null)
   const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [showSignupPassword, setShowSignupPassword] = useState(false)
+  const searchParams = useSearchParams()
+  const callbackError = searchParams.get('error')
 
   if (mode === 'signup') {
     return (
@@ -123,6 +126,10 @@ export function LoginForm() {
 
   return (
     <div className="flex flex-col gap-4">
+      {callbackError && (
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{callbackError}</p>
+      )}
+
       <form action={loginFormAction} className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
           <label htmlFor="email" className="text-sm font-medium text-on-surface">

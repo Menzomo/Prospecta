@@ -68,6 +68,8 @@ export async function updateProfileSubscription(
     subscription_paid_at: string
     payment_overdue_since: string | null
     asaas_has_card: boolean
+    terms_accepted_at: string
+    terms_version: string
   }>
 ): Promise<boolean> {
   const { error } = await supabase

@@ -27,6 +27,8 @@ export interface Database {
           subscription_paid_at: string | null
           payment_overdue_since: string | null
           asaas_has_card: boolean
+          terms_accepted_at: string | null
+          terms_version: string | null
           created_at: string
           updated_at: string
         }
@@ -47,6 +49,8 @@ export interface Database {
           subscription_paid_at?: string | null
           payment_overdue_since?: string | null
           asaas_has_card?: boolean
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -66,6 +70,8 @@ export interface Database {
           subscription_paid_at?: string | null
           payment_overdue_since?: string | null
           asaas_has_card?: boolean
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           updated_at?: string
         }
         Relationships: []

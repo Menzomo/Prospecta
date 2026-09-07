@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { subscribeAction } from '@/features/settings/actions'
 import { createClient } from '@/lib/supabase/client'
+import { TERMS_SECTIONS } from '@/features/settings/termsContent'
 
 type Props = {
   needsCpfCnpj: boolean
@@ -13,6 +14,7 @@ export function SubscribeForm({ needsCpfCnpj }: Props) {
   const [state, formAction, pending] = useActionState(subscribeAction, null)
   const router = useRouter()
   const [confirmed, setConfirmed] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
 
   useEffect(() => {
     if (!state?.qrCode || confirmed) return
@@ -91,13 +93,40 @@ export function SubscribeForm({ needsCpfCnpj }: Props) {
         </div>
       )}
 
+      <div className="flex flex-col gap-2">
+        <p className="text-sm font-medium text-on-surface">Termos de Serviço</p>
+        <div className="max-h-56 overflow-y-auto rounded-lg border border-outline bg-surface-low p-3 text-xs text-on-surface-muted">
+          {TERMS_SECTIONS.map((section) => (
+            <div key={section.title} className="mb-3 last:mb-0">
+              <p className="mb-1 font-semibold text-on-surface">{section.title}</p>
+              {section.paragraphs.map((paragraph, i) => (
+                <p key={i} className="mb-1 last:mb-0 whitespace-pre-wrap">
+                  {paragraph}
+                </p>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        <label className="flex cursor-pointer items-start gap-2 text-xs text-on-surface-muted">
+          <input
+            type="checkbox"
+            name="terms_accepted"
+            checked={termsAccepted}
+            onChange={(e) => setTermsAccepted(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-primary"
+          />
+          Estou ciente e concordo com os Termos de Serviço do Prospecta e assumo as responsabilidades do cliente descritas acima.
+        </label>
+      </div>
+
       {state?.error && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{state.error}</p>
       )}
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || !termsAccepted}
         className="cursor-pointer rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? 'Gerando cobrança...' : 'Assinar'}

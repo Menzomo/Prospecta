@@ -18,6 +18,7 @@ import {
 } from '@/services/asaasService'
 import { closeUserAccount } from '@/services/subscriptionService'
 import { sendEmail, SUPPORT_EMAIL } from '@/lib/email'
+import { TERMS_VERSION } from '@/features/settings/termsContent'
 
 async function getRemoteIp(): Promise<string> {
   const h = await headers()
@@ -120,12 +121,21 @@ export async function subscribeAction(
     return { errors: validation.error.flatten().fieldErrors }
   }
 
+  if (formData.get('terms_accepted') !== 'on') {
+    return { error: 'Você precisa aceitar os Termos de Serviço para assinar.' }
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   const { createAdminClient } = await import('@/lib/supabase/admin')
   const adminSupabase = createAdminClient()
+
+  await updateProfileSubscription(adminSupabase, user.id, {
+    terms_accepted_at: new Date().toISOString(),
+    terms_version: TERMS_VERSION,
+  })
 
   let company = await getCompanyProfileByUserId(supabase, user.id)
 

@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import { GoogleAuthButton } from '@/features/auth/components/GoogleAuthButton'
 
@@ -19,7 +20,9 @@ export default function LoginPage() {
             <div className="h-px flex-1 bg-outline" />
           </div>
 
-          <LoginForm />
+          <Suspense>
+            <LoginForm />
+          </Suspense>
         </div>
       </div>
     </div>
