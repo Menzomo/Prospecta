@@ -72,7 +72,15 @@ export function LeadsKanban({ leads, hasSettings }: Props) {
     // misturando cards de status diferentes numa grade confusa. Rolagem
     // horizontal com snap funciona bem tanto no celular (arrasta uma coluna
     // por vez) quanto no desktop (mostra várias, sem quebrar layout).
-    <div className="flex snap-x gap-4 overflow-x-auto pb-2">
+    //
+    // -mx-6 px-6 "sangra" o container até a borda real da tela no mobile,
+    // cancelando o p-6 do <main> (leads/page.tsx) — sem isso, w-[85vw] (85%
+    // da viewport inteira) mal cabia dentro da área já descontada do padding
+    // da página, e a próxima coluna não sobrava nem uma tira visível pra
+    // avisar que dava pra arrastar. snap-mandatory troca o snap "proximity"
+    // (solto, não garante ir até o fim) por um snap forte — arrastar um
+    // pouco já leva direto pra coluna inteira do lado, como uma seleção.
+    <div className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-2 sm:mx-0 sm:px-0">
       {activeColumns.map((col) => (
         <div key={col.id} className="flex w-[85vw] shrink-0 snap-start flex-col gap-3 sm:w-80">
           {/* Column header */}
