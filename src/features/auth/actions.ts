@@ -21,6 +21,7 @@ export type AuthActionState = {
     full_name?: string[]
   }
   error?: string
+  redirectTo?: string
 } | null
 
 export async function loginAction(
@@ -75,7 +76,14 @@ export async function loginAction(
     if (sessionError) console.error('[loginAction] enforce_session_limit falhou', sessionError.message)
   }
 
-  redirect('/dashboard')
+  // Não usamos redirect() aqui de propósito: dentro de um Server Action ele
+  // vira uma navegação client-side do router do Next.js (sem recarregar a
+  // página) — e por isso o zoom que o Safari no iOS aplica ao focar o campo
+  // de senha "grudava" e o dashboard abria zoomado também. Devolvendo
+  // redirectTo e deixando o client fazer window.location.href (ver
+  // LoginForm), a troca de página é uma navegação de verdade, que reseta o
+  // zoom do jeito que o navegador já faz sozinho em qualquer carregamento novo.
+  return { redirectTo: '/dashboard' }
 }
 
 export async function signupAction(

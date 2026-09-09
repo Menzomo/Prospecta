@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { loginAction, signupAction } from '@/features/auth/actions'
 
@@ -28,6 +28,17 @@ export function LoginForm() {
   const [showSignupPassword, setShowSignupPassword] = useState(false)
   const searchParams = useSearchParams()
   const callbackError = searchParams.get('error')
+
+  // window.location em vez de router.push/redirect() de propósito: precisa
+  // ser uma navegação de verdade (recarrega a página), não client-side, pra
+  // desfazer o zoom que o Safari no iOS aplica ao focar o campo de senha —
+  // uma troca de página via router do Next.js mantém esse zoom "grudado" no
+  // dashboard (bug relatado).
+  useEffect(() => {
+    if (loginState?.redirectTo) {
+      window.location.href = loginState.redirectTo
+    }
+  }, [loginState])
 
   if (mode === 'signup') {
     return (
@@ -184,10 +195,10 @@ export function LoginForm() {
 
         <button
           type="submit"
-          disabled={loginPending}
+          disabled={loginPending || !!loginState?.redirectTo}
           className="cursor-pointer rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loginPending ? 'Entrando...' : 'Entrar'}
+          {loginPending || loginState?.redirectTo ? 'Entrando...' : 'Entrar'}
         </button>
       </form>
 
