@@ -20,7 +20,11 @@ export function KpiCard({ label, value, note, badge, progress, urgency }: Props)
   return (
     <div className="rounded-xl border border-outline bg-surface-container p-5 shadow-card flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
-        <p className="text-xs font-medium text-on-surface-muted uppercase tracking-wide">{label}</p>
+        {/* min-w-0: sem isso, um item flex não encolhe abaixo da largura do
+            texto numa linha só — com label longo ("Acompanhamentos
+            Pendentes") isso empurra o ponto de urgência pra fora do card
+            em vez de deixar o texto quebrar linha dentro do espaço disponível. */}
+        <p className="min-w-0 text-xs font-medium text-on-surface-muted uppercase tracking-wide">{label}</p>
         {urgency && (
           <span className="h-2 w-2 shrink-0 rounded-full bg-red-500 mt-0.5" aria-label="Urgente" />
         )}
