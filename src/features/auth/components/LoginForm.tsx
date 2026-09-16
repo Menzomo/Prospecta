@@ -1,9 +1,27 @@
 'use client'
 
-import { useActionState, useEffect, useState } from 'react'
+import { useActionState, useEffect, useState, useSyncExternalStore } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Script from 'next/script'
 import { loginAction, signupAction } from '@/features/auth/actions'
+
+// Quando o link de recuperação de senha já expirou ou foi usado, o Supabase
+// redireciona o erro direto pro Site URL configurado no painel — não pro
+// nosso /auth/callback — e manda como fragmento (#error=...), não como
+// query string. O servidor nunca vê o fragmento, então isso só existe no
+// client (window.location.hash); useSyncExternalStore lê com segurança sem
+// dar mismatch de hidratação (servidor sempre "sem erro", cliente confirma
+// depois). Sem isso, quem cai aqui vindo de um link expirado não via
+// nenhum aviso — só voltava pro login em silêncio.
+function subscribeNoop() {
+  return () => {}
+}
+function getHashHasError() {
+  return window.location.hash.includes('error=')
+}
+function getServerHashHasError() {
+  return false
+}
 
 // Vazio até você configurar (ver .env.example) — sem sitekey o widget some
 // e o login segue funcionando normal, só sem CAPTCHA.
@@ -32,7 +50,18 @@ export function LoginForm() {
   const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [showSignupPassword, setShowSignupPassword] = useState(false)
   const searchParams = useSearchParams()
-  const callbackError = searchParams.get('error')
+  const queryError = searchParams.get('error')
+  const hashError = useSyncExternalStore(subscribeNoop, getHashHasError, getServerHashHasError)
+  const callbackError = queryError ?? (hashError ? 'Link inválido ou expirado. Solicite a redefinição de senha novamente.' : null)
+
+  // Limpa o fragmento de erro da URL depois de já ter lido ele acima — só
+  // chamada imperativa numa API do navegador (não setState), então cabe
+  // direito num efeito.
+  useEffect(() => {
+    if (hashError) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    }
+  }, [hashError])
 
   // window.location em vez de router.push/redirect() de propósito: precisa
   // ser uma navegação de verdade (recarrega a página), não client-side, pra
