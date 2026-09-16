@@ -2,7 +2,12 @@
 
 import { useActionState, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Script from 'next/script'
 import { loginAction, signupAction } from '@/features/auth/actions'
+
+// Vazio até você configurar (ver .env.example) — sem sitekey o widget some
+// e o login segue funcionando normal, só sem CAPTCHA.
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
 function EyeIcon({ open }: { open: boolean }) {
   if (open) {
@@ -37,6 +42,17 @@ export function LoginForm() {
   useEffect(() => {
     if (loginState?.redirectTo) {
       window.location.href = loginState.redirectTo
+    }
+  }, [loginState])
+
+  // Token do Turnstile é de uso único — depois de um erro, o widget precisa
+  // ser resetado pra gerar outro token pra próxima tentativa. Isso é uma
+  // chamada imperativa numa API externa (não setState), então cabe direito
+  // num efeito: sincroniza o widget do Cloudflare com o resultado do login.
+  useEffect(() => {
+    if (loginState?.error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(window as any).turnstile?.reset?.()
     }
   }, [loginState])
 
@@ -193,6 +209,10 @@ export function LoginForm() {
           </p>
         )}
 
+        {TURNSTILE_SITE_KEY && (
+          <div className="cf-turnstile" data-sitekey={TURNSTILE_SITE_KEY} data-theme="light" />
+        )}
+
         <button
           type="submit"
           disabled={loginPending || !!loginState?.redirectTo}
@@ -201,6 +221,10 @@ export function LoginForm() {
           {loginPending || loginState?.redirectTo ? 'Entrando...' : 'Entrar'}
         </button>
       </form>
+
+      {TURNSTILE_SITE_KEY && (
+        <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="lazyOnload" />
+      )}
 
       <div className="text-right">
         <a href="/forgot-password" className="text-xs text-primary hover:underline">

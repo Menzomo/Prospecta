@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { loginSchema, signupSchema } from '@/validations/authSchema'
 import { checkAndSendBetaNotification } from '@/services/betaNotificationService'
 import { getProfileById } from '@/repositories/profileRepository'
+import { checkLoginThrottle, recordFailedLogin, clearLoginThrottle } from '@/repositories/loginThrottleRepository'
 
 async function getRequestOrigin(): Promise<string> {
   const h = await headers()
@@ -37,15 +38,37 @@ export async function loginAction(
     return { errors: validation.error.flatten().fieldErrors }
   }
 
+  const email = validation.data.email.trim().toLowerCase()
+  const captchaToken = (formData.get('cf-turnstile-response') as string | null) ?? undefined
+
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const adminSupabase = createAdminClient()
+
+  // Throttle por e-mail (5 erradas em 15min → bloqueia por 15min) — mitiga
+  // brute-force/credential stuffing contra essa action, que é um endpoint
+  // POST comum e pode ser chamada direto, sem passar pela UI. O rate limit
+  // padrão do Supabase Auth é por IP, contornável distribuindo tentativas.
+  const throttle = await checkLoginThrottle(adminSupabase, email)
+  if (throttle.locked) {
+    const minutes = Math.ceil(throttle.retryAfterSeconds / 60)
+    return { error: `Muitas tentativas de login. Tente novamente em ${minutes} minuto${minutes === 1 ? '' : 's'}.` }
+  }
+
   const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithPassword(validation.data)
+  const { error } = await supabase.auth.signInWithPassword({
+    ...validation.data,
+    options: captchaToken ? { captchaToken } : undefined,
+  })
 
   if (error) {
+    await recordFailedLogin(adminSupabase, email)
     if (error.message === 'Email not confirmed') {
       return { error: 'Email não confirmado. Verifique sua caixa de entrada.' }
     }
     return { error: 'Email ou senha inválidos.' }
   }
+
+  await clearLoginThrottle(adminSupabase, email)
 
   const { data: { user } } = await supabase.auth.getUser()
   if (user) {
@@ -64,8 +87,6 @@ export async function loginAction(
     // Máximo 2 sessões simultâneas por usuário — evita uma assinatura sendo
     // usada por vários vendedores ao mesmo tempo. Nunca bloqueia o login se
     // a limpeza falhar (pior caso: uma sessão a mais temporariamente).
-    const { createAdminClient } = await import('@/lib/supabase/admin')
-    const adminSupabase = createAdminClient()
     // RPCs não são tipadas em src/lib/supabase/types.ts (Functions: never) —
     // mesmo padrão de cast já usado em debitWallet/creditWallet.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
