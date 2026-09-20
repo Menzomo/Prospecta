@@ -121,6 +121,8 @@ export async function signupAction(
     return { errors: validation.error.flatten().fieldErrors }
   }
 
+  const captchaToken = (formData.get('cf-turnstile-response') as string | null) ?? undefined
+
   const origin = await getRequestOrigin()
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signUp({
@@ -129,6 +131,7 @@ export async function signupAction(
     options: {
       data: { full_name: validation.data.full_name },
       emailRedirectTo: `${origin}/auth/callback`,
+      captchaToken,
     },
   })
 
@@ -158,11 +161,25 @@ export async function forgotPasswordAction(
   const email = (formData.get('email') as string | null)?.trim() ?? ''
   if (!email) return { error: 'Informe o email.' }
 
+  const captchaToken = (formData.get('cf-turnstile-response') as string | null) ?? undefined
+
   const origin = await getRequestOrigin()
   const supabase = await createClient()
-  await supabase.auth.resetPasswordForEmail(email, {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${origin}/auth/callback?next=/reset-password`,
+    captchaToken,
   })
+
+  if (error) {
+    console.error('[forgotPasswordAction]', error.code, error.message)
+    // captcha_failed é um problema real do lado do cliente (widget não
+    // carregou, token expirou) — vale avisar. Qualquer outro erro (incluindo
+    // e-mail não cadastrado) mantemos silencioso e devolvemos sucesso mesmo
+    // assim, mesmo padrão do próprio Supabase: evita enumeration.
+    if (error.code === 'captcha_failed') {
+      return { error: 'Não foi possível verificar o CAPTCHA. Tente novamente.' }
+    }
+  }
 
   return { success: true }
 }

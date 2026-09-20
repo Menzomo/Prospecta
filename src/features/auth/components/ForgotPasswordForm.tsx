@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import Link from 'next/link'
 import { forgotPasswordAction } from '@/features/auth/actions'
+import { TurnstileWidget } from '@/components/TurnstileWidget'
 
 export function ForgotPasswordForm() {
   const [state, formAction, pending] = useActionState(forgotPasswordAction, null)
@@ -40,6 +41,8 @@ export function ForgotPasswordForm() {
       {state?.error && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{state.error}</p>
       )}
+
+      <TurnstileWidget resetSignal={state?.error} />
 
       <button
         type="submit"
