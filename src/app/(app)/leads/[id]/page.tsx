@@ -54,18 +54,18 @@ export default async function LeadDetailPage({ params }: Props) {
 
   return (
     <>
-      <header className="border-b border-outline bg-surface-container px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/leads" className="text-sm text-on-surface-muted hover:text-on-surface">
+      <header className="border-b border-outline bg-surface-container px-4 py-4 sm:px-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
+            <Link href="/leads" className="shrink-0 text-sm text-on-surface-muted hover:text-on-surface">
               ← Leads
             </Link>
-            <span className="text-outline">/</span>
-            <h1 className="text-lg font-semibold text-on-surface font-[--font-heading]">{lead.company_name}</h1>
+            <span className="shrink-0 text-outline">/</span>
+            <h1 className="min-w-0 truncate text-lg font-semibold text-on-surface font-[--font-heading]">{lead.company_name}</h1>
             <StatusBadge status={status} />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <LeadRepliesButton messages={emailMessages} threads={emailThreads} leadId={lead.id} />
             <CallButton
               phone={lead.phone ?? null}
@@ -93,11 +93,11 @@ export default async function LeadDetailPage({ params }: Props) {
         </div>
       </header>
 
-      <main className="flex flex-1 justify-center p-6">
+      <main className="flex flex-1 justify-center p-4 sm:p-6">
         <div className="w-full max-w-5xl space-y-6">
           {/* Status summary */}
           <div className="rounded-xl border border-outline bg-surface-container p-4 shadow-card">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs text-on-surface-muted">Status atual</p>
                 <p className="mt-0.5 font-medium text-on-surface">{statusLabel}</p>
