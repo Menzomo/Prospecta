@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCompanyProfileByUserId } from '@/repositories/companyProfileRepository'
@@ -127,39 +126,12 @@ function WalletSection({ balance, transactions }: { balance: number; transaction
 type Props = { searchParams: Promise<{ section?: string }> }
 
 export default async function SettingsPage({ searchParams }: Props) {
-  const { section: raw } = await searchParams
-  // Sem seção na URL: no mobile, quem clica em "Configurações" caía direto
-  // em "Dados da Empresa" sem ver as outras opções (a sub-navegação só
-  // existe dentro do drawer do Sidebar, que já fechou depois do clique).
-  // Sem seção escolhida, mostra um menu com todas as opções em vez de
-  // assumir uma por padrão — no desktop isso só aparece se alguém navegar
-  // pra /settings sem seção; o normal lá é entrar já com uma escolhida pelo
-  // sub-menu do Sidebar (sempre visível).
-  const section: Section | null = raw && SECTIONS.some((s) => s.key === raw) ? (raw as Section) : null
+  const { section: raw = 'empresa' } = await searchParams
+  const section: Section = (SECTIONS.some((s) => s.key === raw) ? raw : 'empresa') as Section
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
-
-  if (!section) {
-    return (
-      <main className="flex flex-col gap-6 p-6">
-        <PageHeader title="Configurações" subtitle="Gerencie sua conta e integrações" />
-        <nav className="mx-auto flex w-full max-w-lg flex-col gap-2">
-          {SECTIONS.map((s) => (
-            <Link
-              key={s.key}
-              href={`/settings?section=${s.key}`}
-              className="flex items-center justify-between rounded-xl border border-outline bg-surface-container px-4 py-3.5 text-sm font-medium text-on-surface shadow-card transition-colors hover:bg-surface-low"
-            >
-              {s.label}
-              <span className="text-on-surface-muted" aria-hidden>›</span>
-            </Link>
-          ))}
-        </nav>
-      </main>
-    )
-  }
 
   const [company, gmailConnection, gmailRequest, telephonySettings, walletBalance, walletTransactions, assignedNumber, profile, canWrite] = await Promise.all([
     getCompanyProfileByUserId(supabase, user.id),
@@ -191,15 +163,6 @@ export default async function SettingsPage({ searchParams }: Props) {
       <PageHeader title="Configurações" subtitle="Gerencie sua conta e integrações" />
 
       <div className="mx-auto w-full max-w-lg">
-
-        {/* Volta pro menu de seções — só no mobile, o desktop já tem o
-            sub-menu sempre visível no Sidebar */}
-        <Link
-          href="/settings"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-on-surface-muted hover:text-on-surface lg:hidden"
-        >
-          ← Configurações
-        </Link>
 
         {/* Dados da Empresa */}
         {section === 'empresa' && (

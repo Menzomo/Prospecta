@@ -97,6 +97,13 @@ function IconClose() {
     </svg>
   )
 }
+function IconChevronDown() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  )
+}
 
 const ALL_SETTINGS_SUB_ITEMS = [
   { section: 'empresa',   label: 'Dados da Empresa' },
@@ -132,17 +139,86 @@ function getInitials(email: string | null | undefined): string {
   return name.slice(0, 2).toUpperCase()
 }
 
+function SettingsAccordionItem({
+  item,
+  isActive,
+  inSettings,
+  currentSection,
+  onLinkClick,
+}: {
+  item: NavItem
+  isActive: boolean
+  inSettings: boolean
+  currentSection: string
+  onLinkClick?: () => void
+}) {
+  // No mobile, "Configurações" nunca navega direto — só expande as opções
+  // aqui mesmo no drawer (sem fechar, sem trocar de tela). Só escolher uma
+  // opção de verdade navega e fecha o menu. Começa expandido se a pessoa já
+  // estiver numa página de configurações (ex: reabriu o menu no meio do
+  // caminho), mas o toque manual sempre pode fechar/abrir por cima disso.
+  const [manuallyToggled, setManuallyToggled] = useState<boolean | null>(null)
+  const expanded = manuallyToggled ?? inSettings
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setManuallyToggled(!expanded)}
+        className={`flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-0.5 ${
+          isActive
+            ? 'bg-blue-600/15 text-blue-400 border-l-4 border-blue-500 pl-2'
+            : 'text-white/60 hover:text-white/90 hover:bg-white/5 border-l-4 border-transparent pl-2'
+        }`}
+      >
+        <span className={`shrink-0 ${isActive ? 'text-blue-400' : 'text-white/40'}`}>
+          {item.icon}
+        </span>
+        {item.label}
+        <span className={`ml-auto shrink-0 text-white/30 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}>
+          <IconChevronDown />
+        </span>
+      </button>
+
+      {/* Truque do grid-template-rows animando 0fr→1fr: dá pra animar até
+          "altura automática" com CSS puro, sem medir altura em JS. */}
+      <div className={`grid transition-[grid-template-rows] duration-200 ease-in-out ${expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+        <div className="overflow-hidden">
+          <div className="mb-1 mt-0.5 space-y-0.5 pl-9">
+            {ALL_SETTINGS_SUB_ITEMS.map((sub) => (
+              <Link
+                key={sub.section}
+                href={`/settings?section=${sub.section}`}
+                onClick={onLinkClick}
+                className={`block rounded-md px-2.5 py-1.5 text-xs transition-colors ${
+                  currentSection === sub.section
+                    ? 'font-semibold text-blue-400'
+                    : 'text-white/45 hover:text-white/75 hover:bg-white/5'
+                }`}
+              >
+                {sub.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function NavLinks({
   items,
   pathname,
   inSettings,
   currentSection,
+  isMobile,
   onLinkClick,
 }: {
   items: NavItem[]
   pathname: string
   inSettings: boolean
   currentSection: string
+  isMobile?: boolean
   onLinkClick?: () => void
 }) {
   const settingsSubItems = ALL_SETTINGS_SUB_ITEMS
@@ -152,6 +228,20 @@ function NavLinks({
       {items.map((item) => {
         const isActive = item.match(pathname)
         const isSettings = item.href === '/settings'
+
+        if (isSettings && isMobile) {
+          return (
+            <SettingsAccordionItem
+              key={item.href}
+              item={item}
+              isActive={isActive}
+              inSettings={inSettings}
+              currentSection={currentSection}
+              onLinkClick={onLinkClick}
+            />
+          )
+        }
+
         return (
           <div key={item.href}>
             <Link
@@ -377,6 +467,7 @@ export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
             pathname={pathname}
             inSettings={inSettings}
             currentSection={currentSection}
+            isMobile
             onLinkClick={() => setOpen(false)}
           />
         </nav>
