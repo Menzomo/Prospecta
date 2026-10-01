@@ -7,17 +7,19 @@ import {
   IconLeads,
   IconSearch,
   IconTemplates,
+  IconVisitas,
   IconFollowups,
   IconSettings,
 } from '@/components/layout/Sidebar'
 
-export type SpotlightItem = 'dashboard' | 'leads' | 'search' | 'templates' | 'followups' | 'settings'
+export type SpotlightItem = 'dashboard' | 'leads' | 'search' | 'templates' | 'visitas' | 'followups' | 'settings'
 
 const ITEMS: { key: SpotlightItem; label: string; icon: React.ReactNode }[] = [
   { key: 'dashboard', label: 'Dashboard',       icon: <IconDashboard /> },
   { key: 'leads',     label: 'Leads',           icon: <IconLeads /> },
   { key: 'search',    label: 'Buscar Leads',    icon: <IconSearch /> },
   { key: 'templates', label: 'Templates',       icon: <IconTemplates /> },
+  { key: 'visitas',   label: 'Visitas',         icon: <IconVisitas /> },
   { key: 'followups', label: 'Acompanhamentos', icon: <IconFollowups /> },
   { key: 'settings',  label: 'Configurações',   icon: <IconSettings /> },
 ]

@@ -11,7 +11,9 @@ type Props = { searchParams: Promise<{ step?: string }> }
 
 export default async function OnboardingPage({ searchParams }: Props) {
   const { step: stepParam } = await searchParams
-  const resumeStep = stepParam ? Math.max(1, Math.min(11, Number(stepParam))) || 1 : null
+  // 12 = TOTAL_STEPS do OnboardingWizard (mantém em sincronia manualmente —
+  // adicionar/remover uma etapa lá exige atualizar esse número aqui também).
+  const resumeStep = stepParam ? Math.max(1, Math.min(12, Number(stepParam))) || 1 : null
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

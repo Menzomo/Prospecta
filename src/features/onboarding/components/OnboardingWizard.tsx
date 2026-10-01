@@ -10,7 +10,7 @@ import type { GmailRequestStatus } from '@/types/gmail'
 
 type Category = { id: string; name: string }
 
-const TOTAL_STEPS = 11
+const TOTAL_STEPS = 12
 
 const INPUT_CLASS =
   'w-full rounded-lg border border-outline bg-surface-container px-3 py-2 text-sm text-on-surface [-webkit-text-fill-color:#191b23] placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-1 focus:ring-primary sm:py-2.5'
@@ -35,7 +35,7 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
   const [step, setStep] = useState(initialStep)
   const [state, formAction, pending] = useActionState(onboardingAction, null)
 
-  // Step 8 Gmail request state
+  // Step 10 Gmail request state
   const [gmailInput, setGmailInput] = useState('')
   const [gmailRequesting, setGmailRequesting] = useState(false)
   const [gmailRequestError, setGmailRequestError] = useState<string | null>(null)
@@ -388,8 +388,47 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
           </div>
         )}
 
-        {/* ── Etapa 9 — Gmail ── */}
+        {/* ── Etapa 9 — Visitas ── */}
         {step === 9 && (
+          <div className="rounded-xl border border-outline bg-surface-container p-4 shadow-card sm:rounded-2xl sm:p-8">
+            <div className="mb-4 text-center sm:mb-6">
+              <p className="mb-1 text-2xl sm:mb-3 sm:text-4xl">🗺️</p>
+              <h1 className="text-base font-bold text-on-surface font-[--font-heading] sm:text-xl">Visitas</h1>
+            </div>
+            <div className="mb-4 sm:mb-6">
+              <SidebarSpotlight
+                highlight="visitas"
+                title="Agende visitas e otimize a rota do dia"
+                description="Marque visitas presenciais pros seus leads e deixe o Prospecta calcular a rota mais eficiente a partir da sua localização. Importante: pra rota funcionar, o lead precisa ter o endereço correto e confirmado — se faltar ou estiver errado, edita no próprio lead antes de agendar a visita."
+              >
+                <div className="mt-3 flex flex-col gap-2">
+                  <div className="rounded-lg border border-outline bg-surface-low p-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1 select-none blur-[3px]">
+                        <p className="text-xs font-medium text-on-surface">Empresa Exemplo</p>
+                        <p className="text-[10px] text-on-surface-muted">Rua Exemplo, 123 — Centro</p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-blue-500/10 px-1.5 py-0.5 text-[9px] font-medium text-blue-600">Planejada</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-outline bg-surface-low p-2.5">
+                    <p className="text-[10px] font-semibold text-on-surface-muted">Calcular rota do dia</p>
+                    <p className="mt-1 text-[10px] text-on-surface-muted">1 visita planejada com endereço confirmado.</p>
+                    <div className="mt-1.5 inline-flex items-center gap-1 rounded-md border border-outline bg-surface-container px-2 py-1 text-[10px] text-on-surface">
+                      📍 Usar minha localização atual
+                    </div>
+                    <p className="mt-1.5 text-[10px] text-amber-600">Custa R$ 0,15 por cálculo, descontado da carteira.</p>
+                  </div>
+                </div>
+              </SidebarSpotlight>
+            </div>
+            <button onClick={next} className={BTN_PRIMARY}>Continuar</button>
+          </div>
+        )}
+
+        {/* ── Etapa 10 — Gmail ── */}
+        {step === 10 && (
           <div className="rounded-xl border border-outline bg-surface-container p-4 shadow-card sm:rounded-2xl sm:p-8">
             <div className="mb-4 text-center sm:mb-6">
               <p className="mb-1 text-2xl sm:mb-3 sm:text-4xl">📧</p>
@@ -472,8 +511,8 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
           </div>
         )}
 
-        {/* ── Etapa 10 — Assinatura ── */}
-        {step === 10 && (
+        {/* ── Etapa 11 — Assinatura ── */}
+        {step === 11 && (
           <div className="rounded-xl border border-outline bg-surface-container p-4 shadow-card sm:rounded-2xl sm:p-8">
             <div className="mb-4 text-center sm:mb-6">
               <p className="mb-1 text-2xl sm:mb-3 sm:text-4xl">💳</p>
@@ -496,8 +535,8 @@ export function OnboardingWizard({ initialStep = 1, categories, gmailRequestStat
           </div>
         )}
 
-        {/* ── Etapa 11 — Finalização ── */}
-        {step === 11 && (
+        {/* ── Etapa 12 — Finalização ── */}
+        {step === 12 && (
           <div className="rounded-xl border border-outline bg-surface-container p-4 text-center shadow-card sm:rounded-2xl sm:p-8">
             <p className="mb-1 text-3xl sm:mb-3 sm:text-5xl">🚀</p>
             <h1 className="text-base font-bold text-on-surface font-[--font-heading] sm:text-2xl">Tudo pronto!</h1>
