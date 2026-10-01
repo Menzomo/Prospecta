@@ -1,3 +1,5 @@
+'use client'
+
 import Link from 'next/link'
 import type { ManualReviewLead } from '@/repositories/leadQualityRepository'
 import type { AdminCategory } from '@/repositories/adminRepository'
@@ -6,6 +8,7 @@ import {
   approveGlobalLeadAction,
   rejectGlobalLeadAction,
   reprocessGlobalLeadAction,
+  reprocessAllGlobalLeadsAction,
 } from '@/features/admin/actions'
 
 interface Props {
@@ -46,12 +49,34 @@ export function AdminManualReviewQueue({
     ? `/admin?${clearNicheParams.toString()}`
     : '/admin'
 
+  const leadIds = leads.map((l) => l.id)
+
   return (
     <section>
-      <h2 className="mb-3 text-base font-semibold text-gray-900">
-        Revisão de Leads{' '}
-        <span className="text-sm font-normal text-gray-400">({leads.length} aguardando)</span>
-      </h2>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-base font-semibold text-gray-900">
+          Revisão de Leads{' '}
+          <span className="text-sm font-normal text-gray-400">({leads.length} aguardando)</span>
+        </h2>
+
+        {leads.length > 0 && (
+          <form
+            action={reprocessAllGlobalLeadsAction.bind(null, leadIds)}
+            onSubmit={(e) => {
+              if (!confirm(`Reprocessar os ${leadIds.length} leads listados abaixo? Eles voltam pra fila de enriquecimento do n8n.`)) {
+                e.preventDefault()
+              }
+            }}
+          >
+            <button
+              type="submit"
+              className="cursor-pointer rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200"
+            >
+              Reprocessar todos ({leads.length})
+            </button>
+          </form>
+        )}
+      </div>
 
       {/* Nicho filter */}
       <form method="GET" action="/admin" className="mb-4 flex flex-wrap items-center gap-3">

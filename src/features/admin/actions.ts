@@ -11,6 +11,7 @@ import {
   approveGlobalLead,
   rejectGlobalLead,
   reprocessGlobalLead,
+  reprocessGlobalLeads,
 } from '@/repositories/globalLeadRepository'
 
 const addEmailSchema = z.object({
@@ -266,6 +267,16 @@ export async function reprocessGlobalLeadAction(leadId: string, _formData: FormD
   const { supabase, user } = await requireAdmin()
   const ok = await reprocessGlobalLead(supabase, leadId)
   if (ok) console.log(`[reprocessGlobalLeadAction] Admin ${user.email} reprocessed lead ${leadId}`)
+  revalidatePath('/admin')
+}
+
+// Reprocessa todos os leads passados de uma vez — usado pelo botão
+// "Reprocessar todos" na fila de revisão manual (os IDs são os leads
+// visíveis na tela no momento, já respeitando os filtros aplicados).
+export async function reprocessAllGlobalLeadsAction(leadIds: string[], _formData: FormData): Promise<void> {
+  const { supabase, user } = await requireAdmin()
+  const ok = await reprocessGlobalLeads(supabase, leadIds)
+  if (ok) console.log(`[reprocessAllGlobalLeadsAction] Admin ${user.email} reprocessed ${leadIds.length} leads`)
   revalidatePath('/admin')
 }
 

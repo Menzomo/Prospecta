@@ -319,6 +319,31 @@ export async function reprocessGlobalLead(
   return true
 }
 
+// Mesma coisa que reprocessGlobalLead, só que em lote — usado pelo botão
+// "Reprocessar todos" da fila de revisão manual, pra não precisar de N
+// updates (um por lead) quando dá pra fazer um só com .in('id', ids).
+export async function reprocessGlobalLeads(
+  supabase: SupabaseClient<Database>,
+  ids: string[]
+): Promise<boolean> {
+  if (ids.length === 0) return true
+
+  const { error } = await supabase
+    .from('global_leads')
+    .update({
+      status: 'pending_enrichment',
+      rejection_reason: null,
+      updated_at: new Date().toISOString(),
+    })
+    .in('id', ids)
+
+  if (error) {
+    console.error('[globalLeadRepository.reprocessGlobalLeads]', { code: error.code, message: error.message })
+    return false
+  }
+  return true
+}
+
 export async function updateGlobalLeadEmailAndPromote(
   supabase: SupabaseClient<Database>,
   id: string,
