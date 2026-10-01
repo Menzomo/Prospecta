@@ -6,6 +6,7 @@ import type { AdminCategory } from '@/repositories/adminRepository'
 import {
   dismissGlobalLeadAction,
   approveGlobalLeadAction,
+  approveAllGlobalLeadsAction,
   rejectGlobalLeadAction,
   reprocessGlobalLeadAction,
   reprocessAllGlobalLeadsAction,
@@ -60,21 +61,39 @@ export function AdminManualReviewQueue({
         </h2>
 
         {leads.length > 0 && (
-          <form
-            action={reprocessAllGlobalLeadsAction.bind(null, leadIds)}
-            onSubmit={(e) => {
-              if (!confirm(`Reprocessar os ${leadIds.length} leads listados abaixo? Eles voltam pra fila de enriquecimento do n8n.`)) {
-                e.preventDefault()
-              }
-            }}
-          >
-            <button
-              type="submit"
-              className="cursor-pointer rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200"
+          <div className="flex items-center gap-2">
+            <form
+              action={approveAllGlobalLeadsAction.bind(null, leadIds)}
+              onSubmit={(e) => {
+                if (!confirm(`Aprovar os ${leadIds.length} leads listados abaixo? Eles ficam ativos pra busca na hora.`)) {
+                  e.preventDefault()
+                }
+              }}
             >
-              Reprocessar todos ({leads.length})
-            </button>
-          </form>
+              <button
+                type="submit"
+                className="cursor-pointer rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-green-700"
+              >
+                Aprovar todos ({leads.length})
+              </button>
+            </form>
+
+            <form
+              action={reprocessAllGlobalLeadsAction.bind(null, leadIds)}
+              onSubmit={(e) => {
+                if (!confirm(`Reprocessar os ${leadIds.length} leads listados abaixo? Eles voltam pra fila de enriquecimento do n8n.`)) {
+                  e.preventDefault()
+                }
+              }}
+            >
+              <button
+                type="submit"
+                className="cursor-pointer rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200"
+              >
+                Reprocessar todos ({leads.length})
+              </button>
+            </form>
+          </div>
         )}
       </div>
 

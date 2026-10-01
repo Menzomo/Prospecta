@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/supabase/types'
-import type { GlobalLead, CreateGlobalLeadDto } from '@/types/globalLeads'
+import type { GlobalLead, CreateGlobalLeadDto, LeadQualityStatus } from '@/types/globalLeads'
 import { computeLeadQualityStatus } from '@/types/globalLeads'
 import { expandStateCode } from '@/utils/stateUtils'
 import { getReleasedCities } from '@/repositories/releasedCityRepository'
@@ -274,6 +274,59 @@ export async function approveGlobalLead(
     console.error('[globalLeadRepository.approveGlobalLead]', { code: error.code, message: error.message })
     return false
   }
+  return true
+}
+
+// Mesma coisa que approveGlobalLead, em lote — usado pelo botão "Aprovar
+// todos" da fila de revisão manual. Diferente de reprocessGlobalLeads, não
+// dá pra fazer um UPDATE único: lead_quality_status depende do email/phone
+// de CADA lead, então agrupa por status computado (no máximo 4 grupos
+// possíveis) em vez de um UPDATE por lead.
+export async function approveGlobalLeads(
+  supabase: SupabaseClient<Database>,
+  ids: string[],
+  approvedBy: string
+): Promise<boolean> {
+  if (ids.length === 0) return true
+
+  const { data: current, error: fetchError } = await supabase
+    .from('global_leads')
+    .select('id, email, phone')
+    .in('id', ids)
+
+  if (fetchError || !current) {
+    console.error('[globalLeadRepository.approveGlobalLeads] fetch', fetchError?.message)
+    return false
+  }
+
+  const now = new Date().toISOString()
+  const groups = new Map<LeadQualityStatus, string[]>()
+  for (const lead of current) {
+    const quality = computeLeadQualityStatus(lead.email, lead.phone)
+    const group = groups.get(quality) ?? []
+    group.push(lead.id)
+    groups.set(quality, group)
+  }
+
+  for (const [quality, groupIds] of groups) {
+    const { error } = await supabase
+      .from('global_leads')
+      .update({
+        status: 'active',
+        lead_quality_status: quality,
+        approved_at: now,
+        approved_by: approvedBy,
+        rejection_reason: null,
+        updated_at: now,
+      })
+      .in('id', groupIds)
+
+    if (error) {
+      console.error('[globalLeadRepository.approveGlobalLeads] update', { code: error.code, message: error.message })
+      return false
+    }
+  }
+
   return true
 }
 

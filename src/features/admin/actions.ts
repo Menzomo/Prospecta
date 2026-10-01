@@ -9,6 +9,7 @@ import {
   updateGlobalLeadEmailAndPromote,
   markGlobalLeadInvalid,
   approveGlobalLead,
+  approveGlobalLeads,
   rejectGlobalLead,
   reprocessGlobalLead,
   reprocessGlobalLeads,
@@ -253,6 +254,16 @@ export async function approveGlobalLeadAction(leadId: string, _formData: FormDat
   const { supabase, user } = await requireAdmin()
   const ok = await approveGlobalLead(supabase, leadId, user.id)
   if (ok) console.log(`[approveGlobalLeadAction] Admin ${user.email} approved lead ${leadId}`)
+  revalidatePath('/admin')
+}
+
+// Aprova todos os leads passados de uma vez — usado pelo botão "Aprovar
+// todos" na fila de revisão manual (os IDs são os leads visíveis na tela
+// no momento, já respeitando os filtros aplicados).
+export async function approveAllGlobalLeadsAction(leadIds: string[], _formData: FormData): Promise<void> {
+  const { supabase, user } = await requireAdmin()
+  const ok = await approveGlobalLeads(supabase, leadIds, user.id)
+  if (ok) console.log(`[approveAllGlobalLeadsAction] Admin ${user.email} approved ${leadIds.length} leads`)
   revalidatePath('/admin')
 }
 
