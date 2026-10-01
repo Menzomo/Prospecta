@@ -13,7 +13,13 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import type { LeadCardData } from '@/features/leads/components/LeadsGrid'
 import { LeadsView } from '@/features/leads/components/LeadsView'
 
-export default async function LeadsPage() {
+type Props = {
+  searchParams: Promise<{ search?: string }>
+}
+
+export default async function LeadsPage({ searchParams }: Props) {
+  const { search } = await searchParams
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -79,6 +85,7 @@ export default async function LeadsPage() {
         leads={allLeads}
         categories={categoriesInUse}
         hasSettings={hasSettings}
+        initialSearch={search ?? ''}
       />
     </main>
   )

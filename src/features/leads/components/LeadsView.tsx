@@ -19,11 +19,17 @@ type Props = {
   leads: LeadCardData[]
   categories: LeadCategory[]
   hasSettings: boolean
+  // Vem de /leads?search=... — a busca por nome no topo do app (Topbar)
+  // navega pra cá com esse parâmetro, mas antes dessa mudança nada aqui
+  // lia ele: a busca aparecia como se tivesse funcionado (a página mudava),
+  // mas a lista não era filtrada de verdade.
+  initialSearch?: string
 }
 
-export function LeadsView({ leads, categories, hasSettings }: Props) {
+export function LeadsView({ leads, categories, hasSettings, initialSearch = '' }: Props) {
   const [category, setCategory] = useState('all')
   const [city, setCity] = useState('')
+  const [search, setSearch] = useState(initialSearch)
 
   const filtered = useMemo(() => {
     return leads.filter((l) => {
@@ -32,11 +38,12 @@ export function LeadsView({ leads, categories, hasSettings }: Props) {
         if (cat && l.category_name !== cat.name) return false
       }
       if (city && !l.city?.toLowerCase().includes(city.toLowerCase())) return false
+      if (search && !l.company_name.toLowerCase().includes(search.toLowerCase())) return false
       return true
     })
-  }, [leads, category, city, categories])
+  }, [leads, category, city, search, categories])
 
-  const hasActiveFilters = category !== 'all' || !!city
+  const hasActiveFilters = category !== 'all' || !!city || !!search
 
   return (
     <div className="flex flex-col gap-5">
@@ -59,6 +66,19 @@ export function LeadsView({ leads, categories, hasSettings }: Props) {
           </span>
           <input
             type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por nome..."
+            className="rounded-lg border border-outline bg-surface-container py-2 pl-8 pr-3 text-sm text-on-surface placeholder:text-on-surface-muted outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+
+        <div className="relative">
+          <span className="pointer-events-none absolute inset-y-0 left-2.5 flex items-center text-on-surface-muted">
+            <IconSearch />
+          </span>
+          <input
+            type="text"
             value={city}
             onChange={(e) => setCity(e.target.value)}
             placeholder="Filtrar por cidade..."
@@ -69,7 +89,7 @@ export function LeadsView({ leads, categories, hasSettings }: Props) {
         {hasActiveFilters && (
           <button
             type="button"
-            onClick={() => { setCategory('all'); setCity('') }}
+            onClick={() => { setCategory('all'); setCity(''); setSearch('') }}
             className="text-sm text-on-surface-muted hover:text-on-surface hover:underline"
           >
             Limpar filtros
