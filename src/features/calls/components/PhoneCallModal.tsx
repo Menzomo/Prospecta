@@ -11,6 +11,13 @@ import { FollowupCreateForm } from '@/features/followups/components/FollowupCrea
 
 const ANALYSIS_POLL_INTERVAL = 5000
 
+const DIAL_STATUS_INFO: Record<string, { title: string; description: string }> = {
+  'no-answer': { title: 'O lead não atendeu', description: 'Ninguém atendeu a ligação. Tente novamente em alguns minutos.' },
+  busy:        { title: 'Linha ocupada', description: 'O número estava ocupado. Tente novamente mais tarde.' },
+  failed:      { title: 'Falha na ligação', description: 'Não foi possível completar a ligação. Verifique o número e tente novamente.' },
+  canceled:    { title: 'Ligação cancelada', description: 'A ligação foi encerrada antes do lead atender.' },
+}
+
 type Props = {
   phone: string
   companyName: string
@@ -31,9 +38,11 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
   const [localAnalysis, setLocalAnalysis]     = useState<CallAnalysis | null>(null)
   const [analysisPolling, setAnalysisPolling] = useState(false)
   const [showFollowupForm, setShowFollowupForm] = useState(false)
+  const [dialCallStatus, setDialCallStatus] = useState<string | null>(null)
   const notesRef = useRef<HTMLTextAreaElement>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const analysisPollerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const dialPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const { state, error, callId, connectedAt, endedAt, startCall, endCall, reset } = usePhoneCall({
     leadId,
@@ -44,6 +53,10 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
   const isEnded     = state === 'ended'
   const isBusy      = ['initializing', 'connecting', 'ringing', 'in-progress'].includes(state)
   const canStart    = state === 'idle' || state === 'error'
+  // dial_call_status diferente de 'completed' (no-answer/busy/failed/
+  // canceled) = o lead não atendeu de verdade — não é cobrado (ver
+  // callService.ts) e a tela mostra isso em vez de "Chamada encerrada".
+  const leadDidNotAnswer = dialCallStatus !== null && dialCallStatus !== 'completed'
 
   // Ao encerrar: foca notas, busca créditos e inicia polling de gravação
   useEffect(() => {
@@ -94,6 +107,40 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEnded])
 
+  // Ao encerrar: busca o resultado real do <Dial> (dial_call_status) pra
+  // saber se o lead atendeu de verdade — connectedAt/endedAt (acima) só
+  // refletem a perna do navegador até a Telnyx, não se o lead atendeu.
+  // Esse webhook (POST /api/calls/twiml/completed) deve chegar quase na
+  // hora, bem antes do de gravação, então o polling aqui é curto.
+  useEffect(() => {
+    if (!isEnded || !callId) return
+
+    let attempts = 0
+    const MAX_ATTEMPTS = 6 // 6 × 2s = 12s
+
+    const checkDialStatus = async () => {
+      const res = await fetch(`/api/calls/${callId}`).catch(() => null)
+      if (!res?.ok) return
+      const data: { call?: { dial_call_status: string | null } } = await res.json().catch(() => ({}))
+
+      if (data.call?.dial_call_status) {
+        setDialCallStatus(data.call.dial_call_status)
+        if (dialPollRef.current) clearInterval(dialPollRef.current)
+        return
+      }
+
+      attempts++
+      if (attempts >= MAX_ATTEMPTS && dialPollRef.current) clearInterval(dialPollRef.current)
+    }
+
+    checkDialStatus()
+    dialPollRef.current = setInterval(checkDialStatus, 2000)
+
+    return () => {
+      if (dialPollRef.current) clearInterval(dialPollRef.current)
+    }
+  }, [isEnded, callId])
+
   // Polling direto no Supabase para buscar a análise sem reload
   useEffect(() => {
     if (!analysisPolling || !callId) return
@@ -117,12 +164,29 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
     }
   }, [analysisPolling, callId])
 
-  function handleClose() {
-    if (isBusy) return   // não fechar durante chamada ativa
+  // Reseta o estado da ligação sem fechar o modal — usado pelo botão
+  // "Tentar novamente" quando o lead não atende, pra deixar a pessoa ligar
+  // de novo pro mesmo número sem precisar reabrir o modal.
+  function resetCallState() {
     reset()
     setAnalysisState('idle')
     setCredits(null)
+    setRecordingReady(false)
+    setLocalAnalysis(null)
+    setAnalysisPolling(false)
+    setDialCallStatus(null)
+    setNotes('')
+    setNotesSaved(false)
+  }
+
+  function handleClose() {
+    if (isBusy) return   // não fechar durante chamada ativa
+    resetCallState()
     onClose()
+  }
+
+  function handleRetry() {
+    resetCallState()
   }
 
   async function handleRequestAnalysis() {
@@ -271,8 +335,49 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
             </div>
           )}
 
+          {/* — Tela: ended, lead não atendeu — sem custo, sem prompt de IA */}
+          {isEnded && leadDidNotAnswer && (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-3 rounded-xl bg-amber-50 px-4 py-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-600" aria-hidden>
+                    <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.34 1.85.573 2.81.7a2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91" />
+                    <line x1="23" y1="1" x2="1" y2="23" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-on-surface">
+                    {DIAL_STATUS_INFO[dialCallStatus as string]?.title ?? 'O lead não atendeu'}
+                  </p>
+                  <p className="text-xs text-on-surface-muted">
+                    {DIAL_STATUS_INFO[dialCallStatus as string]?.description ?? 'Tente novamente mais tarde.'}
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-xs text-on-surface-muted">Essa tentativa não foi cobrada.</p>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="flex-1 cursor-pointer rounded-lg border border-outline px-3 py-2 text-sm font-medium text-on-surface transition-colors hover:bg-surface-low"
+                >
+                  Fechar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  className="flex-1 cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* — Tela: ended — resumo e notas */}
-          {isEnded && (
+          {isEnded && !leadDidNotAnswer && (
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3 rounded-xl bg-surface-low px-4 py-3">
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100">

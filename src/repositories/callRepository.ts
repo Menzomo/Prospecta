@@ -125,6 +125,35 @@ export async function updateCallStatus(
   return true
 }
 
+/**
+ * Registra o resultado real do <Dial> (POST /api/calls/twiml/completed) —
+ * dial_call_status vem direto do provedor (completed/no-answer/busy/failed/
+ * canceled) e é o que diz se o lead atendeu de verdade, diferente do
+ * CallStatus genérico do callback de gravação. Atualiza por id (o callId
+ * gerado no browser, igual ao calls.id — ver createCall), não por call_sid,
+ * porque é isso que o <Dial action=...> já devolve na query string.
+ */
+export async function updateCallDialResult(
+  supabase: SupabaseClient<Database>,
+  callId: string,
+  update: {
+    dial_call_status: string
+    status?: string
+    ended_at?: string
+  }
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('calls')
+    .update(update)
+    .eq('id', callId)
+
+  if (error) {
+    console.error('[callRepository.updateCallDialResult]', error.message)
+    return false
+  }
+  return true
+}
+
 export async function updateCallRecording(
   supabase: SupabaseClient<Database>,
   callId: string,

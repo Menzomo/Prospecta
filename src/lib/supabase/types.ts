@@ -772,6 +772,7 @@ export interface Database {
           from_number: string
           direction: string
           status: string
+          dial_call_status: string | null
           duration_seconds: number | null
           created_at: string
           ended_at: string | null
@@ -791,6 +792,7 @@ export interface Database {
           from_number: string
           direction?: string
           status?: string
+          dial_call_status?: string | null
           duration_seconds?: number | null
           created_at?: string
           ended_at?: string | null
@@ -802,6 +804,7 @@ export interface Database {
         }
         Update: {
           status?: string
+          dial_call_status?: string | null
           duration_seconds?: number | null
           ended_at?: string | null
           recording_sid?: string | null

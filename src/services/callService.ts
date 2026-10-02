@@ -8,7 +8,8 @@ import type { Database } from '@/lib/supabase/types'
 import type { ITelephonyProvider, AccessTokenResult } from '@/lib/telephony/ITelephonyProvider'
 import { getTelephonySettings } from '@/repositories/telephonySettingsRepository'
 import { createProviderFromSettings } from '@/lib/telephony/factory'
-import { createCall, updateCallStatus } from '@/repositories/callRepository'
+import { createCall, updateCallStatus, updateCallDialResult } from '@/repositories/callRepository'
+import { CALL_STATUSES, type CallStatus } from '@/types/calls'
 import { createCallAnalysis, getCallAnalysisByCallId, deleteCallAnalysisByCallId } from '@/repositories/callAnalysisRepository'
 import { debitWallet, getBalance } from '@/repositories/walletRepository'
 import { getLeadsByUserId } from '@/repositories/leadRepository'
@@ -319,7 +320,7 @@ export async function handleStatusCallbackWebhook(
     // Busca o callId pelo call_sid para disparar o evento e para o débito
     const { data: call } = await adminSupabase
       .from('calls')
-      .select('id, direction')
+      .select('id, direction, dial_call_status')
       .eq('call_sid', update.callSid)
       .maybeSingle()
 
@@ -339,7 +340,17 @@ export async function handleStatusCallbackWebhook(
       const isAdmin  = adminIds.includes(userId)
       const isInbound = call.direction === 'inbound'
 
-      if (!isAdmin && !isInbound && update.status === 'completed' && update.durationSeconds && update.durationSeconds > 0) {
+      // CallStatus (acima) é genérico — fica 'completed' sempre que a sessão
+      // termina normalmente, mesmo se o *lead* nunca atendeu (esse callback é
+      // o de gravação, só dispara se algo foi gravado). dial_call_status vem
+      // do <Dial action=...> (POST /api/calls/twiml/completed) e é quem
+      // realmente diz se o dial conectou — null só quando aquele callback
+      // ainda não chegou (raro, ele dispara antes deste); qualquer valor
+      // diferente de 'completed' (no-answer/busy/failed/canceled) bloqueia a
+      // cobrança porque o lead não atendeu de verdade.
+      const dialConfirmedAnswer = call.dial_call_status === null || call.dial_call_status === 'completed'
+
+      if (!isAdmin && !isInbound && dialConfirmedAnswer && update.status === 'completed' && update.durationSeconds && update.durationSeconds > 0) {
         const minutos = Math.ceil(update.durationSeconds / 60)
         const custo   = parseFloat((minutos * 0.20).toFixed(4))
         try {
@@ -392,6 +403,55 @@ export async function handleStatusCallbackWebhook(
       }
     }
   }
+
+  return { ok: true }
+}
+
+/**
+ * Registra o resultado real do <Dial> (chamado por POST
+ * /api/calls/twiml/completed?callId=...) — dial_call_status diz se o lead
+ * atendeu de verdade (completed) ou não (no-answer/busy/failed/canceled),
+ * diferente do CallStatus genérico do callback de gravação (ver
+ * handleStatusCallbackWebhook). Fecha o registro da chamada na hora pra
+ * casos de não-atendimento — senão ficaria travada em 'initiated' pra
+ * sempre, já que o callback de gravação não dispara se nada foi atendido.
+ */
+export async function handleDialCompletedWebhook(
+  adminSupabase: SupabaseClient<Database>,
+  callId: string,
+  rawParams: Record<string, string>,
+  webhookUrl: string,
+  rawHeaders: Record<string, string>,
+  rawBody: string
+): Promise<StatusCallbackResult> {
+  const { data: call } = await adminSupabase
+    .from('calls')
+    .select('user_id')
+    .eq('id', callId)
+    .maybeSingle()
+
+  if (!call) return { ok: true } // chamada desconhecida — nada a fazer
+
+  const loaded = await loadProvider(adminSupabase, call.user_id)
+  if (!loaded) return { ok: true }
+
+  if (!isDev() && !loaded.provider.validateWebhookSignature(rawHeaders, webhookUrl, rawBody, rawParams)) {
+    return { ok: false, forbidden: true }
+  }
+
+  const dialCallStatus = rawParams['DialCallStatus']
+  if (!dialCallStatus) return { ok: true }
+
+  const patch: Parameters<typeof updateCallDialResult>[2] = { dial_call_status: dialCallStatus }
+
+  // Dial não conectou — fecha o registro agora (não vai chegar callback de
+  // gravação nenhum pra fazer isso depois).
+  if (dialCallStatus !== 'completed' && CALL_STATUSES.includes(dialCallStatus as CallStatus)) {
+    patch.status = dialCallStatus
+    patch.ended_at = new Date().toISOString()
+  }
+
+  await updateCallDialResult(adminSupabase, callId, patch)
 
   return { ok: true }
 }
