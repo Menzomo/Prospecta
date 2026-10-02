@@ -74,6 +74,10 @@ export function SubscribeForm({ needsCpfCnpj }: Props) {
         <p className="mt-1 text-sm text-on-surface-muted">Assinatura recorrente via Pix ou cartão.</p>
       </div>
 
+      <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 text-xs text-blue-800">
+        💡 Ligações pelo número do Prospecta custam R$ 0,20/min (descontado da carteira) e só são cobradas quando atendidas. Se o lead não atender, encerre a ligação <strong>antes</strong> dela cair na caixa postal (normalmente em torno de 20-25 segundos de toque) — a caixa postal conta como atendida e gera cobrança.
+      </div>
+
       {needsCpfCnpj && (
         <div className="flex flex-col gap-1">
           <label htmlFor="cpf_cnpj" className="text-sm font-medium text-on-surface">

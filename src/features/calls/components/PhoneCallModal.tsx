@@ -314,6 +314,24 @@ export function PhoneCallModal({ phone, companyName, leadId, userLeadId, onClose
                 </svg>
               </div>
               <p className="font-mono text-sm text-on-surface-muted">{editablePhone}</p>
+              {state === 'ringing' && (
+                <>
+                  <p className="max-w-[240px] text-center text-xs text-amber-600">
+                    💡 Se não atender em ~20-25s, desligue antes de cair na caixa postal — ela conta como atendida e gera cobrança.
+                  </p>
+                  {/* Sem isso, não tinha como desligar durante o toque — o X
+                      do cabeçalho fica escondido enquanto isBusy, e o botão
+                      de encerrar só aparecia depois de "atendida" (tarde
+                      demais pra evitar a cobrança da caixa postal). */}
+                  <button
+                    type="button"
+                    onClick={endCall}
+                    className="flex cursor-pointer items-center gap-2 rounded-xl border border-outline px-4 py-2 text-sm font-medium text-on-surface-muted transition-colors hover:bg-surface-low"
+                  >
+                    Desligar
+                  </button>
+                </>
+              )}
             </div>
           )}
 
