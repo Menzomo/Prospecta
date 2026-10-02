@@ -4,7 +4,7 @@
 // mudança relevante no texto abaixo deve vir acompanhada de um bump nessa
 // versão, pra manter o histórico de qual redação cada cliente aceitou.
 
-export const TERMS_VERSION = '2026-09-07'
+export const TERMS_VERSION = '2026-10-01'
 
 export type TermsSection = {
   title: string
@@ -30,6 +30,7 @@ export const TERMS_SECTIONS: TermsSection[] = [
       '2.7. Não utilizar a plataforma para fins ilícitos, envio de spam em massa, coleta de dados sem consentimento, ou qualquer prática que viole direitos de terceiros.',
       '2.8. Comunicar à Prospecta qualquer uso indevido, vazamento de credenciais ou incidente de segurança relacionado à sua conta assim que identificado.',
       '2.9. Uso do número de telefone fornecido pela Prospecta: o número disponibilizado pela plataforma para realização de ligações destina-se exclusivamente a atividades de prospecção comercial, devendo ser utilizado dentro do horário comercial e em conformidade com a legislação aplicável (incluindo normas de proteção ao consumidor e regras de telemarketing/cobrança indevida). O Cliente é o único e exclusivo responsável — inclusive na esfera civil, criminal e administrativa — por qualquer uso indevido do número, tais como ligações fora do horário permitido, importunação, ameaça, fraude ou qualquer conduta ilícita praticada durante seu uso. A Prospecta apenas disponibiliza a infraestrutura técnica e não responde por atos praticados pelo Cliente através do número fornecido.',
+      '2.10. Cobrança por ligação: cada ligação realizada através do número fornecido pela Prospecta é cobrada por minuto (conforme tabela vigente, descontada da carteira) e só é cobrada quando efetivamente atendida. Ligações não atendidas pelo lead — sem resposta, linha ocupada, falha de conexão ou encerradas antes do atendimento — não são cobradas. Caso a ligação seja direcionada para caixa postal ou secretária eletrônica, ela é considerada atendida para fins de cobrança, já que a conexão telefônica foi efetivamente estabelecida — a Prospecta não verifica nem garante se quem atendeu foi uma pessoa ou um sistema automático de mensagens.',
     ],
   },
   {
