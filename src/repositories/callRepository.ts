@@ -140,6 +140,7 @@ export async function updateCallDialResult(
     dial_call_status: string
     status?: string
     ended_at?: string
+    duration_seconds?: number
   }
 ): Promise<boolean> {
   const { error } = await supabase

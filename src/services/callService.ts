@@ -426,7 +426,7 @@ export async function handleDialCompletedWebhook(
 ): Promise<StatusCallbackResult> {
   const { data: call } = await adminSupabase
     .from('calls')
-    .select('user_id')
+    .select('user_id, duration_seconds')
     .eq('id', callId)
     .maybeSingle()
 
@@ -444,11 +444,26 @@ export async function handleDialCompletedWebhook(
 
   const patch: Parameters<typeof updateCallDialResult>[2] = { dial_call_status: dialCallStatus }
 
-  // Dial não conectou — fecha o registro agora (não vai chegar callback de
-  // gravação nenhum pra fazer isso depois).
-  if (dialCallStatus !== 'completed' && CALL_STATUSES.includes(dialCallStatus as CallStatus)) {
+  // Esse webhook dispara pra toda chamada, atendida ou não — ao contrário do
+  // callback de gravação (handleStatusCallbackWebhook), que só roda se algo
+  // foi gravado E pode mandar um CallStatus não-terminal mesmo numa chamada
+  // já encerrada (visto na prática: duration_seconds e gravação presentes,
+  // status preso em 'in-progress' pra sempre). Por isso fecha o registro
+  // aqui sempre que o <Dial> resolve, atendida ou não — não depende do outro
+  // webhook pra isso. A decisão de cobrança continua só em
+  // handleStatusCallbackWebhook, sem mudança.
+  if (CALL_STATUSES.includes(dialCallStatus as CallStatus)) {
     patch.status = dialCallStatus
     patch.ended_at = new Date().toISOString()
+
+    // DialCallDuration é mais confiável que esperar o callback de gravação
+    // (que pode nem chegar, ou chegar com status errado) — só preenche se
+    // ainda não tiver duração registrada, pra não sobrescrever um valor já
+    // mais preciso vindo de outro caminho.
+    const dialDuration = rawParams['DialCallDuration'] ? parseInt(rawParams['DialCallDuration'], 10) : null
+    if (dialDuration !== null && !Number.isNaN(dialDuration) && call.duration_seconds === null) {
+      patch.duration_seconds = dialDuration
+    }
   }
 
   await updateCallDialResult(adminSupabase, callId, patch)
