@@ -243,7 +243,7 @@ export async function completeForwardingDetailsAction(
       })
 
       const nextDueDate = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10)
-      const { subscriptionId } = await createAsaasSubscription({
+      const { subscriptionId, nextDueDate: asaasNextDueDate } = await createAsaasSubscription({
         customerId,
         externalReference: `subscription:${user.id}`,
         nextDueDate,
@@ -253,6 +253,7 @@ export async function completeForwardingDetailsAction(
         subscription_source: 'asaas',
         asaas_customer_id: customerId,
         asaas_subscription_id: subscriptionId,
+        asaas_next_due_date: asaasNextDueDate,
       })
     } catch (err) {
       console.error('[completeForwardingDetailsAction] falha ao criar assinatura Asaas', err)

@@ -6,6 +6,8 @@ import { getTelephonySettings } from '@/repositories/telephonySettingsRepository
 import { getBalance, getTransactions } from '@/repositories/walletRepository'
 import { getAssignedNumber, getAvailableNumbers } from '@/repositories/telnyxNumberRepository'
 import { getProfileById, hasActiveSubscription } from '@/repositories/profileRepository'
+import { syncAsaasNextDueDate } from '@/services/asaasService'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { GmailRequestStatus } from '@/types/gmail'
 import type { WalletTransaction } from '@/repositories/walletRepository'
 import { CompanyProfileForm } from '@/features/settings/components/CompanyProfileForm'
@@ -146,6 +148,16 @@ export default async function SettingsPage({ searchParams }: Props) {
     section === 'plano' ? getProfileById(supabase, user.id) : Promise.resolve(null),
     hasActiveSubscription(supabase, user.id),
   ])
+
+  // Vencimento vem do Asaas. Se ainda não temos ou ele já passou (cobrança gerada
+  // sem webhook), buscamos de novo aqui.
+  if (profile?.asaas_subscription_id) {
+    const today = new Date().toISOString().slice(0, 10)
+    if (!profile.asaas_next_due_date || profile.asaas_next_due_date < today) {
+      const refreshed = await syncAsaasNextDueDate(createAdminClient(), user.id, profile.asaas_subscription_id)
+      if (refreshed) profile.asaas_next_due_date = refreshed
+    }
+  }
 
   const availableNumbers = (section === 'telefonia' && process.env.TELEPHONY_PROVIDER === 'telnyx' && !assignedNumber)
     ? await getAvailableNumbers(supabase)
@@ -354,12 +366,11 @@ export default async function SettingsPage({ searchParams }: Props) {
                   <div>
                     <p className="text-xs text-on-surface-muted">Próxima renovação</p>
                     <p className="font-medium text-on-surface">
-                      {profile.asaas_subscription_id && profile.subscription_paid_at
-                        ? (() => {
-                            const next = new Date(profile.subscription_paid_at)
-                            next.setMonth(next.getMonth() + 1)
-                            return next.toLocaleDateString('pt-BR')
-                          })()
+                      {profile.asaas_subscription_id
+                        ? profile.asaas_next_due_date
+                          // yyyy-mm-dd no meio-dia evita voltar um dia no fuso
+                          ? new Date(`${profile.asaas_next_due_date}T12:00:00`).toLocaleDateString('pt-BR')
+                          : '—'
                         : profile.subscription_source === 'manual'
                           ? 'Sem vencimento (liberação manual)'
                           : '—'}

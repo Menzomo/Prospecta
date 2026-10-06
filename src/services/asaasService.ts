@@ -77,8 +77,8 @@ export async function createAsaasSubscription(input: {
    * cobrar de novo pelo mês que a pessoa já pagou fora do sistema.
    */
   nextDueDate?: string
-}): Promise<{ subscriptionId: string; firstPaymentId: string | null }> {
-  const subscription = await asaasFetch<{ id: string }>('/subscriptions', {
+}): Promise<{ subscriptionId: string; firstPaymentId: string | null; nextDueDate: string | null }> {
+  const subscription = await asaasFetch<{ id: string; nextDueDate: string | null }>('/subscriptions', {
     method: 'POST',
     body: JSON.stringify({
       customer: input.customerId,
@@ -96,7 +96,53 @@ export async function createAsaasSubscription(input: {
     `/payments?subscription=${subscription.id}&limit=1`
   )
 
-  return { subscriptionId: subscription.id, firstPaymentId: payments.data[0]?.id ?? null }
+  return {
+    subscriptionId: subscription.id,
+    firstPaymentId: payments.data[0]?.id ?? null,
+    nextDueDate: subscription.nextDueDate ?? null,
+  }
+}
+
+/**
+ * Próximo vencimento que o cliente precisa pagar. Prioriza a cobrança pendente
+ * mais próxima (já gerada no Asaas). O nextDueDate da assinatura é só a próxima
+ * cobrança a ser gerada, então usamos ele apenas quando não há nada pendente.
+ */
+export async function getAsaasSubscription(subscriptionId: string): Promise<{
+  status: string
+  nextDueDate: string | null
+}> {
+  const subscription = await asaasFetch<{ status: string; nextDueDate: string | null }>(
+    `/subscriptions/${subscriptionId}`
+  )
+  const dueDates: string[] = []
+  for (const status of ['OVERDUE', 'PENDING']) {
+    const result = await asaasFetch<{ data: { dueDate: string }[] }>(
+      `/payments?subscription=${subscriptionId}&status=${status}&limit=100`
+    )
+    dueDates.push(...result.data.map((p) => p.dueDate))
+  }
+  dueDates.sort()
+  return { status: subscription.status, nextDueDate: dueDates[0] ?? subscription.nextDueDate ?? null }
+}
+
+/**
+ * Busca o próximo vencimento no Asaas e grava no perfil. Falha não quebra o
+ * fluxo chamador: a tela cai no valor anterior e o próximo evento tenta de novo.
+ */
+export async function syncAsaasNextDueDate(
+  adminSupabase: SupabaseClient<Database>,
+  userId: string,
+  subscriptionId: string
+): Promise<string | null> {
+  try {
+    const { nextDueDate } = await getAsaasSubscription(subscriptionId)
+    await updateProfileSubscription(adminSupabase, userId, { asaas_next_due_date: nextDueDate })
+    return nextDueDate
+  } catch (err) {
+    console.error('[asaasService] falha ao sincronizar próximo vencimento:', err)
+    return null
+  }
 }
 
 export async function createAsaasPayment(input: {
@@ -312,6 +358,10 @@ export async function handleAsaasWebhook(
         // Data da 1ª ativação — não muda nas renovações
         ...(profile?.subscribed_at ? {} : { subscribed_at: new Date().toISOString() }),
       })
+      // Pagamento confirmado avança o ciclo no Asaas: atualiza o próximo vencimento
+      if (payload.payment?.subscription) {
+        await syncAsaasNextDueDate(adminSupabase, userId, payload.payment.subscription)
+      }
     } catch (err) {
       console.error('[asaasService] falha ao ativar assinatura:', err)
       await alertBillingError(`ativar assinatura (userId=${userId})`, err)

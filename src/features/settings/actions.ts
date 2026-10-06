@@ -160,11 +160,14 @@ export async function subscribeAction(
       await updateProfileSubscription(adminSupabase, user.id, { asaas_customer_id: customerId })
     }
 
-    const { subscriptionId, firstPaymentId } = await createAsaasSubscription({
+    const { subscriptionId, firstPaymentId, nextDueDate } = await createAsaasSubscription({
       customerId,
       externalReference: `subscription:${user.id}`,
     })
-    await updateProfileSubscription(adminSupabase, user.id, { asaas_subscription_id: subscriptionId })
+    await updateProfileSubscription(adminSupabase, user.id, {
+      asaas_subscription_id: subscriptionId,
+      asaas_next_due_date: nextDueDate,
+    })
 
     if (!firstPaymentId) {
       return { error: 'Assinatura criada, mas a primeira cobrança ainda não está disponível. Atualize a página em instantes.' }

@@ -71,6 +71,7 @@ export async function updateProfileSubscription(
     terms_accepted_at: string
     terms_version: string
     subscribed_at: string
+    asaas_next_due_date: string | null
   }>
 ): Promise<boolean> {
   const { error } = await supabase
