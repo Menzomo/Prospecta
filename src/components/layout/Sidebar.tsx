@@ -210,7 +210,7 @@ function SettingsAccordionItem({
                 }`}
               >
                 {sub.label}
-                {sub.section === 'plano' && subscriptionAlert && <RenewalDot className="ml-1.5 inline-block align-middle" />}
+                {sub.section === 'plano' && subscriptionAlert && <RenewalDot className="ml-auto" />}
               </Link>
             ))}
           </div>
@@ -284,13 +284,14 @@ function NavLinks({
                     key={sub.section}
                     href={`/settings?section=${sub.section}`}
                     onClick={onLinkClick}
-                    className={`block rounded-md px-2.5 py-1.5 text-xs transition-colors ${
+                    className={`flex items-center rounded-md px-2.5 py-1.5 text-xs transition-colors ${
                       currentSection === sub.section
                         ? 'font-semibold text-blue-400'
                         : 'text-white/45 hover:text-white/75 hover:bg-white/5'
                     }`}
                   >
                     {sub.label}
+                    {sub.section === 'plano' && subscriptionAlert && <RenewalDot className="ml-auto" />}
                   </Link>
                 ))}
               </div>
