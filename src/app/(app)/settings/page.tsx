@@ -354,7 +354,7 @@ export default async function SettingsPage({ searchParams }: Props) {
                   <div>
                     <p className="text-xs text-on-surface-muted">Próxima renovação</p>
                     <p className="font-medium text-on-surface">
-                      {profile.subscription_source === 'asaas' && profile.subscription_paid_at
+                      {profile.asaas_subscription_id && profile.subscription_paid_at
                         ? (() => {
                             const next = new Date(profile.subscription_paid_at)
                             next.setMonth(next.getMonth() + 1)
@@ -367,8 +367,15 @@ export default async function SettingsPage({ searchParams }: Props) {
                   </div>
                 </div>
 
-                {profile.subscription_source === 'asaas' && (
-                  <div className="mt-4">
+                {profile.asaas_subscription_id && (
+                  <div className="mt-4 flex flex-col gap-4">
+                    <div className="rounded-xl border border-outline bg-surface-container p-6 shadow-card">
+                      <p className="text-sm font-semibold text-on-surface">Renovar ou pagar a próxima cobrança</p>
+                      <p className="mt-1 text-xs text-on-surface-muted">Gere o Pix da próxima cobrança agora, ou cadastre um cartão pra renovação automática.</p>
+                      <div className="mt-3">
+                        <PayOverdueViaPixButton />
+                      </div>
+                    </div>
                     <CreditCardForm hasCard={profile.asaas_has_card} />
                   </div>
                 )}
