@@ -208,6 +208,23 @@ export async function findSubscriptionPayment(
   return null
 }
 
+/** Cobranças ainda não pagas de uma assinatura (pendentes e vencidas). */
+export async function listPendingSubscriptionPayments(subscriptionId: string): Promise<{ id: string }[]> {
+  const found: { id: string }[] = []
+  for (const status of ['PENDING', 'OVERDUE']) {
+    const result = await asaasFetch<{ data: { id: string }[] }>(
+      `/payments?subscription=${subscriptionId}&status=${status}&limit=100`
+    )
+    found.push(...result.data)
+  }
+  return found
+}
+
+/** Exclui uma cobrança pendente/vencida (não estorna cobrança já paga). */
+export async function deleteAsaasPayment(paymentId: string): Promise<void> {
+  await asaasFetch(`/payments/${paymentId}`, { method: 'DELETE' })
+}
+
 export async function getPixQrCode(paymentId: string): Promise<{
   encodedImage: string
   payload: string

@@ -52,6 +52,8 @@ export type AdminUser = {
   email: string
   role: string
   created_at: string
+  subscription_status: string
+  asaas_subscription_id: string | null
 }
 
 export async function getGlobalLeadByIdForAdmin(
@@ -284,7 +286,7 @@ export async function getUsersForAdmin(
 ): Promise<AdminUser[]> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, role, created_at')
+    .select('id, email, role, created_at, subscription_status, asaas_subscription_id')
     .order('created_at', { ascending: false })
     .limit(20)
 
