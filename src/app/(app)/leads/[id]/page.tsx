@@ -13,6 +13,8 @@ import { SubscriptionGateCard } from '@/components/SubscriptionGateCard'
 import { LeadEditForm } from '@/features/leads/components/LeadEditForm'
 import { LeadAddressForm } from '@/features/leads/components/LeadAddressForm'
 import { LeadTimeline } from '@/features/leads/components/LeadTimeline'
+import { LeadNoteCard } from '@/features/leads/components/LeadNoteCard'
+import { listLeadNotes } from '@/repositories/leadNotesRepository'
 import { LeadRepliesButton } from '@/features/leads/components/LeadRepliesButton'
 import { LeadFollowupSection } from '@/features/followups/components/LeadFollowupSection'
 import { CallButton } from '@/features/calls/components/CallButton'
@@ -38,6 +40,8 @@ export default async function LeadDetailPage({ params }: Props) {
 
   const lead = await getLeadById(supabase, id)
   if (!lead) notFound()
+
+  const notes = await listLeadNotes(supabase, { leadId: id })
 
   const [emailMessages, followups, emailThreads, hasSettings, calls, canWrite, visits] = await Promise.all([
     getEmailMessagesByLeadId(supabase, user.id, id),
@@ -137,12 +141,14 @@ export default async function LeadDetailPage({ params }: Props) {
             <div className="flex flex-col gap-4">
               <LeadEmailsSection messages={emailMessages} threads={emailThreads} />
               <LeadCallsSection calls={calls} leadId={lead.id} />
+              <LeadTimeline lead={lead} messages={emailMessages} followups={followups} threads={emailThreads} calls={calls} visits={visits} notes={notes} leadNote={lead.notes ?? null} />
             </div>
           </div>
 
           <LeadFollowupSection leadId={lead.id} followups={followups} canWrite={canWrite} />
 
-          <LeadTimeline lead={lead} messages={emailMessages} followups={followups} threads={emailThreads} calls={calls} visits={visits} />
+          <LeadNoteCard target={{ leadId: lead.id }} />
+
         </div>
       </main>
     </>

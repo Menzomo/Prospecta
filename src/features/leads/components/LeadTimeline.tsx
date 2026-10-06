@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { Lead } from '@/types/leads'
 import type { EmailMessage, EmailThread } from '@/types/email'
 import type { Followup } from '@/types/followups'
 import type { CallWithAnalysis } from '@/types/calls'
 import type { LeadVisit } from '@/types/visits'
 import { VISIT_STATUS_LABELS } from '@/types/visits'
+import type { LeadNote } from '@/repositories/leadNotesRepository'
 
 type LeadCreatedEvent = { id: string; type: 'lead_created'; timestamp: string }
 type VisitEvent = { id: string; type: 'visit'; timestamp: string; status: string; scheduled_date: string }
@@ -152,6 +154,50 @@ function eventLabel(event: TimelineEvent): string {
   }
 }
 
+type NotesEntry =
+  | { id: string; kind: 'note'; timestamp: string; content: string }
+  | { id: string; kind: 'legacy'; timestamp: string; content: string }
+  | { id: string; kind: 'call'; timestamp: string; content: string; status: string }
+
+function LeadNotesTab({
+  notes,
+  legacyNote,
+  calls,
+}: {
+  notes: LeadNote[]
+  legacyNote: string | null
+  calls: CallWithAnalysis[]
+}) {
+  const entries: NotesEntry[] = [
+    ...notes.map((n): NotesEntry => ({ id: `note_${n.id}`, kind: 'note', timestamp: n.created_at, content: n.content })),
+    ...(legacyNote && legacyNote.trim()
+      ? [{ id: 'legacy_note', kind: 'legacy' as const, timestamp: '', content: legacyNote }]
+      : []),
+    ...calls
+      .filter((c) => c.notes && c.notes.trim())
+      .map((c): NotesEntry => ({ id: `call_${c.id}`, kind: 'call', timestamp: c.created_at, content: c.notes!, status: c.status })),
+  ].sort((a, b) => (b.timestamp ? new Date(b.timestamp).getTime() : 0) - (a.timestamp ? new Date(a.timestamp).getTime() : 0))
+
+  if (entries.length === 0) {
+    return <p className="text-sm text-gray-400">Nenhuma nota ainda. Crie uma no card Notas, logo abaixo de Acompanhamentos.</p>
+  }
+
+  return (
+    <div className="flex max-h-96 flex-col gap-3 overflow-y-auto pr-1">
+      {entries.map((e) => (
+        <div key={e.id} className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+          <p className="text-xs text-gray-400">
+            {e.kind === 'note' && formatDateTime(e.timestamp)}
+            {e.kind === 'call' && `${formatDateTime(e.timestamp)} · Ligação (${CALL_STATUS_LABELS[e.status] ?? e.status})`}
+            {e.kind === 'legacy' && 'Nota do cadastro'}
+          </p>
+          <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">{e.content}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 type Props = {
   lead: Pick<Lead, 'id' | 'created_at'>
   messages: EmailMessage[]
@@ -159,21 +205,36 @@ type Props = {
   threads: EmailThread[]
   calls?: CallWithAnalysis[]
   visits?: LeadVisit[]
+  // Notas criadas no card Notas (tabela lead_notes)
+  notes?: LeadNote[]
+  // Nota antiga do cadastro (leads.notes / user_leads.notes), só leitura
+  leadNote?: string | null
 }
 
-export function LeadTimeline({ lead, messages, followups, threads, calls = [], visits = [] }: Props) {
+export function LeadTimeline({
+  lead,
+  messages,
+  followups,
+  threads,
+  calls = [],
+  visits = [],
+  notes = [],
+  leadNote = null,
+}: Props) {
   const [expanded, setExpanded] = useState(false)
+  const [tab, setTab] = useState<'eventos' | 'notas'>('eventos')
   const events = buildTimeline(lead, messages, followups, threads, calls, visits)
 
   const lastEvent = events[0]
   const replyCount = events.filter((e) => e.type === 'reply_received').length
+  const notesCount = notes.length + (leadNote && leadNote.trim() ? 1 : 0) + calls.filter((c) => c.notes && c.notes.trim()).length
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
       {/* Compact header — always visible */}
       <button
         type="button"
-        onClick={() => setExpanded((v) => !v)}
+        onClick={() => setExpanded(true)}
         className="flex w-full cursor-pointer items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors"
       >
         <div className="flex flex-col gap-0.5">
@@ -195,13 +256,50 @@ export function LeadTimeline({ lead, messages, followups, threads, calls = [], v
           )}
         </div>
         <span className="ml-4 shrink-0 text-xs font-medium text-blue-600">
-          {expanded ? 'Fechar' : 'Ver histórico'}
+          Ver histórico
         </span>
       </button>
 
-      {/* Full timeline — collapsible */}
-      {expanded && (
-        <div className="border-t border-gray-100 px-6 py-4">
+      {/* Modal centralizado — mesmo padrão do modal de ligações */}
+      {expanded && createPortal(
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setExpanded(false) }}
+        >
+          <div className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+              <span className="text-sm font-semibold text-gray-900">Histórico</span>
+              <button
+                type="button"
+                onClick={() => setExpanded(false)}
+                className="cursor-pointer rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100"
+              >
+                Fechar
+              </button>
+            </div>
+        <div className="overflow-y-auto px-6 py-4">
+          <div className="mb-4 flex gap-1 rounded-lg bg-gray-100 p-1 text-xs font-medium">
+            <button
+              type="button"
+              onClick={() => setTab('eventos')}
+              className={`flex-1 cursor-pointer rounded-md px-3 py-1.5 transition-colors ${tab === 'eventos' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Eventos
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab('notas')}
+              className={`flex-1 cursor-pointer rounded-md px-3 py-1.5 transition-colors ${tab === 'notas' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Notas
+              {notesCount > 0 && <span className="ml-1.5 rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] text-gray-600">{notesCount}</span>}
+            </button>
+          </div>
+
+          {tab === 'notas' ? (
+            <LeadNotesTab notes={notes} legacyNote={leadNote} calls={calls} />
+          ) : (
           <div className="max-h-96 overflow-y-auto pr-1">
             <div className="flex flex-col">
               {events.map((event, index) => {
@@ -312,7 +410,11 @@ export function LeadTimeline({ lead, messages, followups, threads, calls = [], v
               })}
             </div>
           </div>
+          )}
         </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   )

@@ -815,6 +815,28 @@ export interface Database {
         }
         Relationships: []
       }
+      lead_notes: {
+        Row: {
+          id: string
+          user_id: string
+          lead_id: string | null
+          user_lead_id: string | null
+          content: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          lead_id?: string | null
+          user_lead_id?: string | null
+          content: string
+          created_at?: string
+        }
+        Update: {
+          content?: string
+        }
+        Relationships: []
+      }
       call_analyses: {
         Row: {
           id: string
