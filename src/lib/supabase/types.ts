@@ -30,6 +30,7 @@ export interface Database {
           terms_accepted_at: string | null
           terms_version: string | null
           subscribed_at: string | null
+          asaas_next_due_date: string | null
           created_at: string
           updated_at: string
         }
@@ -53,6 +54,7 @@ export interface Database {
           terms_accepted_at?: string | null
           terms_version?: string | null
           subscribed_at?: string | null
+          asaas_next_due_date?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -75,6 +77,7 @@ export interface Database {
           terms_accepted_at?: string | null
           terms_version?: string | null
           subscribed_at?: string | null
+          asaas_next_due_date?: string | null
           updated_at?: string
         }
         Relationships: []

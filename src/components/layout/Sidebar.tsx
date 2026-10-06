@@ -139,17 +139,29 @@ function getInitials(email: string | null | undefined): string {
   return name.slice(0, 2).toUpperCase()
 }
 
+function RenewalDot({ className = '' }: { className?: string }) {
+  return (
+    <span
+      role="img"
+      aria-label="Renovação da assinatura pendente"
+      className={`h-2 w-2 shrink-0 rounded-full bg-red-500 ${className}`}
+    />
+  )
+}
+
 function SettingsAccordionItem({
   item,
   isActive,
   inSettings,
   currentSection,
+  subscriptionAlert,
   onLinkClick,
 }: {
   item: NavItem
   isActive: boolean
   inSettings: boolean
   currentSection: string
+  subscriptionAlert: boolean
   onLinkClick?: () => void
 }) {
   // No mobile, "Configurações" nunca navega direto — só expande as opções
@@ -175,6 +187,7 @@ function SettingsAccordionItem({
           {item.icon}
         </span>
         {item.label}
+        {subscriptionAlert && <RenewalDot />}
         <span className={`ml-auto shrink-0 text-white/30 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}>
           <IconChevronDown />
         </span>
@@ -197,6 +210,7 @@ function SettingsAccordionItem({
                 }`}
               >
                 {sub.label}
+                {sub.section === 'plano' && subscriptionAlert && <RenewalDot className="ml-1.5 inline-block align-middle" />}
               </Link>
             ))}
           </div>
@@ -211,6 +225,7 @@ function NavLinks({
   pathname,
   inSettings,
   currentSection,
+  subscriptionAlert,
   isMobile,
   onLinkClick,
 }: {
@@ -218,6 +233,7 @@ function NavLinks({
   pathname: string
   inSettings: boolean
   currentSection: string
+  subscriptionAlert: boolean
   isMobile?: boolean
   onLinkClick?: () => void
 }) {
@@ -237,6 +253,7 @@ function NavLinks({
               isActive={isActive}
               inSettings={inSettings}
               currentSection={currentSection}
+              subscriptionAlert={subscriptionAlert}
               onLinkClick={onLinkClick}
             />
           )
@@ -257,6 +274,7 @@ function NavLinks({
                 {item.icon}
               </span>
               {item.label}
+              {isSettings && subscriptionAlert && <RenewalDot className="ml-auto" />}
             </Link>
 
             {isSettings && inSettings && (
@@ -366,9 +384,10 @@ function SidebarFooter({ userEmail }: { userEmail?: string | null }) {
 interface SidebarProps {
   isAdmin?: boolean
   userEmail?: string | null
+  subscriptionAlert?: boolean
 }
 
-export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
+export function Sidebar({ isAdmin = false, userEmail, subscriptionAlert = false }: SidebarProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [open, setOpen] = useState(false)
@@ -400,6 +419,7 @@ export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
             pathname={pathname}
             inSettings={inSettings}
             currentSection={currentSection}
+            subscriptionAlert={subscriptionAlert}
           />
         </nav>
 
@@ -467,6 +487,7 @@ export function Sidebar({ isAdmin = false, userEmail }: SidebarProps) {
             pathname={pathname}
             inSettings={inSettings}
             currentSection={currentSection}
+            subscriptionAlert={subscriptionAlert}
             isMobile
             onLinkClick={() => setOpen(false)}
           />
