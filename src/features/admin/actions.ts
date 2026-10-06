@@ -136,10 +136,12 @@ export async function assignTelnyxNumberToUserAction(
 
   // Receber um número atribuído manualmente é o sinal de "pagou por fora"
   // (ex.: dinheiro) — libera acesso igual uma assinatura confirmada via Asaas.
-  const { updateProfileSubscription } = await import('@/repositories/profileRepository')
+  const { updateProfileSubscription, getProfileById } = await import('@/repositories/profileRepository')
+  const currentProfile = await getProfileById(adminSupabase, targetProfile.id)
   await updateProfileSubscription(adminSupabase, targetProfile.id, {
     subscription_status: 'active',
     subscription_source: 'manual',
+    ...(currentProfile?.subscribed_at ? {} : { subscribed_at: new Date().toISOString() }),
   })
 
   revalidatePath('/admin')
