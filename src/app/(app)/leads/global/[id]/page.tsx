@@ -12,6 +12,8 @@ import { LeadFollowupSection } from '@/features/followups/components/LeadFollowu
 import { LeadAddressForm } from '@/features/leads/components/LeadAddressForm'
 import { LeadCallsSection } from '@/features/calls/components/LeadCallsSection'
 import { LeadTimeline } from '@/features/leads/components/LeadTimeline'
+import { LeadNoteCard } from '@/features/leads/components/LeadNoteCard'
+import { listLeadNotes } from '@/repositories/leadNotesRepository'
 import { MarkInboxRead } from '@/features/inbox/components/MarkInboxRead'
 import { CallButton } from '@/features/calls/components/CallButton'
 import { LEAD_STATUS_LABELS, LEAD_STATUSES } from '@/types/leads'
@@ -51,6 +53,8 @@ export default async function UserLeadDetailPage({ params }: Props) {
     state: string | null
     address: string | null
   }
+
+  const notes = await listLeadNotes(supabase, { userLeadId: id })
 
   const [followups, hasSettings, calls, canWrite, visits] = await Promise.all([
     getFollowupsByUserLeadId(supabase, user.id, id),
@@ -203,6 +207,8 @@ export default async function UserLeadDetailPage({ params }: Props) {
           {/* Followups */}
           <LeadFollowupSection userLeadId={id} followups={followups} canWrite={canWrite} />
 
+          <LeadNoteCard target={{ userLeadId: id }} />
+
           {/* Calls */}
           <LeadCallsSection calls={calls} userLeadId={id} />
 
@@ -213,9 +219,8 @@ export default async function UserLeadDetailPage({ params }: Props) {
             threads={[]}
             calls={calls}
             visits={visits}
+            notes={notes}
             leadNote={data.notes}
-            userLeadId={id}
-            canEditNote={canWrite}
           />
         </div>
       </main>

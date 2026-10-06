@@ -7,7 +7,7 @@ import type { Followup } from '@/types/followups'
 import type { CallWithAnalysis } from '@/types/calls'
 import type { LeadVisit } from '@/types/visits'
 import { VISIT_STATUS_LABELS } from '@/types/visits'
-import { saveUserLeadNotesAction } from '@/features/leads/actions'
+import type { LeadNote } from '@/repositories/leadNotesRepository'
 
 type LeadCreatedEvent = { id: string; type: 'lead_created'; timestamp: string }
 type VisitEvent = { id: string; type: 'visit'; timestamp: string; status: string; scheduled_date: string }
@@ -153,86 +153,46 @@ function eventLabel(event: TimelineEvent): string {
   }
 }
 
+type NotesEntry =
+  | { id: string; kind: 'note'; timestamp: string; content: string }
+  | { id: string; kind: 'legacy'; timestamp: string; content: string }
+  | { id: string; kind: 'call'; timestamp: string; content: string; status: string }
+
 function LeadNotesTab({
-  leadNote,
-  userLeadId,
-  canEditNote,
+  notes,
+  legacyNote,
   calls,
 }: {
-  leadNote: string | null
-  userLeadId: string | null
-  canEditNote: boolean
+  notes: LeadNote[]
+  legacyNote: string | null
   calls: CallWithAnalysis[]
 }) {
-  const [draft, setDraft] = useState(leadNote ?? '')
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
+  const entries: NotesEntry[] = [
+    ...notes.map((n): NotesEntry => ({ id: `note_${n.id}`, kind: 'note', timestamp: n.created_at, content: n.content })),
+    ...(legacyNote && legacyNote.trim()
+      ? [{ id: 'legacy_note', kind: 'legacy' as const, timestamp: '', content: legacyNote }]
+      : []),
+    ...calls
+      .filter((c) => c.notes && c.notes.trim())
+      .map((c): NotesEntry => ({ id: `call_${c.id}`, kind: 'call', timestamp: c.created_at, content: c.notes!, status: c.status })),
+  ].sort((a, b) => (b.timestamp ? new Date(b.timestamp).getTime() : 0) - (a.timestamp ? new Date(a.timestamp).getTime() : 0))
 
-  const callNotes = calls.filter((c) => c.notes && c.notes.trim())
-  const isDirty = draft.trim() !== (leadNote ?? '').trim()
-
-  async function handleSave() {
-    if (!userLeadId) return
-    setSaving(true)
-    setSaveError(null)
-    setSaved(false)
-    const result = await saveUserLeadNotesAction(userLeadId, draft)
-    setSaving(false)
-    if (result.ok) setSaved(true)
-    else setSaveError(result.error ?? 'Erro ao salvar.')
+  if (entries.length === 0) {
+    return <p className="text-sm text-gray-400">Nenhuma nota ainda. Crie uma no card Notas, logo abaixo de Acompanhamentos.</p>
   }
 
   return (
-    <div className="flex max-h-96 flex-col gap-5 overflow-y-auto pr-1">
-      <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Nota do lead</p>
-        {canEditNote && userLeadId ? (
-          <div className="flex flex-col gap-2">
-            <textarea
-              rows={4}
-              value={draft}
-              onChange={(e) => { setDraft(e.target.value); setSaved(false) }}
-              placeholder="Escreva uma nota sobre esse lead..."
-              className="resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving || !isDirty}
-                className="cursor-pointer rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {saving ? 'Salvando...' : 'Salvar nota'}
-              </button>
-              {saved && <span className="text-xs text-green-600">Nota salva.</span>}
-              {saveError && <span className="text-xs text-red-500">{saveError}</span>}
-            </div>
-          </div>
-        ) : leadNote ? (
-          <p className="whitespace-pre-wrap text-sm text-gray-700">{leadNote}</p>
-        ) : (
-          <p className="text-sm text-gray-400">Nenhuma nota no lead ainda.</p>
-        )}
-      </div>
-
-      <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Notas das ligações</p>
-        {callNotes.length === 0 ? (
-          <p className="text-sm text-gray-400">Nenhuma nota de ligação ainda.</p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {callNotes.map((call) => (
-              <div key={call.id} className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-                <p className="text-xs text-gray-400">
-                  {formatDateTime(call.created_at)} · {CALL_STATUS_LABELS[call.status] ?? call.status}
-                </p>
-                <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">{call.notes}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+    <div className="flex max-h-96 flex-col gap-3 overflow-y-auto pr-1">
+      {entries.map((e) => (
+        <div key={e.id} className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+          <p className="text-xs text-gray-400">
+            {e.kind === 'note' && formatDateTime(e.timestamp)}
+            {e.kind === 'call' && `${formatDateTime(e.timestamp)} · Ligação (${CALL_STATUS_LABELS[e.status] ?? e.status})`}
+            {e.kind === 'legacy' && 'Nota do cadastro'}
+          </p>
+          <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">{e.content}</p>
+        </div>
+      ))}
     </div>
   )
 }
@@ -244,11 +204,10 @@ type Props = {
   threads: EmailThread[]
   calls?: CallWithAnalysis[]
   visits?: LeadVisit[]
-  // Nota do próprio lead (leads.notes ou user_leads.notes) — aparece na aba Notas.
+  // Notas criadas no card Notas (tabela lead_notes)
+  notes?: LeadNote[]
+  // Nota antiga do cadastro (leads.notes / user_leads.notes), só leitura
   leadNote?: string | null
-  // Só pra lead de busca: id do user_lead, pra permitir editar a nota aqui.
-  userLeadId?: string | null
-  canEditNote?: boolean
 }
 
 export function LeadTimeline({
@@ -258,9 +217,8 @@ export function LeadTimeline({
   threads,
   calls = [],
   visits = [],
+  notes = [],
   leadNote = null,
-  userLeadId = null,
-  canEditNote = false,
 }: Props) {
   const [expanded, setExpanded] = useState(false)
   const [tab, setTab] = useState<'eventos' | 'notas'>('eventos')
@@ -268,7 +226,7 @@ export function LeadTimeline({
 
   const lastEvent = events[0]
   const replyCount = events.filter((e) => e.type === 'reply_received').length
-  const notesCount = (leadNote && leadNote.trim() ? 1 : 0) + calls.filter((c) => c.notes && c.notes.trim()).length
+  const notesCount = notes.length + (leadNote && leadNote.trim() ? 1 : 0) + calls.filter((c) => c.notes && c.notes.trim()).length
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -323,12 +281,7 @@ export function LeadTimeline({
           </div>
 
           {tab === 'notas' ? (
-            <LeadNotesTab
-              leadNote={leadNote}
-              userLeadId={userLeadId}
-              canEditNote={canEditNote}
-              calls={calls}
-            />
+            <LeadNotesTab notes={notes} legacyNote={leadNote} calls={calls} />
           ) : (
           <div className="max-h-96 overflow-y-auto pr-1">
             <div className="flex flex-col">

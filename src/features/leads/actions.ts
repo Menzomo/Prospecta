@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createLeadSchema, updateLeadSchema } from '@/validations/leadSchema'
 import { updateLead, hideLead, updateLeadStatus } from '@/repositories/leadRepository'
 import { hideUserLead, updateUserLead } from '@/repositories/userLeadRepository'
+import { createLeadNote } from '@/repositories/leadNotesRepository'
 import { createLeadWithDuplicateCheck } from '@/services/leadService'
 import type { LeadStatus } from '@/types/leads'
 import type { UserLeadStatus } from '@/types/globalLeads'
@@ -246,32 +247,35 @@ export async function updateVisitLeadStatusAction(
   revalidatePath('/visitas')
 }
 
-// Salva a nota do lead de busca (user_leads.notes) sem sair da página —
-// chamada direto do componente de histórico, mesmo padrão de saveCallNotesAction.
-export async function saveUserLeadNotesAction(
-  userLeadId: string,
-  notes: string
+// Cria uma nota nova sobre um lead (manual ou de busca). Vai pra aba Notas do histórico.
+export async function createLeadNoteAction(
+  target: { leadId: string } | { userLeadId: string },
+  content: string
 ): Promise<{ ok: boolean; error?: string }> {
+  const text = content.trim()
+  if (!text) return { ok: false, error: 'Escreva alguma coisa antes de salvar.' }
+  if (text.length > 4000) return { ok: false, error: 'Nota muito longa (máx. 4000 caracteres).' }
+
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
   if (!user) return { ok: false, error: 'Não autenticado.' }
 
-  // Ownership — RLS também protege, mas checa aqui pra erro claro
-  const { data: existing } = await supabase
-    .from('user_leads')
+  // Ownership antes de inserir — o RLS também protege, mas erro claro aqui
+  const ownerTable = 'leadId' in target ? 'leads' : 'user_leads'
+  const ownerId = 'leadId' in target ? target.leadId : target.userLeadId
+  const { data: owned } = await supabase
+    .from(ownerTable)
     .select('id')
-    .eq('id', userLeadId)
+    .eq('id', ownerId)
     .eq('user_id', user.id)
     .maybeSingle()
+  if (!owned) return { ok: false, error: 'Lead não encontrado.' }
 
-  if (!existing) return { ok: false, error: 'Lead não encontrado.' }
+  const ok = await createLeadNote(supabase, user.id, target, text)
+  if (!ok) return { ok: false, error: 'Não foi possível salvar a nota.' }
 
-  const updated = await updateUserLead(supabase, userLeadId, { notes: notes.trim() || null })
-  if (!updated) return { ok: false, error: 'Não foi possível salvar a nota.' }
-
-  revalidatePath(`/leads/global/${userLeadId}`)
+  revalidatePath('/leads')
   return { ok: true }
 }
