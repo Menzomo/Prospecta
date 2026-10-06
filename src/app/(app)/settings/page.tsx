@@ -344,6 +344,29 @@ export default async function SettingsPage({ searchParams }: Props) {
                   </p>
                 </div>
 
+                <div className="mt-4 grid grid-cols-2 gap-3 rounded-xl border border-outline bg-surface-container p-4 text-sm">
+                  <div>
+                    <p className="text-xs text-on-surface-muted">Assinado em</p>
+                    <p className="font-medium text-on-surface">
+                      {profile.subscribed_at ? new Date(profile.subscribed_at).toLocaleDateString('pt-BR') : '—'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-on-surface-muted">Próxima renovação</p>
+                    <p className="font-medium text-on-surface">
+                      {profile.subscription_source === 'asaas' && profile.subscription_paid_at
+                        ? (() => {
+                            const next = new Date(profile.subscription_paid_at)
+                            next.setMonth(next.getMonth() + 1)
+                            return next.toLocaleDateString('pt-BR')
+                          })()
+                        : profile.subscription_source === 'manual'
+                          ? 'Sem vencimento (liberação manual)'
+                          : '—'}
+                    </p>
+                  </div>
+                </div>
+
                 {profile.subscription_source === 'asaas' && (
                   <div className="mt-4">
                     <CreditCardForm hasCard={profile.asaas_has_card} />

@@ -29,6 +29,7 @@ export interface Database {
           asaas_has_card: boolean
           terms_accepted_at: string | null
           terms_version: string | null
+          subscribed_at: string | null
           created_at: string
           updated_at: string
         }
@@ -51,6 +52,7 @@ export interface Database {
           asaas_has_card?: boolean
           terms_accepted_at?: string | null
           terms_version?: string | null
+          subscribed_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -72,6 +74,7 @@ export interface Database {
           asaas_has_card?: boolean
           terms_accepted_at?: string | null
           terms_version?: string | null
+          subscribed_at?: string | null
           updated_at?: string
         }
         Relationships: []

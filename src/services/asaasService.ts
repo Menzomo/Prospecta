@@ -286,11 +286,14 @@ export async function handleAsaasWebhook(
 
   if (kind === 'subscription' && userId) {
     try {
+      const profile = await getProfileById(adminSupabase, userId)
       await updateProfileSubscription(adminSupabase, userId, {
         subscription_status: 'active',
         subscription_source: 'asaas',
         subscription_paid_at: new Date().toISOString(),
         payment_overdue_since: null,
+        // Data da 1ª ativação — não muda nas renovações
+        ...(profile?.subscribed_at ? {} : { subscribed_at: new Date().toISOString() }),
       })
     } catch (err) {
       console.error('[asaasService] falha ao ativar assinatura:', err)

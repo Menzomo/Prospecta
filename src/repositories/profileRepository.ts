@@ -70,6 +70,7 @@ export async function updateProfileSubscription(
     asaas_has_card: boolean
     terms_accepted_at: string
     terms_version: string
+    subscribed_at: string
   }>
 ): Promise<boolean> {
   const { error } = await supabase
