@@ -222,6 +222,7 @@ export default async function UserLeadDetailPage({ params }: Props) {
             notes={notes}
             leadNote={data.notes}
           />
+
         </div>
       </main>
 

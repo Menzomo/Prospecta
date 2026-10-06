@@ -141,6 +141,7 @@ export default async function LeadDetailPage({ params }: Props) {
             <div className="flex flex-col gap-4">
               <LeadEmailsSection messages={emailMessages} threads={emailThreads} />
               <LeadCallsSection calls={calls} leadId={lead.id} />
+              <LeadTimeline lead={lead} messages={emailMessages} followups={followups} threads={emailThreads} calls={calls} visits={visits} notes={notes} leadNote={lead.notes ?? null} />
             </div>
           </div>
 
@@ -148,7 +149,6 @@ export default async function LeadDetailPage({ params }: Props) {
 
           <LeadNoteCard target={{ leadId: lead.id }} />
 
-          <LeadTimeline lead={lead} messages={emailMessages} followups={followups} threads={emailThreads} calls={calls} visits={visits} notes={notes} leadNote={lead.notes ?? null} />
         </div>
       </main>
     </>

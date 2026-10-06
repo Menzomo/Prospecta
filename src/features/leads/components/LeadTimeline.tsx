@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { Lead } from '@/types/leads'
 import type { EmailMessage, EmailThread } from '@/types/email'
 import type { Followup } from '@/types/followups'
@@ -233,7 +234,7 @@ export function LeadTimeline({
       {/* Compact header — always visible */}
       <button
         type="button"
-        onClick={() => setExpanded((v) => !v)}
+        onClick={() => setExpanded(true)}
         className="flex w-full cursor-pointer items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors"
       >
         <div className="flex flex-col gap-0.5">
@@ -255,13 +256,29 @@ export function LeadTimeline({
           )}
         </div>
         <span className="ml-4 shrink-0 text-xs font-medium text-blue-600">
-          {expanded ? 'Fechar' : 'Ver histórico'}
+          Ver histórico
         </span>
       </button>
 
-      {/* Full timeline — collapsible */}
-      {expanded && (
-        <div className="border-t border-gray-100 px-6 py-4">
+      {/* Modal centralizado — mesmo padrão do modal de ligações */}
+      {expanded && createPortal(
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setExpanded(false) }}
+        >
+          <div className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+              <span className="text-sm font-semibold text-gray-900">Histórico</span>
+              <button
+                type="button"
+                onClick={() => setExpanded(false)}
+                className="cursor-pointer rounded-lg px-2 py-1 text-sm text-gray-500 hover:bg-gray-100"
+              >
+                Fechar
+              </button>
+            </div>
+        <div className="overflow-y-auto px-6 py-4">
           <div className="mb-4 flex gap-1 rounded-lg bg-gray-100 p-1 text-xs font-medium">
             <button
               type="button"
@@ -395,6 +412,9 @@ export function LeadTimeline({
           </div>
           )}
         </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   )
