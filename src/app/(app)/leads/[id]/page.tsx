@@ -142,7 +142,7 @@ export default async function LeadDetailPage({ params }: Props) {
 
           <LeadFollowupSection leadId={lead.id} followups={followups} canWrite={canWrite} />
 
-          <LeadTimeline lead={lead} messages={emailMessages} followups={followups} threads={emailThreads} calls={calls} visits={visits} />
+          <LeadTimeline lead={lead} messages={emailMessages} followups={followups} threads={emailThreads} calls={calls} visits={visits} leadNote={lead.notes ?? null} />
         </div>
       </main>
     </>

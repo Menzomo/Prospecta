@@ -213,6 +213,9 @@ export default async function UserLeadDetailPage({ params }: Props) {
             threads={[]}
             calls={calls}
             visits={visits}
+            leadNote={data.notes}
+            userLeadId={id}
+            canEditNote={canWrite}
           />
         </div>
       </main>

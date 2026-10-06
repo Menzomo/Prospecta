@@ -245,3 +245,33 @@ export async function updateVisitLeadStatusAction(
 
   revalidatePath('/visitas')
 }
+
+// Salva a nota do lead de busca (user_leads.notes) sem sair da página —
+// chamada direto do componente de histórico, mesmo padrão de saveCallNotesAction.
+export async function saveUserLeadNotesAction(
+  userLeadId: string,
+  notes: string
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { ok: false, error: 'Não autenticado.' }
+
+  // Ownership — RLS também protege, mas checa aqui pra erro claro
+  const { data: existing } = await supabase
+    .from('user_leads')
+    .select('id')
+    .eq('id', userLeadId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!existing) return { ok: false, error: 'Lead não encontrado.' }
+
+  const updated = await updateUserLead(supabase, userLeadId, { notes: notes.trim() || null })
+  if (!updated) return { ok: false, error: 'Não foi possível salvar a nota.' }
+
+  revalidatePath(`/leads/global/${userLeadId}`)
+  return { ok: true }
+}
