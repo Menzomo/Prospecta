@@ -81,7 +81,11 @@ export default async function LeadsPage({ searchParams }: Props) {
         }
       />
 
+      {/* key: sem isso, buscar outro nome pela barra do topo estando já em /leads
+          muda a URL mas o LeadsView mantém o termo antigo (estado só lê o
+          initialSearch na primeira renderização). */}
       <LeadsView
+        key={search ?? ''}
         leads={allLeads}
         categories={categoriesInUse}
         hasSettings={hasSettings}
