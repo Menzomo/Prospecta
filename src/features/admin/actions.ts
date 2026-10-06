@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { listPendingSubscriptionPayments, deleteAsaasPayment, alertBillingError } from '@/services/asaasService'
 import {
   getGlobalLeadById,
   updateGlobalLeadEmailAndPromote,
@@ -323,4 +324,37 @@ export async function unreleaseCityAction(city: string, _formData: FormData): Pr
   revalidatePath('/admin')
   revalidatePath('/search')
   revalidatePath('/onboarding')
+}
+
+// Cancela as cobranças pendentes/vencidas de um usuário no Asaas (ex.: Pix
+// ou boleto gerado antes da hora). Não encerra a assinatura nem estorna nada.
+export async function cancelPendingChargesAction(
+  userId: string
+): Promise<{ ok: boolean; canceled?: number; error?: string }> {
+  const { user } = await requireAdmin()
+
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const adminSupabase = createAdminClient()
+  const { data: profile } = await adminSupabase
+    .from('profiles')
+    .select('asaas_subscription_id')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (!profile?.asaas_subscription_id) {
+    return { ok: false, error: 'Esse usuário não tem assinatura no Asaas.' }
+  }
+
+  try {
+    const pending = await listPendingSubscriptionPayments(profile.asaas_subscription_id)
+    for (const payment of pending) {
+      await deleteAsaasPayment(payment.id)
+    }
+    console.log(`[cancelPendingChargesAction] Admin ${user.email} canceled ${pending.length} charges for user ${userId}`)
+    revalidatePath('/admin')
+    return { ok: true, canceled: pending.length }
+  } catch (err) {
+    await alertBillingError(`cancelar cobranças pendentes (userId=${userId})`, err)
+    return { ok: false, error: err instanceof Error ? err.message : 'Falha ao cancelar no Asaas.' }
+  }
 }

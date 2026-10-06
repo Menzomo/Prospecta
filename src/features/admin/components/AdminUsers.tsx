@@ -1,4 +1,5 @@
 import type { AdminUser } from '@/repositories/adminRepository'
+import { AdminCancelChargesButton } from '@/features/admin/components/AdminCancelChargesButton'
 
 interface Props {
   users: AdminUser[]
@@ -24,6 +25,8 @@ export function AdminUsers({ users }: Props) {
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Email</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Role</th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600">Cadastro</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-600">Assinatura</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-600">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -43,6 +46,14 @@ export function AdminUsers({ users }: Props) {
                   </td>
                   <td className="px-4 py-3 text-gray-500">
                     {new Date(user.created_at).toLocaleDateString('pt-BR')}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-600">{user.subscription_status}</td>
+                  <td className="px-4 py-3 text-right">
+                    {user.asaas_subscription_id ? (
+                      <AdminCancelChargesButton userId={user.id} email={user.email} />
+                    ) : (
+                      <span className="text-xs text-gray-300">—</span>
+                    )}
                   </td>
                 </tr>
               ))}
