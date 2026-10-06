@@ -92,9 +92,6 @@ export function FollowupItem({ followup, leadId, userLeadId, canWrite = true }: 
           <p className={`mt-0.5 text-xs ${overdue ? 'font-medium text-red-500' : 'text-gray-500'}`}>
             {overdue ? 'Atrasado · ' : ''}{formatDueAt(followup.due_at)}
           </p>
-          {followup.notes && (
-            <p className="mt-1 text-xs text-gray-500">{followup.notes}</p>
-          )}
         </div>
 
         {canWrite && (
@@ -153,16 +150,6 @@ export function FollowupItem({ followup, leadId, userLeadId, canWrite = true }: 
             {updateState?.errors?.due_at && (
               <p className="text-xs text-red-500">{updateState.errors.due_at[0]}</p>
             )}
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Observações</label>
-            <textarea
-              name="notes"
-              rows={2}
-              defaultValue={followup.notes ?? ''}
-              className="resize-none rounded-lg border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
           </div>
 
           {updateState?.error && (

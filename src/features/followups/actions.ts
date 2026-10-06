@@ -34,7 +34,6 @@ export async function createFollowupAction(
 ): Promise<CreateFollowupActionState> {
   const validation = createFollowupSchema.safeParse({
     title: formData.get('title'),
-    notes: formData.get('notes') || undefined,
     due_at: formData.get('due_at'),
   })
 
@@ -53,7 +52,7 @@ export async function createFollowupAction(
     lead_id: leadId ?? null,
     user_lead_id: userLeadId ?? null,
     title: validation.data.title,
-    notes: validation.data.notes || null,
+    notes: null,
     due_at: validation.data.due_at,
   })
 
@@ -87,7 +86,6 @@ export async function updateFollowupAction(
 ): Promise<UpdateFollowupActionState> {
   const validation = updateFollowupSchema.safeParse({
     title: formData.get('title'),
-    notes: formData.get('notes') || undefined,
     due_at: formData.get('due_at'),
   })
 
@@ -104,7 +102,6 @@ export async function updateFollowupAction(
 
   const followup = await updateFollowup(supabase, user.id, followupId, {
     title: validation.data.title,
-    notes: validation.data.notes || null,
     due_at: validation.data.due_at,
   })
 
