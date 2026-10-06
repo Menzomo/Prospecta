@@ -137,9 +137,12 @@ export async function assignTelnyxNumberToUserAction(
   // (ex.: dinheiro) — libera acesso igual uma assinatura confirmada via Asaas.
   const { updateProfileSubscription, getProfileById } = await import('@/repositories/profileRepository')
   const currentProfile = await getProfileById(adminSupabase, targetProfile.id)
+  // Se a conta já tem assinatura no Asaas, mantém a origem 'asaas' — senão a
+  // renovação e o cartão somem da tela do usuário.
+  const hasAsaasSubscription = Boolean(currentProfile?.asaas_subscription_id)
   await updateProfileSubscription(adminSupabase, targetProfile.id, {
     subscription_status: 'active',
-    subscription_source: 'manual',
+    ...(hasAsaasSubscription ? {} : { subscription_source: 'manual' }),
     ...(currentProfile?.subscribed_at ? {} : { subscribed_at: new Date().toISOString() }),
   })
 
