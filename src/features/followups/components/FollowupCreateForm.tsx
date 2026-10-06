@@ -8,7 +8,6 @@ type Props = {
   leadId?: string | null
   userLeadId?: string | null
   defaultTitle?: string
-  defaultNotes?: string
   defaultDaysFromNow?: number
 }
 
@@ -24,7 +23,7 @@ function daysFromNowLocal(days: number): string {
   return d.toISOString().slice(0, 16)
 }
 
-export function FollowupCreateForm({ leadId, userLeadId, defaultTitle, defaultNotes, defaultDaysFromNow }: Props) {
+export function FollowupCreateForm({ leadId, userLeadId, defaultTitle, defaultDaysFromNow }: Props) {
   const boundAction = createFollowupAction.bind(null, leadId ?? null, userLeadId ?? null)
   const [state, formAction, pending] = useActionState(boundAction, null)
   const [dueAtLocal, setDueAtLocal] = useState(() =>
@@ -74,20 +73,6 @@ export function FollowupCreateForm({ leadId, userLeadId, defaultTitle, defaultNo
         {state?.errors?.due_at && (
           <p className="text-xs text-red-500">{state.errors.due_at[0]}</p>
         )}
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="followup-notes" className="text-xs font-medium text-gray-600">
-          Observações
-        </label>
-        <textarea
-          id="followup-notes"
-          name="notes"
-          rows={2}
-          defaultValue={defaultNotes ?? ''}
-          placeholder="Detalhes adicionais..."
-          className="resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-        />
       </div>
 
       {state?.error && (

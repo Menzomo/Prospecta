@@ -27,7 +27,7 @@ export type CreateFollowupDto = {
 
 export type UpdateFollowupDto = {
   title: string
-  notes: string | null
+  notes?: string | null
   due_at: string
 }
 
