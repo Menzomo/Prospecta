@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { listPendingSubscriptionPayments, deleteAsaasPayment, alertBillingError } from '@/services/asaasService'
+import { listPendingSubscriptionPayments, deleteAsaasPayment, syncAsaasNextDueDate, alertBillingError } from '@/services/asaasService'
 import {
   getGlobalLeadById,
   updateGlobalLeadEmailAndPromote,
@@ -355,6 +355,9 @@ export async function cancelPendingChargesAction(
     for (const payment of pending) {
       await deleteAsaasPayment(payment.id)
     }
+    // Cobrança cancelada some da lista de pendentes — sem isso a data guardada
+    // fica presa na cobrança excluída e a bolinha de renovação continua acesa à toa.
+    await syncAsaasNextDueDate(adminSupabase, userId, profile.asaas_subscription_id)
     console.log(`[cancelPendingChargesAction] Admin ${user.email} canceled ${pending.length} charges for user ${userId}`)
     revalidatePath('/admin')
     return { ok: true, canceled: pending.length }
