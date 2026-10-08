@@ -267,7 +267,9 @@ export async function payOverdueViaPixAction(
   if (!profile?.asaas_subscription_id) return { error: 'Nenhuma assinatura encontrada.' }
 
   try {
-    const payment = await findSubscriptionPayment(profile.asaas_subscription_id, ['PENDING', 'OVERDUE'])
+    // Vencida primeiro: se existir cobrança OVERDUE e outra PENDING (próximo
+    // ciclo já gerado), tem que cobrar a vencida, não a que ainda nem venceu.
+    const payment = await findSubscriptionPayment(profile.asaas_subscription_id, ['OVERDUE', 'PENDING'])
     if (!payment) return { error: 'Nenhuma cobrança pendente encontrada.' }
 
     const qr = await switchPendingPaymentToPix(payment.id)
