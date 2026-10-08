@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { payOverdueViaPixAction, checkPixPaymentStatusAction } from '@/features/settings/actions'
+import { CopyPixPayloadButton } from '@/features/settings/components/CopyPixPayloadButton'
 
 export function PayOverdueViaPixButton() {
   const [state, formAction, pending] = useActionState(payOverdueViaPixAction, null)
@@ -47,6 +48,7 @@ export function PayOverdueViaPixButton() {
             onClick={(e) => e.currentTarget.select()}
           />
         )}
+        {state.payload && <CopyPixPayloadButton payload={state.payload} />}
         <p className="text-xs text-on-surface-muted">Aguardando confirmação do pagamento...</p>
       </div>
     )

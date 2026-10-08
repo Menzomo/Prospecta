@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { CopyPixPayloadButton } from '@/features/settings/components/CopyPixPayloadButton'
 
 type RechargeResult = { qrCode: string; payload: string } | null
 
@@ -87,6 +88,7 @@ export function RechargeForm() {
               rows={3}
               onClick={(e) => e.currentTarget.select()}
             />
+            <CopyPixPayloadButton payload={result.payload} />
             <p className="text-xs text-on-surface-muted">Aguardando confirmação do pagamento...</p>
           </>
         )}
