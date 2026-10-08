@@ -2,8 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { payOverdueViaPixAction } from '@/features/settings/actions'
-import { createClient } from '@/lib/supabase/client'
+import { payOverdueViaPixAction, checkPixPaymentStatusAction } from '@/features/settings/actions'
 
 export function PayOverdueViaPixButton() {
   const [state, formAction, pending] = useActionState(payOverdueViaPixAction, null)
@@ -11,13 +10,12 @@ export function PayOverdueViaPixButton() {
   const [confirmed, setConfirmed] = useState(false)
 
   useEffect(() => {
-    if (!state?.qrCode || confirmed) return
+    if (!state?.qrCode || !state.paymentId || confirmed) return
 
-    const supabase = createClient()
+    const paymentId = state.paymentId
     const id = setInterval(async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase as any).from('profiles').select('subscription_status').single()
-      if (data?.subscription_status === 'active') {
+      const { paid } = await checkPixPaymentStatusAction(paymentId)
+      if (paid) {
         setConfirmed(true)
         clearInterval(id)
         router.refresh()
@@ -25,7 +23,7 @@ export function PayOverdueViaPixButton() {
     }, 3000)
 
     return () => clearInterval(id)
-  }, [state?.qrCode, confirmed, router])
+  }, [state?.qrCode, state?.paymentId, confirmed, router])
 
   if (confirmed) {
     return <p className="mt-3 text-sm font-semibold text-green-600">Pagamento confirmado! Assinatura reativada.</p>

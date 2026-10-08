@@ -14,6 +14,7 @@ import {
   setAsaasSubscriptionCreditCard,
   findSubscriptionPayment,
   switchPendingPaymentToPix,
+  getAsaasPaymentStatus,
   alertBillingError,
 } from '@/services/asaasService'
 import { closeUserAccount } from '@/services/subscriptionService'
@@ -105,6 +106,7 @@ export async function updateCompanyAction(
 export type SubscribeActionState = {
   errors?: { cpf_cnpj?: string[] }
   error?: string
+  paymentId?: string
   qrCode?: string
   payload?: string
 } | null
@@ -174,7 +176,7 @@ export async function subscribeAction(
     }
 
     const qr = await getPixQrCode(firstPaymentId)
-    return { qrCode: qr.encodedImage, payload: qr.payload }
+    return { qrCode: qr.encodedImage, payload: qr.payload, paymentId: firstPaymentId }
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Erro ao criar assinatura.'
     console.error('[subscribeAction]', msg)
@@ -251,7 +253,7 @@ export async function setCreditCardAction(
 
 // --- Regularizar cobrança vencida via Pix (assinante de cartão) ---
 
-export type PayOverdueActionState = { error?: string; qrCode?: string; payload?: string } | null
+export type PayOverdueActionState = { error?: string; qrCode?: string; payload?: string; paymentId?: string } | null
 
 export async function payOverdueViaPixAction(
   _state: PayOverdueActionState,
@@ -269,12 +271,38 @@ export async function payOverdueViaPixAction(
     if (!payment) return { error: 'Nenhuma cobrança pendente encontrada.' }
 
     const qr = await switchPendingPaymentToPix(payment.id)
-    return { qrCode: qr.encodedImage, payload: qr.payload }
+    return { qrCode: qr.encodedImage, payload: qr.payload, paymentId: payment.id }
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Erro ao gerar Pix.'
     console.error('[payOverdueViaPixAction]', msg)
     await alertBillingError(`pagar vencido via pix (userId=${user.id})`, err)
     return { error: msg }
+  }
+}
+
+const PAID_STATUSES = new Set(['CONFIRMED', 'RECEIVED'])
+
+/**
+ * Polling do botão de Pix chama isso em vez de ler profiles.subscription_status
+ * direto — confere o pagamento específico que foi gerado, e só esse, no Asaas.
+ * Confere posse (a cobrança precisa ser da assinatura do usuário logado) antes
+ * de responder.
+ */
+export async function checkPixPaymentStatusAction(paymentId: string): Promise<{ paid: boolean }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const profile = await getProfileById(supabase, user.id)
+  if (!profile?.asaas_subscription_id) return { paid: false }
+
+  try {
+    const payment = await getAsaasPaymentStatus(paymentId)
+    if (payment.subscription !== profile.asaas_subscription_id) return { paid: false }
+    return { paid: PAID_STATUSES.has(payment.status) }
+  } catch (err) {
+    console.error('[checkPixPaymentStatusAction]', err)
+    return { paid: false }
   }
 }
 

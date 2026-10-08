@@ -279,6 +279,19 @@ export async function getPixQrCode(paymentId: string): Promise<{
   return asaasFetch(`/payments/${paymentId}/pixQrCode`)
 }
 
+/**
+ * Status de um pagamento específico — usado pro polling do botão de Pix.
+ * Não dá pra confiar em profiles.subscription_status pra isso: a conta pode
+ * já estar "active" (período de carência) antes do Pix gerado ser pago de
+ * verdade, o que fazia o polling antigo "confirmar" sem ninguém ter pago.
+ */
+export async function getAsaasPaymentStatus(paymentId: string): Promise<{
+  status: string
+  subscription: string | null
+}> {
+  return asaasFetch(`/payments/${paymentId}`)
+}
+
 // ── Webhook ──────────────────────────────────────────────────────────────────
 
 type AsaasWebhookPayload = {
