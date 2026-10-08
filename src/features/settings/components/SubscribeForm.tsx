@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { subscribeAction, checkPixPaymentStatusAction } from '@/features/settings/actions'
+import { CopyPixPayloadButton } from '@/features/settings/components/CopyPixPayloadButton'
 import { TERMS_SECTIONS } from '@/features/settings/termsContent'
 
 type Props = {
@@ -54,6 +55,7 @@ export function SubscribeForm({ needsCpfCnpj }: Props) {
                 onClick={(e) => e.currentTarget.select()}
               />
             )}
+            {state.payload && <CopyPixPayloadButton payload={state.payload} />}
             <p className="text-xs text-on-surface-muted">Aguardando confirmação do pagamento...</p>
           </>
         )}
