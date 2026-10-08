@@ -144,7 +144,7 @@ function RenewalDot({ className = '' }: { className?: string }) {
     <span
       role="img"
       aria-label="Renovação da assinatura pendente"
-      className={`h-2 w-2 shrink-0 rounded-full bg-red-500 ${className}`}
+      className={`inline-block h-2 w-2 shrink-0 rounded-full bg-red-500 ${className}`}
     />
   )
 }
@@ -203,7 +203,7 @@ function SettingsAccordionItem({
                 key={sub.section}
                 href={`/settings?section=${sub.section}`}
                 onClick={onLinkClick}
-                className={`block rounded-md px-2.5 py-1.5 text-xs transition-colors ${
+                className={`flex items-center rounded-md px-2.5 py-1.5 text-xs transition-colors ${
                   currentSection === sub.section
                     ? 'font-semibold text-blue-400'
                     : 'text-white/45 hover:text-white/75 hover:bg-white/5'

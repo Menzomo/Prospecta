@@ -2,8 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { subscribeAction } from '@/features/settings/actions'
-import { createClient } from '@/lib/supabase/client'
+import { subscribeAction, checkPixPaymentStatusAction } from '@/features/settings/actions'
 import { TERMS_SECTIONS } from '@/features/settings/termsContent'
 
 type Props = {
@@ -17,17 +16,12 @@ export function SubscribeForm({ needsCpfCnpj }: Props) {
   const [termsAccepted, setTermsAccepted] = useState(false)
 
   useEffect(() => {
-    if (!state?.qrCode || confirmed) return
+    if (!state?.qrCode || !state.paymentId || confirmed) return
 
-    const supabase = createClient()
+    const paymentId = state.paymentId
     const id = setInterval(async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data } = await (supabase as any)
-        .from('profiles')
-        .select('subscription_status')
-        .single()
-
-      if (data?.subscription_status === 'active') {
+      const { paid } = await checkPixPaymentStatusAction(paymentId)
+      if (paid) {
         setConfirmed(true)
         clearInterval(id)
         router.refresh()
@@ -35,7 +29,7 @@ export function SubscribeForm({ needsCpfCnpj }: Props) {
     }, 3000)
 
     return () => clearInterval(id)
-  }, [state?.qrCode, confirmed, router])
+  }, [state?.qrCode, state?.paymentId, confirmed, router])
 
   if (state?.qrCode) {
     return (
