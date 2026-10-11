@@ -7,13 +7,13 @@ const WHATSAPP_MESSAGE = encodeURIComponent('Olá! Vi o Prospecta e queria tirar
 const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MESSAGE}`
 
 export const metadata: Metadata = {
-  title: 'Prospecta — Prospecção comercial organizada',
+  title: 'Prospecta — Prospecção comercial em Caxias do Sul/RS',
   description:
-    'Encontre leads por cidade e segmento, enriqueça com IA, ligue, mande e-mail e planeje visitas — tudo em um CRM só, por R$ 150/mês.',
+    'Encontre leads em Caxias do Sul/RS por segmento, enriqueça com IA, ligue, mande e-mail e planeje visitas — tudo em um CRM só, por R$ 150/mês.',
   openGraph: {
-    title: 'Prospecta — Prospecção comercial organizada',
+    title: 'Prospecta — Prospecção comercial em Caxias do Sul/RS',
     description:
-      'Encontre leads por cidade e segmento, enriqueça com IA, ligue, mande e-mail e planeje visitas — tudo em um CRM só.',
+      'Encontre leads em Caxias do Sul/RS por segmento, enriqueça com IA, ligue, mande e-mail e planeje visitas — tudo em um CRM só.',
     locale: 'pt_BR',
     type: 'website',
   },
@@ -21,8 +21,8 @@ export const metadata: Metadata = {
 
 const FEATURES = [
   {
-    title: 'Busca de leads por cidade e segmento',
-    description: 'Encontre empresas pra prospectar por cidade e categoria e adicione à sua base em poucos cliques.',
+    title: 'Busca de leads em Caxias do Sul/RS',
+    description: 'Encontre empresas pra prospectar em Caxias do Sul/RS por categoria e adicione à sua base em poucos cliques. Em breve, mais cidades.',
     icon: (
       <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
     ),
@@ -65,7 +65,7 @@ const FEATURES = [
 ]
 
 const STEPS = [
-  { title: 'Busque leads', description: 'Filtre por cidade e categoria e adicione à sua base.' },
+  { title: 'Busque leads', description: 'Filtre por categoria em Caxias do Sul/RS e adicione à sua base.' },
   { title: 'Organize no pipeline', description: 'Cada lead com status claro, notas e histórico.' },
   { title: 'Aborde do seu jeito', description: 'Ligue, mande e-mail ou agende uma visita.' },
   { title: 'Acompanhe até fechar', description: 'Lembretes de retorno pra não perder nenhum negócio.' },
@@ -131,14 +131,15 @@ export default function LandingPage() {
         {/* Hero */}
         <section className="mx-auto max-w-6xl px-4 pb-16 pt-16 text-center sm:px-6 sm:pb-24 sm:pt-24">
           <span className="inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
-            Prospecção B2B organizada
+            Prospecção B2B em Caxias do Sul/RS
           </span>
           <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-bold leading-tight text-on-surface font-[--font-heading] sm:text-5xl">
             Do primeiro contato ao fechamento, tudo em um só lugar
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base text-on-surface-muted sm:text-lg">
-            Encontre empresas pra prospectar, enriqueça os dados com inteligência artificial, ligue, mande e-mail,
-            planeje visitas e acompanhe cada lead até a conversão — sem planilha, sem perder contato na correria.
+            Encontre empresas pra prospectar em Caxias do Sul/RS, enriqueça os dados com inteligência artificial,
+            ligue, mande e-mail, planeje visitas e acompanhe cada lead até a conversão — sem planilha, sem perder
+            contato na correria.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
