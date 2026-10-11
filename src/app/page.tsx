@@ -102,18 +102,18 @@ export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-surface">
       {/* Nav */}
-      <header className="sticky top-0 z-40 border-b border-outline bg-surface-container/90 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-sidebar/95 backdrop-blur">
         <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-          <span className="text-lg font-bold text-on-surface font-[--font-heading]">Prospecta</span>
+          <span className="text-lg font-bold text-white font-[--font-heading]">Prospecta</span>
           <div className="hidden items-center gap-8 md:flex">
-            <a href="#recursos" className="text-sm font-medium text-on-surface-muted transition-colors hover:text-on-surface">Recursos</a>
-            <a href="#como-funciona" className="text-sm font-medium text-on-surface-muted transition-colors hover:text-on-surface">Como funciona</a>
-            <a href="#preco" className="text-sm font-medium text-on-surface-muted transition-colors hover:text-on-surface">Preço</a>
+            <a href="#recursos" className="text-sm font-medium text-white/60 transition-colors hover:text-white">Recursos</a>
+            <a href="#como-funciona" className="text-sm font-medium text-white/60 transition-colors hover:text-white">Como funciona</a>
+            <a href="#preco" className="text-sm font-medium text-white/60 transition-colors hover:text-white">Preço</a>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/login"
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/10 sm:px-4"
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10 sm:px-4"
             >
               Entrar
             </Link>
