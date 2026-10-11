@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
-const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password', '/auth/callback', '/api/gmail/callback']
+const PUBLIC_PATHS = ['/', '/login', '/forgot-password', '/reset-password', '/auth/callback', '/api/gmail/callback']
 
 // Webhooks servidor-a-servidor — sem cookie de sessão, cada um se protege
 // com o próprio segredo (Bearer CRON_SECRET, assinatura Ed25519 da Telnyx,
@@ -29,7 +29,7 @@ export async function middleware(request: NextRequest) {
 
   const { response, user } = await updateSession(request)
 
-  if (user && pathname === '/login') {
+  if (user && (pathname === '/login' || pathname === '/')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
