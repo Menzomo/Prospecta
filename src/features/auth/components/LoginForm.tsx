@@ -40,12 +40,14 @@ function EyeIcon({ open }: { open: boolean }) {
 }
 
 export function LoginForm() {
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const searchParams = useSearchParams()
+  // Landing page manda ?mode=signup direto no botão "Criar conta grátis" —
+  // sem isso a pessoa caía sempre na aba de login e precisava trocar na mão.
+  const [mode, setMode] = useState<'login' | 'signup'>(searchParams.get('mode') === 'signup' ? 'signup' : 'login')
   const [loginState, loginFormAction, loginPending] = useActionState(loginAction, null)
   const [signupState, signupFormAction, signupPending] = useActionState(signupAction, null)
   const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [showSignupPassword, setShowSignupPassword] = useState(false)
-  const searchParams = useSearchParams()
   const queryError = searchParams.get('error')
   const hashError = useSyncExternalStore(subscribeNoop, getHashHasError, getServerHashHasError)
   const callbackError = queryError ?? (hashError ? 'Link inválido ou expirado. Solicite a redefinição de senha novamente.' : null)
