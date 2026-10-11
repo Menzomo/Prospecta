@@ -36,7 +36,7 @@ const FEATURES = [
   },
   {
     title: 'Análise da ligação com IA',
-    description: 'Toda ligação é transcrita e analisada: resumo, objeções do lead, estratégias de conversão e sugestão automática de status e do próximo retorno.',
+    description: 'Depois de qualquer ligação, peça a análise por IA (opcional, cobrada à parte): resumo, objeções do lead, estratégias de conversão e sugestão automática de status e do próximo retorno.',
     icon: (
       <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" />
     ),
@@ -74,8 +74,9 @@ const STEPS = [
 const PLAN_ITEMS = [
   'Busca e enriquecimento de leads com IA',
   'CRM completo — pipeline, notas, histórico e acompanhamentos',
-  'Roteirização de visitas',
+  'Roteirização de visitas (cálculo de rota cobrado à parte)',
   'Ligações direto da plataforma (cobradas por minuto, só quando atendidas)',
+  'Análise de ligação com IA, opcional (cobrada à parte)',
   'E-mail integrado ao Gmail com templates',
   'Suporte via WhatsApp',
 ]
@@ -182,7 +183,7 @@ export default function LandingPage() {
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="mx-auto max-w-2xl text-center">
               <h2 className="text-3xl font-bold text-on-surface font-[--font-heading]">Como funciona</h2>
-              <p className="mt-3 text-on-surface-muted">Quatro passos, do zero ao negócio fechado.</p>
+              <p className="mt-3 text-on-surface-muted">Quatro passos, do zero ao negócio fechado — e como funciona o que é cobrado à parte.</p>
             </div>
             <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
               {STEPS.map((step, i) => (
@@ -194,6 +195,32 @@ export default function LandingPage() {
                   <p className="mt-1.5 text-sm text-on-surface-muted">{step.description}</p>
                 </div>
               ))}
+            </div>
+
+            {/* Carteira — uso além da assinatura */}
+            <div className="mx-auto mt-14 max-w-3xl rounded-xl border border-outline bg-surface-container p-6 shadow-card sm:p-8">
+              <h3 className="text-lg font-semibold text-on-surface font-[--font-heading]">
+                A assinatura dá acesso à plataforma — o uso vem de uma carteira à parte
+              </h3>
+              <p className="mt-2 text-sm text-on-surface-muted">
+                Os R$ 150/mês liberam busca de leads, CRM, pipeline, e-mail e tudo mais. Ligação, análise de IA e
+                cálculo de rota são cobrados por uso, descontados de uma carteira que você recarrega via Pix a
+                partir de R$ 30, quando quiser:
+              </p>
+              <ul className="mt-5 space-y-3 text-sm text-on-surface-muted">
+                <li className="flex items-start gap-2.5">
+                  <span className="mt-0.5 shrink-0 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">R$ 0,20/min</span>
+                  Ligação direto da plataforma — só cobrada quando atendida.
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="mt-0.5 shrink-0 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">R$ 0,08/min</span>
+                  Análise da ligação com IA — opcional, só se você pedir depois da ligação.
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="mt-0.5 shrink-0 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">R$ 0,15</span>
+                  Cálculo de rota otimizada pras visitas do dia.
+                </li>
+              </ul>
             </div>
           </div>
         </section>
@@ -226,6 +253,9 @@ export default function LandingPage() {
               >
                 Assinar agora
               </Link>
+              <p className="mt-3 text-center text-xs text-on-surface-muted">
+                Veja <a href="#como-funciona" className="underline hover:text-on-surface">como funciona a carteira</a> pro que é cobrado por uso.
+              </p>
             </div>
           </div>
         </section>
