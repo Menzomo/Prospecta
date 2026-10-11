@@ -7,13 +7,13 @@ const WHATSAPP_MESSAGE = encodeURIComponent('Olá! Vi o Prospecta e queria tirar
 const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MESSAGE}`
 
 export const metadata: Metadata = {
-  title: 'Prospecta — Prospecção comercial em Caxias do Sul/RS',
+  title: 'Prospecta — Prospecção ativa por telefone em Caxias do Sul/RS',
   description:
-    'Encontre leads em Caxias do Sul/RS por segmento, enriqueça com IA, ligue, mande e-mail e planeje visitas — tudo em um CRM só, por R$ 150/mês.',
+    'Feito pra quem prospecta por telefone: encontre leads em Caxias do Sul/RS, ligue direto da plataforma, enriqueça com IA e acompanhe tudo até fechar.',
   openGraph: {
-    title: 'Prospecta — Prospecção comercial em Caxias do Sul/RS',
+    title: 'Prospecta — Prospecção ativa por telefone em Caxias do Sul/RS',
     description:
-      'Encontre leads em Caxias do Sul/RS por segmento, enriqueça com IA, ligue, mande e-mail e planeje visitas — tudo em um CRM só.',
+      'Feito pra quem prospecta por telefone: encontre leads em Caxias do Sul/RS, ligue direto da plataforma, enriqueça com IA e acompanhe tudo até fechar.',
     locale: 'pt_BR',
     type: 'website',
   },
@@ -21,8 +21,15 @@ export const metadata: Metadata = {
 
 const FEATURES = [
   {
+    title: 'Ligações direto da plataforma',
+    description: 'Ligue pro lead com um número dedicado, sem trocar de app. A cobrança é por minuto e só acontece quando a ligação é atendida.',
+    icon: (
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
+    ),
+  },
+  {
     title: 'Busca de leads em Caxias do Sul/RS',
-    description: 'Encontre empresas pra prospectar em Caxias do Sul/RS por categoria e adicione à sua base em poucos cliques. Em breve, mais cidades.',
+    description: 'Encontre empresas com telefone pra ligar hoje — filtradas por categoria em Caxias do Sul/RS. Em breve, mais cidades.',
     icon: (
       <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
     ),
@@ -39,13 +46,6 @@ const FEATURES = [
     description: 'Acompanhe cada lead do primeiro contato até a conversão — novo, contatado, interessado, em negociação — com notas, histórico e acompanhamentos pra não perder o timing de retorno.',
     icon: (
       <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3.75m8.5-3.75 1 3.75m0 0 .5 2.25M12 16.5v3.75m-6.75-3.75h13.5" />
-    ),
-  },
-  {
-    title: 'Ligações direto da plataforma',
-    description: 'Ligue pro lead com um número dedicado, sem trocar de app. A cobrança é por minuto e só acontece quando a ligação é atendida.',
-    icon: (
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
     ),
   },
   {
@@ -131,15 +131,15 @@ export default function LandingPage() {
         {/* Hero */}
         <section className="mx-auto max-w-6xl px-4 pb-16 pt-16 text-center sm:px-6 sm:pb-24 sm:pt-24">
           <span className="inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
-            Prospecção B2B em Caxias do Sul/RS
+            Feito pra quem prospecta por telefone
           </span>
           <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-bold leading-tight text-on-surface font-[--font-heading] sm:text-5xl">
-            Do primeiro contato ao fechamento, tudo em um só lugar
+            Prospecção ativa por telefone, do primeiro contato ao fechamento
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base text-on-surface-muted sm:text-lg">
-            Encontre empresas pra prospectar em Caxias do Sul/RS, enriqueça os dados com inteligência artificial,
-            ligue, mande e-mail, planeje visitas e acompanhe cada lead até a conversão — sem planilha, sem perder
-            contato na correria.
+            Encontre empresas pra ligar em Caxias do Sul/RS, enriqueça os dados com inteligência artificial e ligue
+            direto da plataforma — sem planilha, sem trocar de app. Mande e-mail, planeje visitas e acompanhe cada
+            lead até a conversão quando precisar ir além do telefone.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
